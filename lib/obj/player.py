@@ -9,7 +9,8 @@ from lib import server
 
 class Player:
 	def __str__(self):
-		return "%s[%s]"%(repr(self), self.name)
+		return "%s<%s, %s>"%(repr(self), self.id,
+			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
 	
 	def load(self):
 		with self.lock:
@@ -17,8 +18,7 @@ class Player:
 	def _load(self):
 		cfg = ConfigParser.SafeConfigParser()
 		cfg.readfp(general.get_config_io(self.path))
-		self.charid = cfg.getint("main","charid")
-		self.sid = cfg.getint("main","charid")
+		self.id = cfg.getint("main","id")
 		self.name = cfg.get("main","name")
 		self.gmlevel = cfg.getint("main","gmlevel")
 		self.race = cfg.getint("main","race")
@@ -97,7 +97,7 @@ class Player:
 	def _save(self):
 		cfg = ConfigParser.SafeConfigParser()
 		cfg.add_section("main")
-		cfg.set("main", "charid", str(self.charid))
+		cfg.set("main", "id", str(self.id))
 		cfg.set("main", "name", str(self.name))
 		cfg.set("main", "gmlevel", str(self.gmlevel))
 		cfg.set("main", "race", str(self.race))
@@ -182,16 +182,38 @@ class Player:
 		#
 		cfg.write(open(self.path, "wb"))
 	
+	def get_item_part(self, *args):
+		with self.lock:
+			return self._get_item_part(*args)
+	def _get_item_part(self, iid):
+		if not iid: return
+		if iid not in self.item: return
+		part = 0x02 #body
+		item = self.item[iid]
+		if iid == self.equip.head:
+			if item.type == "HELM"			: part = 6
+			elif item.type == "ACCESORY_HEAD"	: part = 7
+		elif iid == self.equip.face:
+			if item.type == "FULLFACE"		: part = 6 #8 before ver315
+			elif item.type == "ACCESORY_FACE"	: part = 8 #9 before ver315
+		elif iid == self.equip.chestacce		: part = 10
+		elif iid == self.equip.tops			: part = 11
+		elif iid == self.equip.bottoms		: part = 12
+		elif iid == self.equip.backpack		: part = 13
+		elif iid == self.equip.right			: part = 14
+		elif iid == self.equip.left			: part = 15
+		elif iid == self.equip.shoes			: part = 16
+		elif iid == self.equip.socks			: part = 17
+		elif iid == self.equip.pet			: part = 18
+		return part
+	
 	def reset_login(self):
-		if self.user:
-			self.user.reset_login()
 		self.reset_map()
 	
 	def reset_map(self):
-		if self.user:
-			self.user.reset_map()
 		with self.lock:
 			self.online = False
+			self.visible = False
 			self.rawx = 0
 			self.rawy = 0
 			self.rawdir = 0

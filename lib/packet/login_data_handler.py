@@ -8,8 +8,9 @@ from lib.packet import packet
 from lib import users
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
+DATA_TYPE_NOT_PRINT = ()
 
-class LoginDataHandle:
+class LoginDataHandler:
 	def __init__(self):
 		self.user = None
 		self.player = None
@@ -21,20 +22,18 @@ class LoginDataHandle:
 		if self.user:
 			self.user.reset_login()
 			self.user = None
-		if self.player:
-			self.player.reset_login()
-			self.player = None
 		self._stop()
 	
 	def handle_data(self, data):
 		#000a 0001 000003f91e07e221
-		print "[login] %s %s %s"%(
-			data[:2].encode("hex"), #length #len(type+data)
-			data[2:4].encode("hex"), #type
-			data[4:].encode("hex"), #data
-			)
 		data = data[:general.unpack_short(data[:2])+2]
 		data_type = data[2:4].encode("hex")
+		if data_type not in DATA_TYPE_NOT_PRINT:
+			print "[login] %s %s %s"%(
+				data[:2].encode("hex"), #length #len(type+data)
+				data[2:4].encode("hex"), #type
+				data[4:].encode("hex"), #data
+				)
 		try:
 			handler = getattr(self, "do_%s"%data_type)
 		except AttributeError:
@@ -47,7 +46,7 @@ class LoginDataHandle:
 			print traceback.format_exc()
 	
 	def do_0001(self, data):
-		print "[login] eco version", data[2:].encode("hex")
+		print "[login] eco version", general.unpack_int(data[:4])
 		self.send("0002", data) #認証接続確認(s0001)の応答
 		self.send("001e", WORD_FRONT+WORD_BACK) #PASS鍵
 	
@@ -144,7 +143,14 @@ class LoginDataHandle:
 			self.send("00a6", False) #キャラクター削除結果
 		self.send("0028", self.user) #4キャラクターの基本属性
 		self.send("0029", self.user) #4キャラクターの装備
-
-
-
-
+	
+	def do_00a7(self, data):
+		num = general.unpack_byte(data[:1])
+		print "[login] select character", num
+		with self.user.lock:
+			self.player = self.user.player[num]
+		self.send("00a8", self.player) #キャラクターマップ通知
+	
+	def do_0032(self, data):
+		mapid = general.unpack_int(data[:4])
+		self.send("0033") #接続先通知要求(ログインサーバ/0032)の応答

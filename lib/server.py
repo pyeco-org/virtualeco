@@ -6,8 +6,8 @@ import threading
 import traceback
 import struct
 from lib import general
-from lib.packet.login_data_handle import LoginDataHandle
-from lib.packet.map_data_handle import MapDataHandle
+from lib.packet.login_data_handler import LoginDataHandler
+from lib.packet.map_data_handler import MapDataHandler
 KEY_HEAD = "\x00\x00\x00\x00\x00\x00\x00\x01\x31"
 KEY_PRIME = "\x00\x00\x01\x00"+"\x00"*0x100
 KEY_PUBLIC = "\x00\x00\x01\x00"+"\x00"*0x100
@@ -48,6 +48,8 @@ class StandardClient(threading.Thread):
 		self.recv_init = False
 		self.recv_key = False
 		self.start()
+	def __str__(self):
+		return "%s<%s:%s>"%(repr(self), self.address[0], self.address[1])
 	def run(self):
 		while self.running:
 			try:
@@ -64,6 +66,7 @@ class StandardClient(threading.Thread):
 					print traceback.format_exc()
 			except:
 				self.stop()
+		print "quit", self
 	def send_packet(self, packet):
 		with self.lock:
 			self.socket.sendall(packet)
@@ -100,8 +103,6 @@ class StandardClient(threading.Thread):
 			self.running = False
 			with self.master.lock:
 				self.master.client_list.remove(self)
-		print "_stop", self.address
-		del self
 
 class LoginServer(StandardServer):
 	def handle_client(self, s):
@@ -109,16 +110,16 @@ class LoginServer(StandardServer):
 class MapServer(StandardServer):
 	def handle_client(self, s):
 		self.client_list.append(MapClient(self, *s))
-class LoginClient(StandardClient, LoginDataHandle):
+class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
 		print "new login client", args
 		StandardClient.__init__(self, *args)
-		LoginDataHandle.__init__(self)
-class MapClient(StandardClient, MapDataHandle):
+		LoginDataHandler.__init__(self)
+class MapClient(StandardClient, MapDataHandler):
 	def __init__(self, *args):
 		print "new map client", args
 		StandardClient.__init__(self, *args)
-		MapDataHandle.__init__(self)
+		MapDataHandler.__init__(self)
 
 def load(path):
 	from lib.obj import serverconfig

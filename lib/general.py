@@ -116,21 +116,21 @@ def pack_int(i):
 def pack_short(i):
 	return struct.pack(">h", i) #signed short
 def pack_byte(i):
-	return struct.pack(">B", i) #unsigned byte
+	return struct.pack(">b", i) #signed byte
 def unpack_int(s):
 	return struct.unpack(">i", s)[0] #signed int
 def unpack_short(s):
 	return struct.unpack(">h", s)[0] #signed short
 def unpack_byte(s):
-	return struct.unpack(">B", s)[0] #unsigned byte
+	return struct.unpack(">b", s)[0] #signed byte
 def pack_str(string):
 	#65636f -> 04 65636f00
 	if not string:
 		return "\x01\x00"
 	string += "\x00"
-	return pack_byte(len(string))+string
+	return struct.pack(">B", len(string))+string #unsigned byte + char*
 def unpack_str(code):
-	length = unpack_byte(code[0])
+	length = struct.unpack(">B", code[0])[0] #unsigned byte
 	string = code[1:length+1]
 	while string.endswith("\x00"):
 		string = string[:-1]
