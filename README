@@ -1,6 +1,7 @@
 A eco server rewrite from pyeco.
 
 different from pyeco:
+cleanly code
 base socket and threading.Thread
 high-speed database loader (like pyc)
-cleanly code
+multi-character support (make / delete)

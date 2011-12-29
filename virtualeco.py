@@ -6,15 +6,15 @@ import time
 import thread
 import threading
 try:
-	# equal python -u
-	sys.stdout = os.fdopen(sys.stdout.fileno(), "w", 0)
-	sys.stderr = os.fdopen(sys.stderr.fileno(), "w", 0)
-	# require python >= 2.6
-	sys.dont_write_bytecode = True
+	#equal python -u
+	sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", 0)
+	sys.stderr = os.fdopen(sys.stderr.fileno(), "wb", 0)
+	sys.dont_write_bytecode = True #require python >= 2.6
+	#thread.stack_size(256*1024)
 except:
 	pass
 print "-----------------------------------------"
-print "|\tvirtualeco\t2011-12-28\t|"
+print "|\tvirtualeco\t2011-12-29\t|"
 print "-----------------------------------------"
 import lib
 
@@ -43,10 +43,10 @@ if __name__ == "__main__":
 	
 	lib.db.load(DATA_PATH)
 	lib.server.load(SERVER_CONFIG)
-	lib.user.load(USER_DIR)
+	lib.users.load(USER_DIR)
 	
 	while True:
-		for player in lib.user.player_list:
-			if player.login_client:
+		for player in lib.users.get_player_list():
+			if player.online:
 				player.save()
 		time.sleep(60)

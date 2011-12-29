@@ -112,26 +112,27 @@ def unpack(s):
 	elif len(s) == 4:	return unpack_int(s)
 	else:			print "unpack error: unknow length", len(s)
 def pack_int(i):
-	return struct.pack(">I", i)
+	return struct.pack(">i", i) #signed int
 def pack_short(i):
-	return struct.pack(">H", i)
+	return struct.pack(">h", i) #signed short
 def pack_byte(i):
-	return struct.pack(">B", i)
+	return struct.pack(">B", i) #unsigned byte
 def unpack_int(s):
-	return struct.unpack(">I", s)[0]
+	return struct.unpack(">i", s)[0] #signed int
 def unpack_short(s):
-	return struct.unpack(">H", s)[0]
+	return struct.unpack(">h", s)[0] #signed short
 def unpack_byte(s):
-	return struct.unpack(">B", s)[0]
+	return struct.unpack(">B", s)[0] #unsigned byte
 def pack_str(string):
 	#65636f -> 04 65636f00
 	if not string:
 		return "\x01\x00"
-	return pack_byte(len(string))+string+"\x00"
+	string += "\x00"
+	return pack_byte(len(string))+string
 def unpack_str(code):
 	length = unpack_byte(code[0])
 	string = code[1:length+1]
-	if string.endswith("\x00"):
+	while string.endswith("\x00"):
 		string = string[:-1]
 	return string, length+1
 

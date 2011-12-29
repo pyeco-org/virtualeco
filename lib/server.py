@@ -64,15 +64,15 @@ class StandardClient(threading.Thread):
 					print traceback.format_exc()
 			except:
 				self.stop()
-	def send(self, data):
+	def send_packet(self, packet):
 		with self.lock:
-			self.socket.sendall(data)
+			self.socket.sendall(packet)
 	def handle_packet(self):
 		if not self.recv_init:
 			if self.buf.startswith(PACKET_INIT):
 				self.recv_init = True
 				self.buf = self.buf[len(PACKET_INIT):]
-				self.send(KEY_HEAD+KEY_PRIME+KEY_PUBLIC)
+				self.send_packet(KEY_HEAD+KEY_PRIME+KEY_PUBLIC)
 			else:
 				self.stop()
 		elif not self.recv_key:
@@ -92,16 +92,15 @@ class StandardClient(threading.Thread):
 				self.stop()
 				return
 			self.handle_data(general.decode(packet))
-	def stop(self):
+	def _stop(self):
 		if not self.running:
 			return
-		self.running = False
 		with self.lock:
 			self.socket.close()
 			self.running = False
 			with self.master.lock:
 				self.master.client_list.remove(self)
-		print "stop", self.address
+		print "_stop", self.address
 		del self
 
 class LoginServer(StandardServer):

@@ -3,15 +3,25 @@
 from lib import general
 
 def make(data_type, *args):
-	data_value = eval("make_%s"%data_type)(*args)
+	if args and hasattr(args[0], "lock"):
+		with args[0].lock:
+			data_value = eval("make_%s"%data_type)(*args)
+	else:
+		data_value = eval("make_%s"%data_type)(*args)
+	if data_value == None:
+		print "packet make error:", data_type, args
+		return ""
 	packet = general.pack_short(len(data_value)+2)
 	packet += data_type.decode("hex")
 	packet += data_value
 	#print "make", packet.encode("hex")
 	return general.encode(packet)
 
-def pack_user_data(value):
-	return "\04"+value+"\x00"*len(value)*3
+def pack_user_data(user, attr, i):
+	result = "\x04"
+	for player in user.player:
+		result += player and general.pack(getattr(player, attr), i) or "\x00"*i
+	return result
 
 def make_0002(ver):
 	"""認証接続確認(s0001)の応答"""
@@ -25,51 +35,78 @@ def make_000b(data):
 	"""接続・接続確認(s000a)の応答"""
 	return data
 
-def make_0020(command):
+def make_0020(user, _type):
 	"""アカウント認証結果/ログアウト開始/ログアウトキャンセル"""
-	if command == "loginsucess":
-		return "\00\00\00\00"+"\00\00\00\00"+"\00\00\00\00"+"\00\00\00\00"
-	elif command == "loginfaild":
-		return "\xFF\xFF\xFF\xFE"+"\00\00\00\00"+"\00\00\00\00"+"\00\00\00\00"
-	elif command == "isonline":
-		return "\xFF\xFF\xFF\xFB"+"\00\00\00\00"+"\00\00\00\00"+"\00\00\00\00"
-	elif command == "logoutstart":
-		return "\00"
-	elif command == "logoutcancel":
+	if _type == "loginsucess":
+		return "\x00\x00\x00\x00"+general.pack(user.userid, 4)+"\x00\x00\x00\x00"*2
+	elif _type == "loginfaild":
+		return "\xFF\xFF\xFF\xFE"+general.pack(user.userid, 4)+"\x00\x00\x00\x00"*2
+	elif _type == "isonline":
+		return "\xFF\xFF\xFF\xFB"+general.pack(user.userid, 4)+"\x00\x00\x00\x00"*2
+	elif _type == "logoutstart":
+		return "\x00"
+	elif _type == "logoutcancel":
 		return "\xF9"
 	else:
-		print "make_0020: command not exist", command
+		print "make_0020: type not exist", _type
 
-def make_0028(player):
+def make_00a1(_type):
+	"""キャラクター作成結果"""
+	if _type == "sucess":
+		return "\x00\x00\x00\x00"
+	elif _type == "nametoolong":
+		return "\xff\xff\xff\x9c"
+	elif _type == "slotexist":
+		return "\xff\xff\xff\x9d"
+	elif _type == "nameexist":
+		return "\xff\xff\xff\x9e"
+	elif _type == "nametooshort":
+		return "\xff\xff\xff\x9f"
+	elif _type == "namebadchar":
+		return "\xff\xff\xff\xa0"
+	elif _type == "other":
+		return "\xff\xff\xff\xff"
+	else:
+		print "make_00a1: type not exist", _type
+
+def make_00a6(sucess):
+	"""キャラクター削除結果"""
+	return sucess and "\x00" or "\x9c"
+
+def make_0028(user):
 	"""4キャラクターの基本属性"""
-	result = "\04"#キャラ数
-	result += general.pack_str(player.name) #名前
-	result += general.pack(0, 2) #不明
-	result += pack_user_data(general.pack(player.race, 1)) #種族
-	result += pack_user_data(general.pack(player.form, 1)) #フォーム（DEMの）
-	result += pack_user_data(general.pack(player.gender, 1)) #性別
-	result += pack_user_data(general.pack(player.hair, 2)) #髪型
-	result += pack_user_data(general.pack(player.haircolor, 1)) #髪色
+	result = general.pack(len(user.player), 1)#キャラ数
+	for player in user.player:
+		result += player and general.pack_str(player.name) or "\x00"#名前
+	result += pack_user_data(user, "race", 1) #種族
+	result += pack_user_data(user, "form", 1) #フォーム（DEMの）
+	result += pack_user_data(user, "gender", 1) #性別
+	result += pack_user_data(user, "hair", 2) #髪型
+	result += pack_user_data(user, "haircolor", 1) #髪色
 	#ウィング #ない時は\xFF\xFF
-	result += pack_user_data(general.pack(player.wig, 2))
-	result += pack_user_data("\xFF") #不明
-	result += pack_user_data(general.pack(player.face, 2)) #顔
+	result += pack_user_data(user, "wig", 2)
+	result += general.pack(len(user.player), 1) #不明
+	for player in user.player:
+		result += player and "\xFF" or "\x00"
+	result += pack_user_data(user, "face", 2) #顔
 	#転生前のレベル #付ければ上位種族になる
-	result += pack_user_data(general.pack(player.base_lv, 1))
-	result += pack_user_data(general.pack(player.ex, 1)) #転生特典？
+	result += pack_user_data(user, "base_lv", 1)
+	result += pack_user_data(user, "ex", 1) #転生特典？
 	#if player.race = 1 than player.ex = 32 or 111+
-	result += pack_user_data(general.pack(player.wing, 1)) #転生翼？
+	result += pack_user_data(user, "wing", 1) #転生翼？
 	#if player.race = 1 than player.wing = 35 ~ 39
-	result += pack_user_data(general.pack(player.wingcolor, 1)) #転生翼色？
+	result += pack_user_data(user, "wingcolor", 1) #転生翼色？
 	#if player.race = 1 than player.wingcolor = 45 ~ 55
-	result += pack_user_data(general.pack(player.job, 1)) #職業
-	result += pack_user_data(general.pack(player.map, 4)) #マップ
-	result += pack_user_data(general.pack(player.lv_base, 1)) #レベル
-	result += pack_user_data(general.pack(player.lv_job1, 1)) #1次職レベル
-	result += pack_user_data("\00\03") #残りクエスト数
-	result += pack_user_data(general.pack(player.lv_job2x, 1)) #2次職レベル
-	result += pack_user_data(general.pack(player.lv_job2t, 1)) #2.5次職レベル
-	result += pack_user_data(general.pack(player.lv_job3, 1)) #3次職レベル
+	result += pack_user_data(user, "job", 1) #職業
+	result += pack_user_data(user, "map", 4) #マップ
+	result += pack_user_data(user, "lv_base", 1) #レベル
+	result += pack_user_data(user, "lv_job1", 1) #1次職レベル
+	result += general.pack(len(user.player), 1) #残りクエスト数
+	for player in user.player:
+		result += player and "\x00\x03" or "\x00\x00"
+	result += pack_user_data(user, "lv_job2x", 1) #2次職レベル
+	result += pack_user_data(user, "lv_job2t", 1) #2.5次職レベル
+	result += pack_user_data(user, "lv_job3", 1) #3次職レベル
 	return result
 
 def make_09e9(player):
@@ -144,10 +181,12 @@ def make_09e9(player):
 	result += general.pack(0, 1) #戦闘状態の時1#0fa6で変更要請#0fa7で変更される
 	return result
 
-def make_0029(player):
+def make_0029(user):
 	"""4キャラクターの装備"""
-	result =  "\x0d"+make_09e9(player)[5:5+13*4]
-	result += "\x0d"+general.pack(0, 4)*13
-	result += "\x0d"+general.pack(0, 4)*13
-	result += "\x0d"+general.pack(0, 4)*13
+	result = ""
+	for player in user.player:
+		if player:
+			result += "\x0d"+make_09e9(player)[5:5+13*4]
+		else:
+			result += "\x0d"+general.pack(0, 4)*13
 	return result

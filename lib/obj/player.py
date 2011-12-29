@@ -5,10 +5,11 @@ import os
 import threading
 import ConfigParser
 from lib import general
+from lib import server
 
 class Player:
 	def __str__(self):
-		return "%s[%s]"%(repr(self), self.path)
+		return "%s[%s]"%(repr(self), self.name)
 	
 	def load(self):
 		with self.lock:
@@ -19,8 +20,6 @@ class Player:
 		self.charid = cfg.getint("main","charid")
 		self.sid = cfg.getint("main","charid")
 		self.name = cfg.get("main","name")
-		self.password = cfg.get("main","password")
-		self.delpassword = cfg.get("main","delpassword")
 		self.gmlevel = cfg.getint("main","gmlevel")
 		self.race = cfg.getint("main","race")
 		self.form = cfg.getint("main","form")
@@ -100,8 +99,6 @@ class Player:
 		cfg.add_section("main")
 		cfg.set("main", "charid", str(self.charid))
 		cfg.set("main", "name", str(self.name))
-		cfg.set("main", "password", str(self.password))
-		cfg.set("main", "delpassword", str(self.delpassword))
 		cfg.set("main", "gmlevel", str(self.gmlevel))
 		cfg.set("main", "race", str(self.race))
 		cfg.set("main", "form", str(self.form))
@@ -186,43 +183,35 @@ class Player:
 		cfg.write(open(self.path, "wb"))
 	
 	def reset_login(self):
-		with self.lock:
-			self._reset_login()
-	def _reset_login(self):
-		if self.login_client:
-			self.login_client.stop()
-		self.login_client = None
-		self._reset_map()
+		if self.user:
+			self.user.reset_login()
+		self.reset_map()
 	
 	def reset_map(self):
+		if self.user:
+			self.user.reset_map()
 		with self.lock:
-			self._reset_map()
-	def _reset_map(self):
-		if self.map_client:
-			self.map_client.stop()
-		self.map_client = None
-		self.online = False
-		self.rawx = 0
-		self.rawy = 0
-		self.rawdir = 0
-		self.battlestatus = 0
-		self.wrprank = 0
-		self.loginevent = False
-		self.logout = False
-		self.sendmapserver = False
-		self.pet = None #Pet()
-		self.kanban = ""
+			self.online = False
+			self.rawx = 0
+			self.rawy = 0
+			self.rawdir = 0
+			self.battlestatus = 0
+			self.wrprank = 0
+			self.loginevent = False
+			self.logout = False
+			self.sendmapserver = False
+			self.pet = None #Pet()
+			self.kanban = ""
 	
-	def __init__(self, path, filename):
+	def __init__(self, user, path):
 		self.path = path
 		self.lock = threading.RLock()
-		self.username = filename.replace(".ini", "")
-		self.login_client = None 
-		self.map_client = None
+		self.user = None
 		self.sort = Player.Sort()
 		self.equip = Player.Equip()
 		self.status = Player.Status()
 		self.reset_login()
+		self.user = user
 		self.load()
 	
 	class Sort:

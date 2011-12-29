@@ -2,22 +2,38 @@
 # -*- coding: utf-8 -*-
 import traceback
 import hashlib
+import os
 from lib import general
 from lib.packet import packet
-from lib import user
+from lib import users
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
 
 class LoginDataHandle:
 	def __init__(self):
+		self.user = None
 		self.player = None
 	
-	def send_data(self, *args):
-		self.send(packet.make(*args))
+	def send(self, *args):
+		self.send_packet(packet.make(*args))
+	
+	def stop(self):
+		if self.user:
+			self.user.reset_login()
+			self.user = None
+		if self.player:
+			self.player.reset_login()
+			self.player = None
+		self._stop()
 	
 	def handle_data(self, data):
 		#000a 0001 000003f91e07e221
-		data = data[:general.unpack_short(data[:2])]
+		print "[login] %s %s %s"%(
+			data[:2].encode("hex"), #length #len(type+data)
+			data[2:4].encode("hex"), #type
+			data[4:].encode("hex"), #data
+			)
+		data = data[:general.unpack_short(data[:2])+2]
 		data_type = data[2:4].encode("hex")
 		try:
 			handler = getattr(self, "do_%s"%data_type)
@@ -32,41 +48,103 @@ class LoginDataHandle:
 	
 	def do_0001(self, data):
 		print "[login] eco version", data[2:].encode("hex")
-		self.send_data("0002", data)
-		self.send_data("001e", WORD_FRONT+WORD_BACK)
+		self.send("0002", data) #認証接続確認(s0001)の応答
+		self.send("001e", WORD_FRONT+WORD_BACK) #PASS鍵
 	
 	def do_001f(self, data):
 		print "[login]", "login",
 		username, username_length = general.unpack_str(data)
 		password_sha1 = general.unpack_str(data[username_length:])[0]
 		print username, password_sha1
-		for player in user.player_list:
-			with player.lock:
-				if not player.username == username:
+		for user in users.get_user_list():
+			with user.lock:
+				if user.name != username:
 					continue
-				player_password_sha1 = hashlib.sha1(
+				user_password_sha1 = hashlib.sha1(
 					"".join((str(general.unpack_int(WORD_FRONT)),
-							player.password,
+							user.password,
 							str(general.unpack_int(WORD_BACK)),
 							))).hexdigest()
-				if player_password_sha1 != password_sha1:
-					self.send("0020", "loginfaild")
+				if user_password_sha1 != password_sha1:
+					self.send("0020", user, "loginfaild") #アカウント認証結果
 					return
-				if player.login_client:
-					player.reset_login()
-					self.send_data("0020", "isonline")
+				if user.login_client:
+					user.reset_login()
+					self.send("0020", user, "isonline") #アカウント認証結果
 					return
-				player.reset_login()
-				player.login_client = self
-				self.send_data("0020", "loginsucess")
-				#4キャラクターの基本属性
-				self.send_data("0028", player)
-				#4キャラクターの装備
-				self.send_data("0029", player)
+				user.reset_login()
+				user.login_client = self
+				self.user = user
+				self.send("0020", user, "loginsucess") #アカウント認証結果
+				self.send("0028", user) #4キャラクターの基本属性
+				self.send("0029", user) #4キャラクターの装備
 				break
 		else:
-			self.send_data("0020", "loginfaild")
+			self.send("0020", "loginfaild") #アカウント認証結果
 	
 	def do_000a(self, data):
 		#接続確認
-		self.send_data("000b", data)
+		self.send("000b", data) #接続・接続確認(s000a)の応答
+
+	def do_00a0(self, data):
+		#キャラクター作成
+		#02 03313100 00 00 0000 32 0000
+		num = general.unpack_byte(data[:1]); data = data[1:]
+		name, length = general.unpack_str(data); data = data[length:]
+		race = general.unpack_byte(data[:1]); data = data[1:]
+		gender = general.unpack_byte(data[:1]); data = data[1:]
+		hair = general.unpack_short(data[:2]); data = data[2:]
+		hair_color = general.unpack_byte(data[:1]); data = data[1:]
+		face = general.unpack_short(data[:2]); data = data[2:]
+		print "[login] new character:", "num", num, "name", name,
+		print "race", race, "gender", gender, "hair", hair,
+		print "haircolor", hair_color, "face", face
+		try:
+			if self.user.player[num]:
+				self.send("00a1", "slotexist") #キャラクター作成結果
+				return
+			for player in users.get_player_list():
+				with player.lock:
+					if player.name == name:
+						self.send("00a1", "nameexist") #キャラクター作成結果
+						return
+			if hair > 15 or hair_color < 50:
+				raise ValueError(
+					"user %s hair %s hair_color %s"%(
+					self.user.name, hair, hair_color))
+				return
+			if not users.make_new_player(
+				self.user, num, name, race, gender, hair, hair_color, face):
+				self.send("00a1", "slotexist") #キャラクター作成結果
+				return
+		except:
+			print "do_00a0 error:", data.encode("hex")
+			print traceback.format_exc()
+			self.send("00a1", "other") #キャラクター作成結果
+			return
+		else:
+			self.send("00a1", "sucess") #キャラクター作成結果
+			self.send("0028", self.user) #4キャラクターの基本属性
+			self.send("0029", self.user) #4キャラクターの装備
+	
+	def do_00a5(self, data):
+		#キャラクター削除 #num + delpassword
+		num = general.unpack_byte(data[:1]); data = data[1:]
+		delpassword_md5, length = general.unpack_str(data); data = data[length:]
+		print "[login] delete character", "num", num, "delpassword", delpassword_md5
+		try:
+			if self.user.delpassword != delpassword_md5:
+				raise (Exception, "delpassword error")
+			with self.user.lock:
+				os.remove(self.user.player[num].path)
+				self.user.player[num] = None
+			self.send("00a6", True) #キャラクター削除結果
+		except:
+			print "do_00a5 error:", traceback.format_exc()
+			self.send("00a6", False) #キャラクター削除結果
+		self.send("0028", self.user) #4キャラクターの基本属性
+		self.send("0029", self.user) #4キャラクターの装備
+
+
+
+

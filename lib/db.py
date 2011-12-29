@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import csv
+import sys
 import os
+import csv
 import marshal
 import traceback
 
@@ -13,25 +14,27 @@ def _detect_type(s):
 		except: return s
 
 def get_raw_list(path, len_min):
-	from lib import general
 	modify_time = int(os.stat(path).st_mtime)
 	dump_path = "%s.dump"%path
+	python_ver = int("".join(__builtin__.map(str, sys.version_info[:3])))
 	raw_list = []
 	if os.path.exists(dump_path):
 		with open(dump_path, "rb") as dump:
-			if modify_time == general.unpack_int(dump.read(4)):
-				raw_list = marshal.loads(dump.read())
+			try:
+				if (general.unpack_int(dump.read(4)) == modify_time and
+					general.unpack_int(dump.read(4)) == python_ver):
+					raw_list = marshal.loads(dump.read())
+			except:
+				print "dump file %s broken."%dump_path, traceback.format_exc()
 	if not raw_list:
 		for row in csv.reader(open(path, "rb")):
 			if len(row) < len_min: continue
 			if row[0].startswith("\xef\xbb\xbf"): row[0] = row[0][3:]
 			if row[0].startswith("#"): continue
-			row_new = [] #can not use map ...
-			for value in row:
-				row_new.append(_detect_type(value))
-			raw_list.append(row_new)
+			raw_list.append(__builtin__.map(_detect_type, row))
 		with open(dump_path, "wb") as dump:
 			dump.write(general.pack_int(modify_time))
+			dump.write(general.pack_int(python_ver))
 			dump.write(marshal.dumps(raw_list))
 	return raw_list
 
@@ -48,6 +51,10 @@ def load_database(path, obj, len_min):
 
 def load(data_path):
 	import data
+	global general
+	from lib import general
+	global __builtin__
+	import __builtin__
 	global item
 	item = load_database(data_path["item"], data.item.Item, 167)
 	global map
