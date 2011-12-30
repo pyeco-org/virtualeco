@@ -100,17 +100,17 @@ def get_config_io(path):
 		config = config[3:]
 	return StringIO(config.replace("\r\n", "\n"))
 
-def pack(s, length):
-	i = int(s)
-	if length == 1:	return pack_byte(i)
-	elif length == 2:	return pack_short(i)
-	elif length == 4:	return pack_int(i)
-	else:			print "pack error: unknow length", length
-def unpack(s):
-	if len(s) == 1:	return unpack_byte(s)
-	elif len(s) == 2:	return unpack_short(s)
-	elif len(s) == 4:	return unpack_int(s)
-	else:			print "unpack error: unknow length", len(s)
+#def pack(s, length):
+#	i = int(s)
+#	if length == 1:	return pack_byte(i)
+#	elif length == 2:	return pack_short(i)
+#	elif length == 4:	return pack_int(i)
+#	else:			print "pack error: unknow length", length
+#def unpack(s):
+#	if len(s) == 1:	return unpack_byte(s)
+#	elif len(s) == 2:	return unpack_short(s)
+#	elif len(s) == 4:	return unpack_int(s)
+#	else:			print "unpack error: unknow length", len(s)
 def pack_int(i):
 	return struct.pack(">i", i) #signed int
 def pack_short(i):

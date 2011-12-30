@@ -4,7 +4,7 @@ import copy
 
 class Item:
 	def __init__(self, row):
-		self.id = row[0]
+		self.item_id = row[0]
 		self.count = 1
 		self.warehouse = 0
 		self.pictid = row[1]

@@ -6,6 +6,7 @@ import threading
 import ConfigParser
 from lib import general
 from lib import server
+from lib import db
 
 class Player:
 	def __str__(self):
@@ -33,7 +34,7 @@ class Player:
 		self.wing = cfg.getint("main","wing")
 		self.wingcolor = cfg.getint("main","wingcolor")
 		self.job = cfg.getint("main","job")
-		self.map = cfg.getint("main","map")
+		self.map_id = cfg.getint("main","map_id")
 		self.lv_base = cfg.getint("main","lv_base")
 		self.lv_job1 = cfg.getint("main","lv_job1")
 		self.lv_job2x = cfg.getint("main","lv_job2x")
@@ -94,6 +95,7 @@ class Player:
 	def save(self):
 		with self.lock:
 			self._save()
+			#print self, "save"
 	def _save(self):
 		cfg = ConfigParser.SafeConfigParser()
 		cfg.add_section("main")
@@ -112,7 +114,7 @@ class Player:
 		cfg.set("main", "wing", str(self.wing))
 		cfg.set("main", "wingcolor", str(self.wingcolor))
 		cfg.set("main", "job", str(self.job))
-		cfg.set("main", "map", str(self.map))
+		cfg.set("main", "map_id", str(self.map_id))
 		cfg.set("main", "lv_base", str(self.lv_base))
 		cfg.set("main", "lv_job1", str(self.lv_job1))
 		cfg.set("main", "lv_job2x", str(self.lv_job2x))
@@ -163,13 +165,13 @@ class Player:
 		cfg.add_section("item")
 		for i in sorted(self.item, key=int):
 			cfg.set("item", str(i), "%s,%s"%(
-				self.item[i].id,
+				self.item[i].item_id,
 				self.item[i].count))
 		#"iid = id,count,warehouse"
 		cfg.add_section("warehouse")
 		for i in sorted(self.warehouse, key=int):
 			cfg.set("warehouse", str(i), "%s,%s,%s"%(
-				self.warehouse[i].id,
+				self.warehouse[i].item_id,
 				self.warehouse[i].count,
 				self.warehouse[i].warehouse))
 		#"name = value"
@@ -207,13 +209,71 @@ class Player:
 		elif iid == self.equip.pet			: part = 18
 		return part
 	
+	def set_map(self, *args):
+		with self.lock:
+			return self._set_map(*args)
+	def _set_map(self, map_id=None):
+		if not map_id:
+			map_id = self.map_id
+		map_obj = db.map_obj.get(map_id)
+		if not map_obj:
+			return False
+		#print self, "set_map", map_obj
+		self.map_id = map_id
+		if self.map_obj:
+			with self.map_obj.lock:
+				self.map_obj.player_list.remove(self)
+		self.map_obj = map_obj
+		with self.map_obj.lock:
+			if self not in self.map_obj.player_list:
+				self.map_obj.player_list.append(self)
+		return True
+	
+	def set_motion(self, motion_id, motion_loop):
+		with self.lock:
+			self.motion_id = motion_id
+			self.motion_loop = motion_loop
+	
+	def set_coord(self, x, y):
+		with self.lock:
+			self.x = x
+			self.y = y
+			if not self.map_obj:
+				return
+			self.rawx = int((self.x - self.map_obj.centerx)*100.0)
+			self.rawy = int((self.map_obj.centery - self.y)*100.0)
+	def set_raw_coord(self, rawx, rawy):
+		with self.lock:
+			self.rawx = rawx
+			self.rawy = rawy
+			if not self.map_obj:
+				return
+			self.x = int(self.map_obj.centerx + rawx/100.0)
+			self.y = int(self.map_obj.centery - rawy/100.0)
+	
+	def set_dir(self, d):
+		with self.lock:
+			self.dir = d
+			self.rawdir = d*45
+	def set_raw_dir(self, rawdir):
+		with self.lock:
+			self.rawdir = rawdir
+			self.dir = int(rawdir/45)
+	
 	def reset_login(self):
 		self.reset_map()
 	
 	def reset_map(self):
 		with self.lock:
+			if self.user.map_client:
+				self.user.map_client.send_map_without_self("1211", self) #PC消去
+			if self.map_obj:
+				with self.map_obj.lock:
+					self.map_obj.player_list.remove(self)
 			self.online = False
 			self.visible = False
+			self.motion_id = 111
+			self.motion_loop = False
 			self.rawx = 0
 			self.rawy = 0
 			self.rawdir = 0
@@ -221,19 +281,21 @@ class Player:
 			self.wrprank = 0
 			self.loginevent = False
 			self.logout = False
-			self.sendmapserver = False
 			self.pet = None #Pet()
 			self.kanban = ""
+			self.map_obj = None
 	
 	def __init__(self, user, path):
 		self.path = path
 		self.lock = threading.RLock()
-		self.user = None
+		self.user = user
+		self.online = False
+		self.visible = False
+		self.map_obj = None
 		self.sort = Player.Sort()
 		self.equip = Player.Equip()
 		self.status = Player.Status()
 		self.reset_login()
-		self.user = user
 		self.load()
 	
 	class Sort:

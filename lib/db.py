@@ -53,12 +53,13 @@ def load(data_path):
 	import data
 	global general
 	from lib import general
+	from lib import obj
 	global __builtin__
 	import __builtin__
 	global item
 	item = load_database(data_path["item"], data.item.Item, 167)
-	global map
-	map = load_database(data_path["map"], data.map.Map, 4)
+	global map_obj
+	map_obj = load_database(data_path["map"], obj.map.Map, 4)
 	global monster
 	monster = load_database(data_path["monster"], data.monster.Monster, 3)
 	global npc

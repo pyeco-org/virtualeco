@@ -4,7 +4,7 @@ import copy
 
 class Pet:
 	def __init__ (self, row):
-		self.id = row[0] #pet id
+		self.pet_id = row[0] #pet id
 		self.name = row[1]
 		self.pictid = row[2] #pet pictid
 		self.hp = row[19]

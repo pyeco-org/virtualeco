@@ -1,4 +1,3 @@
 import player
 import serverconfig
-
-#print sys.modules
+import map

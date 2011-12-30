@@ -4,7 +4,7 @@ import copy
 
 class Monster:
 	def __init__(self, row):
-		self.id = row[0]
+		self.monster_id = row[0]
 		self.name = row[1]
 		self.sid = 0 # >10000
 		self.charid = 0 # = sid

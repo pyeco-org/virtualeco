@@ -8,7 +8,8 @@ from lib.packet import packet
 from lib import users
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
-DATA_TYPE_NOT_PRINT = ()
+DATA_TYPE_NOT_PRINT = (	"000a", #接続確認
+					)
 
 class LoginDataHandler:
 	def __init__(self):
@@ -154,3 +155,9 @@ class LoginDataHandler:
 	def do_0032(self, data):
 		mapid = general.unpack_int(data[:4])
 		self.send("0033") #接続先通知要求(ログインサーバ/0032)の応答
+	
+	def do_002a(self, data):
+		print "[login]", "request friend list"
+		if self.player:
+			self.send("00dd", self.player) #フレンドリスト(自キャラ)
+
