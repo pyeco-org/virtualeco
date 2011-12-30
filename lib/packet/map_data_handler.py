@@ -6,6 +6,7 @@ import os
 from lib import general
 from lib.packet import packet
 from lib import users
+from lib import script
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
 DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
@@ -17,33 +18,6 @@ class MapDataHandler:
 	def __init__(self):
 		self.user = None
 		self.player = None
-	
-	def stop(self):
-		if self.user:
-			self.user.reset_map()
-			self.user = None
-		self._stop()
-	
-	def handle_data(self, data):
-		#000a 000a 0000040d2e159d00
-		data = data[:general.unpack_short(data[:2])+2]
-		data_type = data[2:4].encode("hex")
-		if data_type not in DATA_TYPE_NOT_PRINT:
-			print "[ map ] %s %s %s"%(
-				data[:2].encode("hex"), #length #len(type+data)
-				data[2:4].encode("hex"), #type
-				data[4:].encode("hex"), #data
-				)
-		try:
-			handler = getattr(self, "do_%s"%data_type)
-		except AttributeError:
-			print "[ map ] unknow packet type", data_type, data.encode("hex")
-			return
-		try:
-			handler(data[4:])
-		except:
-			print "[ map ] handle_data error:", data.encode("hex")
-			print traceback.format_exc()
 	
 	def send(self, *args):
 		self.send_packet(packet.make(*args))
@@ -62,6 +36,35 @@ class MapDataHandler:
 	def send_map(self, *args):
 		self.send_map_without_self(*args)
 		self.send(*args)
+	
+	def stop(self):
+		if self.user:
+			self.user.reset_map()
+			self.user = None
+		self._stop()
+	
+	def handle_data(self, data_decode):
+		#000a 000a 0000040d2e159d00
+		while data_decode:
+			data_length = general.unpack_short(data_decode[:2])
+			data_type = data_decode[2:4].encode("hex")
+			data = data_decode[4:data_length+2]
+			data_decode = data_decode[data_length+2:]
+			if data_type not in DATA_TYPE_NOT_PRINT:
+				print "[ map ] %s %s %s"%(
+					general.pack_short(data_length).encode("hex"),
+					data_type,
+					data.encode("hex"))
+			try:
+				handler = getattr(self, "do_%s"%data_type)
+			except AttributeError:
+				print "[ map ] unknow packet type", data_type, data.encode("hex")
+				return
+			try:
+				handler(data)
+			except:
+				print "[ map ] handle_data error:", data.encode("hex")
+				print traceback.format_exc()
 	
 	def send_item_list(self):
 		with self.player.lock:
@@ -113,6 +116,7 @@ class MapDataHandler:
 					return
 	
 	def do_000a(self, data):
+		#接続・接続確認
 		print "[ map ] eco version", general.unpack_int(data[:4])
 		self.send("000b", data)
 		self.send("000f", WORD_FRONT+WORD_BACK)
@@ -122,6 +126,7 @@ class MapDataHandler:
 		self.send("0033", True) #reply_ping=True
 	
 	def do_0010(self, data):
+		#マップサーバーに認証情報の送信
 		print "[ map ]", "login",
 		username, username_length = general.unpack_str(data)
 		password_sha1 = general.unpack_str(data[username_length:])[0]
@@ -147,6 +152,7 @@ class MapDataHandler:
 			self.stop()
 	
 	def do_01fd(self, data):
+		#選択したキャラ番号通知
 		if not self.player:
 			num = general.unpack_byte(data[4:5])
 			with self.user.lock:
@@ -162,7 +168,7 @@ class MapDataHandler:
 		self.player.motion_id = 111
 		self.player.motion_loop = False
 		self.player.set_map()
-		self.send("1239", self.player, True) #キャラ速度通知・変更 #マップ読み込み中は10
+		self.send("1239", self.player, 10) #キャラ速度通知・変更 #マップ読み込み中は10
 		self.send("1a5f") #右クリ設定
 		self.send_item_list() #インベントリ情報
 		self.send("01ff", self.player) #自分のキャラクター情報
@@ -201,6 +207,7 @@ class MapDataHandler:
 		self.send("1239", self.player) #キャラ速度通知・変更
 		self.send("196e", self.player) #クエスト回数・時間
 		self.send("0259", self.player) #ステータス試算結果
+		#self.send("1b67", self.player) #MAPログイン時に基本情報を全て受信した後に受信される
 		self.send("157c", self.player) #キャラの状態
 		self.send("0226", self.player, 0) #スキル一覧0
 		self.send("0226", self.player, 1) #スキル一覧1
@@ -211,7 +218,6 @@ class MapDataHandler:
 		self.sync_map()
 		#self.player.unset_pet()
 		#self.player.set_pet()
-		self.send("1b67", self.player) #MAPログイン時に基本情報を全て受信した後に受信される
 	
 	def do_0fa5(self, data):
 		#戦闘状態変更通知
@@ -226,7 +232,7 @@ class MapDataHandler:
 		loop = general.unpack_byte(data[2]) and True or False
 		print "[ map ] motion %d loop %s"%(motion_id, loop)
 		self.player.set_motion(motion_id, loop)
-		self.send_map("121c", self.player)
+		self.send_map("121c", self.player) #モーション通知
 		if motion_id == 135 and loop: #ログアウト開始
 			print "[ map ]", "start logout"
 			self.send("0020", self.player, "logoutstart")
@@ -266,7 +272,21 @@ class MapDataHandler:
 		obj_id = general.unpack_int(data[:4])
 		print "[ map ] request object id", obj_id
 		self.send_object_detail(obj_id)
-
-
-
-
+	
+	def do_13ba(self, data):
+		#座る/立つの通知
+		if self.player.motion_id != 135:
+			self.player.set_motion(135, False) #座る
+		else:
+			self.player.set_motion(111, False) #立つ
+		self.send_map("121c", self.player) #モーション通知
+	
+	def do_03e8(self, data):
+		#オープンチャット送信
+		message = general.unpack_str(data)[0]
+		self.send_map("03e9", self.player.id, message) #オープンチャット・システムメッセージ
+	
+	def do_05e6(self, data):
+		#イベント実行
+		event_id = general.unpack_int(data[:4])
+		script.run(self.player, event_id)

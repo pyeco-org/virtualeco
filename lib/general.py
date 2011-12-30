@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
+import os
 import time
 import struct
+import marshal
+import traceback
+import ConfigParser
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import db
@@ -80,9 +85,8 @@ class Log:
 		self.logfile.close()
 
 def list_to_str(l):
-	def appendspliter(item):
-		return "%s,"%item
-	return "".join(map(appendspliter, l))
+	result = "".join(map(lambda item: "%s,"%item, l))
+	return result.endswith(",") and result[:-1] or result
 
 def str_to_list(string):
 	return list(map(int, filter(None, string.split(","))))
@@ -99,6 +103,35 @@ def get_config_io(path):
 	if config.startswith("\xef\xbb\xbf"):
 		config = config[3:]
 	return StringIO(config.replace("\r\n", "\n"))
+
+def get_config(path=None):
+	cfg = ConfigParser.SafeConfigParser()
+	if path:
+		cfg.readfp(get_config_io(path))
+	return cfg
+
+def load_dump(path):
+	dump_path = "%s.dump"%path
+	if not os.path.exists(dump_path):
+		return
+	modify_time = int(os.stat(path).st_mtime)
+	python_ver = int("".join(map(str, sys.version_info[:3])))
+	with open(dump_path, "rb") as dump:
+		try:
+			if (unpack_int(dump.read(4)) == modify_time and
+				unpack_int(dump.read(4)) == python_ver):
+				return marshal.loads(dump.read())
+		except:
+			print "dump file %s broken."%dump_path, traceback.format_exc()
+
+def save_dump(path, obj):
+	dump_path = "%s.dump"%path
+	modify_time = int(os.stat(path).st_mtime)
+	python_ver = int("".join(map(str, sys.version_info[:3])))
+	with open(dump_path, "wb") as dump:
+		dump.write(pack_int(modify_time))
+		dump.write(pack_int(python_ver))
+		dump.write(marshal.dumps(obj))
 
 #def pack(s, length):
 #	i = int(s)

@@ -4,6 +4,7 @@ import sys
 import os
 import threading
 import ConfigParser
+USER_DIR = "./user"
 USER_CONFIG_NAME = "user.ini"
 PLAYER_CONIG_NAME = "%d.ini"
 PLAYER_CONFIG_MAX = 4
@@ -107,7 +108,7 @@ def make_new_player(user, num, name, race, gender, hair, hair_color, face):
 	cfg.set("main", "wing", "0")
 	cfg.set("main", "wingcolor", "0")
 	cfg.set("main", "job", "0")
-	cfg.set("main", "map", "30203000")
+	cfg.set("main", "map_id", "30203000")
 	cfg.set("main", "lv_base", "1")
 	cfg.set("main", "lv_job1", "1")
 	cfg.set("main", "lv_job2x", "1")
@@ -183,16 +184,16 @@ def get_player_list():
 					l.append(player)
 	return l
 
-def load(path_dir):
+def load():
 	global general
 	from lib import general
 	global Player
 	from lib.obj.player import Player
 	global server
 	from lib import server
-	for name in os.listdir(path_dir):
+	for name in os.listdir(USER_DIR):
 		try:
-			user_list.append(User(name, os.path.join(path_dir, name)))
+			user_list.append(User(name, os.path.join(USER_DIR, name)))
 		except:
 			print "load error:", name
 			raise

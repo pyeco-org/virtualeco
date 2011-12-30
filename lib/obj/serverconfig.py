@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import threading
-import ConfigParser
+from lib import general
 
 class ServerConfig:
 	def __init__(self, path):
@@ -13,9 +13,7 @@ class ServerConfig:
 		with self.lock:
 			self._load()
 	def _load(self):
-		from lib.general import get_config_io
-		cfg = ConfigParser.SafeConfigParser()
-		cfg.readfp(get_config_io(self.path))
+		cfg = general.get_config(self.path)
 		self.loginserverport = cfg.getint("main", "loginserverport")
 		self.mapserverport = cfg.getint("main", "mapserverport")
 		self.webserverport = cfg.getint("main", "webserverport")
@@ -28,7 +26,7 @@ class ServerConfig:
 		with self.lock:
 			self._save()
 	def _save(self):
-		cfg = ConfigParser.SafeConfigParser()
+		cfg = general.get_config()
 		cfg.add_section("main")
 		cfg.add_section("player")
 		cfg.add_section("gmlevel")

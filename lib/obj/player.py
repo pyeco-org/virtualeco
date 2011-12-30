@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
-import os
 import threading
-import ConfigParser
 from lib import general
 from lib import server
 from lib import db
@@ -17,8 +15,7 @@ class Player:
 		with self.lock:
 			self._load()
 	def _load(self):
-		cfg = ConfigParser.SafeConfigParser()
-		cfg.readfp(general.get_config_io(self.path))
+		cfg = general.get_config(self.path)
 		self.id = cfg.getint("main","id")
 		self.name = cfg.get("main","name")
 		self.gmlevel = cfg.getint("main","gmlevel")
@@ -97,7 +94,7 @@ class Player:
 			self._save()
 			#print self, "save"
 	def _save(self):
-		cfg = ConfigParser.SafeConfigParser()
+		cfg = general.get_config()
 		cfg.add_section("main")
 		cfg.set("main", "id", str(self.id))
 		cfg.set("main", "name", str(self.name))
@@ -151,29 +148,23 @@ class Player:
 		cfg.set("equip", "pet", str(self.equip.pet))
 		#"iid,iid,iid, ..."
 		cfg.add_section("sort")
-		sort = ""
-		for i in self.sort.item:
-			sort += ",%s"%i
-		if sort: sort = sort[1:]
-		cfg.set("sort", "item", sort)
-		sort_warehouse = ""
-		for i in self.sort.warehouse:
-			sort_warehouse += ",%s"%i
-		if sort_warehouse: sort_warehouse = sort_warehouse[1:]
-		cfg.set("sort", "warehouse", sort_warehouse)
+		cfg.set("sort", "item", general.list_to_str(self.sort.item))
+		cfg.set("sort", "warehouse", general.list_to_str(self.sort.warehouse))
 		#"iid = id,count"
 		cfg.add_section("item")
-		for i in sorted(self.item, key=int):
-			cfg.set("item", str(i), "%s,%s"%(
+		for i in self.item:
+			cfg.set("item", str(i),
+				general.list_to_str((
 				self.item[i].item_id,
-				self.item[i].count))
+				self.item[i].count)))
 		#"iid = id,count,warehouse"
 		cfg.add_section("warehouse")
-		for i in sorted(self.warehouse, key=int):
-			cfg.set("warehouse", str(i), "%s,%s,%s"%(
+		for i in self.warehouse:
+			cfg.set("warehouse", str(i),
+				general.list_to_str((
 				self.warehouse[i].item_id,
 				self.warehouse[i].count,
-				self.warehouse[i].warehouse))
+				self.warehouse[i].warehouse)))
 		#"name = value"
 		cfg.add_section("dic")
 		for name, value in self.dic.iteritems():
@@ -279,6 +270,7 @@ class Player:
 			self.rawdir = 0
 			self.battlestatus = 0
 			self.wrprank = 0
+			self.event_id = 0
 			self.loginevent = False
 			self.logout = False
 			self.pet = None #Pet()
@@ -338,7 +330,7 @@ class Player:
 			self.hpheal = 0
 			self.mpheal = 0
 			self.spheal = 0
-			self.aspd = 190
+			self.aspd = 750 #190
 			self.cspd = 187
 			self.speed = 410
 			self.adelay = 2*(1-self.aspd/1000.0) #attack delay

@@ -25,26 +25,28 @@ class LoginDataHandler:
 			self.user = None
 		self._stop()
 	
-	def handle_data(self, data):
+	def handle_data(self, data_decode):
 		#000a 0001 000003f91e07e221
-		data = data[:general.unpack_short(data[:2])+2]
-		data_type = data[2:4].encode("hex")
-		if data_type not in DATA_TYPE_NOT_PRINT:
-			print "[login] %s %s %s"%(
-				data[:2].encode("hex"), #length #len(type+data)
-				data[2:4].encode("hex"), #type
-				data[4:].encode("hex"), #data
-				)
-		try:
-			handler = getattr(self, "do_%s"%data_type)
-		except AttributeError:
-			print "[login] unknow packet type", data_type, data.encode("hex")
-			return
-		try:
-			handler(data[4:])
-		except:
-			print "[login] handle_data error:", data.encode("hex")
-			print traceback.format_exc()
+		while data_decode:
+			data_length = general.unpack_short(data_decode[:2])
+			data_type = data_decode[2:4].encode("hex")
+			data = data_decode[4:data_length+2]
+			data_decode = data_decode[data_length+2:]
+			if data_type not in DATA_TYPE_NOT_PRINT:
+				print "[login] %s %s %s"%(
+					general.pack_short(data_length).encode("hex"),
+					data_type,
+					data.encode("hex"))
+			try:
+				handler = getattr(self, "do_%s"%data_type)
+			except AttributeError:
+				print "[login] unknow packet type", data_type, data.encode("hex")
+				return
+			try:
+				handler(data)
+			except:
+				print "[login] handle_data error:", data.encode("hex")
+				print traceback.format_exc()
 	
 	def do_0001(self, data):
 		print "[login] eco version", general.unpack_int(data[:4])
@@ -160,4 +162,3 @@ class LoginDataHandler:
 		print "[login]", "request friend list"
 		if self.player:
 			self.send("00dd", self.player) #フレンドリスト(自キャラ)
-

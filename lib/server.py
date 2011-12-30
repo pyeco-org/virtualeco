@@ -8,6 +8,7 @@ import struct
 from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
+SERVER_CONFIG = "./server.ini"
 KEY_HEAD = "\x00\x00\x00\x00\x00\x00\x00\x01\x31"
 KEY_PRIME = "\x00\x00\x01\x00"+"\x00"*0x100
 KEY_PUBLIC = "\x00\x00\x01\x00"+"\x00"*0x100
@@ -54,6 +55,7 @@ class StandardClient(threading.Thread):
 		while self.running:
 			try:
 				packet = self.socket.recv(1024)
+				#print packet.encode("hex")
 				if not self.running:
 					return
 				if not packet:
@@ -94,6 +96,7 @@ class StandardClient(threading.Thread):
 				print "packet decode error:", self.buf.encode("hex")
 				self.stop()
 				return
+			#print general.decode(packet).encode("hex")
 			self.handle_data(general.decode(packet))
 	def _stop(self):
 		if not self.running:
@@ -121,10 +124,10 @@ class MapClient(StandardClient, MapDataHandler):
 		StandardClient.__init__(self, *args)
 		MapDataHandler.__init__(self)
 
-def load(path):
+def load():
 	from lib.obj import serverconfig
 	global config
-	config = serverconfig.ServerConfig(path)
+	config = serverconfig.ServerConfig(SERVER_CONFIG)
 	global loginserver
 	loginserver = LoginServer(config.loginserverport)
 	print "Start login server with\t%s:%d"%(BIND_ADDRESS, config.loginserverport)

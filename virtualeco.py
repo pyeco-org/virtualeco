@@ -14,27 +14,18 @@ try:
 except:
 	pass
 print "-----------------------------------------"
-print "|\tvirtualeco\t2011-12-30\t|"
+print " virtualeco	2011-12-31"
 print "-----------------------------------------"
 from lib import db
 from lib import server
 from lib import users
+from lib import script
 
 USE_LOG = False
 STDOUT = sys.stdout
 STDERR = sys.stderr
 STDOUT_LOG = "./stdout.log"
 STDERR_LOG = "./stderr.log"
-SERVER_CONFIG = "./server.ini"
-USER_DIR = "./user"
-DATA_PATH = {	"item": "./data/item.csv",
-			"map": "./data/map.csv",
-			"monster": "./data/monster.csv",
-			"npc": "./data/npc.csv",
-			"pet": "./data/pet.csv",
-			"shop": "./data/shop.csv",
-			"skill": "./data/skill.csv",
-			}
 
 def save_user_data():
 		try:
@@ -51,16 +42,7 @@ def debugger():
 	print "debugger: you can input something and press return"
 	while True:
 		try:
-			string = raw_input()
-			if (not string.startswith("print ") and
-				not string.startswith("for ") and
-				not string.startswith("while ") and
-				not string.startswith("if ") and
-				not string.startswith("elif ") and 
-				not string.startswith("else ") and
-				not string.startswith("import ")):
-				string = "print %s"%string
-			exec string
+			exec raw_input()
 		except KeyboardInterrupt:
 			break
 		except SystemExit:
@@ -74,9 +56,10 @@ if __name__ == "__main__":
 	if USE_LOG:
 		sys.stdout = lib.general.Log(STDOUT, STDOUT_LOG)
 		sys.stderr = lib.general.Log(STDERR, STDERR_LOG)
-	db.load(DATA_PATH)
-	server.load(SERVER_CONFIG)
-	users.load(USER_DIR)
-
+	db.load()
+	script.load()
+	server.load()
+	users.load()
+	
 	thread.start_new_thread(save_user_data_every_min, ())
 	debugger()

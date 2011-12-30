@@ -232,10 +232,13 @@ def make_0029(user):
 			result += "\x0d"+general.pack_int(0)*13
 	return result
 
-def make_1239(player, loading=False):
+def make_1239(player, speed=None):
 	"""キャラ速度通知・変更"""
 	result = general.pack_int(player.id)
-	result += general.pack_short(loading and 10 or player.status.speed)
+	if speed != None:
+		general.pack_short(speed)
+	else:
+		general.pack_short(player.status.speed)
 	return result
 
 def make_0fa7(player, mode=0x02):
@@ -707,7 +710,7 @@ def make_0259(player):
 	result += "\x03" #03固定 #次のdwordの数？
 	result += general.pack_int(player.status.maxhp) #最大hp
 	result += general.pack_int(player.status.maxmp) #最大mp
-	result += general.pack_short(player.status.maxsp) #最大sp
+	result += general.pack_int(player.status.maxsp) #最大sp
 	result += general.pack_short(player.status.maxcapa) #最大Capa
 	result += general.pack_short(player.status.maxpayl) #最大payload
 	return result
@@ -846,4 +849,51 @@ def make_041b(player):
 	result = general.pack_int(player.id)
 	result += general.pack_str(player.kanban)
 	return result
+
+def make_03e9(speaker_id, message):
+	"""オープンチャット・システムメッセージ"""
+	result = general.pack_int(speaker_id)
+	result += general.pack_str(message)
+	#発言者ID
+	#-1: システムメッセージ(黄)
+	#0: 管理者メッセージ(桃)
+	#1-9999: PCユーザー
+	#10000-30000: ペット
+	#他: 飛空庭設置ペットなど
+	return result
+
+def make_05dc():
+	"""イベント開始の通知"""
+	return ""
+
+def make_05e8(event_id):
+	"""EventID通知 Event送信に対する応答"""
+	result = general.pack_int(event_id)
+	result += general.pack_int(0)
+	return result
+
+def make_05dd():
+	"""イベント終了の通知"""
+	return ""
+
+def make_03f8():
+	"""NPCメッセージのヘッダー"""
+	return ""
+
+def make_03f9():
+	"""NPCメッセージのフッター"""
+	return ""
+
+def make_03f7(message, npc_name, npc_motion_id, npc_id, npc_visible=True):
+	"""NPCメッセージ"""
+	result = general.pack_int(npc_id)
+	result += general.pack_byte(0) #unknow
+	result += general.pack_byte((npc_visible and 1 or 0)) #npc visible
+	result += general.pack_str(message)
+	result += general.pack_short(npc_motion_id)
+	result += general.pack_str(npc_name)
+	return result
+
+
+
 
