@@ -39,7 +39,7 @@ def load_database(name, obj, len_min):
 	d = {}
 	for i, row in enumerate(get_raw_list(path, len_min)):
 		try:
-			d[int(row[0])] = obj(row)
+			d[row[0]] = obj(row)
 		except:
 			print "load error: line %d"%(i+1), traceback.format_exc()
 	print "	%d	%s	load."%(len(d), name)

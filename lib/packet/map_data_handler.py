@@ -284,7 +284,8 @@ class MapDataHandler:
 	def do_03e8(self, data):
 		#オープンチャット送信
 		message = general.unpack_str(data)[0]
-		self.send_map("03e9", self.pc.id, message) #オープンチャット・システムメッセージ
+		if not script.handle_cmd(self.pc, message):
+			self.send_map("03e9", self.pc.id, message) #オープンチャット・システムメッセージ
 	
 	def do_05e6(self, data):
 		#イベント実行

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from lib import script
 
-ID = 0x112a887
+ID = 18000007
 SCRIPT_PATH = "./script/say.py"
 
 def main(pc):

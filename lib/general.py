@@ -12,7 +12,7 @@ try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import db
 from lib.site_packages import rijndael
-
+DUMP_WITH_ZLIB = False
 ACCESORY_TYPE_LIST = ("ACCESORY_NECK",
 				"JOINT_SYMBOL",
 				)
@@ -121,7 +121,10 @@ def load_dump(path):
 		try:
 			if (unpack_int(dump.read(4)) == modify_time and
 				unpack_int(dump.read(4)) == python_ver):
-				return marshal.loads(dump.read())
+				if DUMP_WITH_ZLIB:
+					return marshal.loads(dump.read().decode("zlib"))
+				else:
+					return marshal.loads(dump.read())
 		except:
 			print "dump file %s broken."%dump_path, traceback.format_exc()
 
@@ -132,7 +135,10 @@ def save_dump(path, obj):
 	with open(dump_path, "wb") as dump:
 		dump.write(pack_int(modify_time))
 		dump.write(pack_int(python_ver))
-		dump.write(marshal.dumps(obj))
+		if DUMP_WITH_ZLIB:
+			dump.write(marshal.dumps(obj).encode("zlib"))
+		else	:
+			dump.write(marshal.dumps(obj))
 
 #def pack(s, length):
 #	i = int(s)
@@ -146,17 +152,29 @@ def save_dump(path, obj):
 #	elif len(s) == 4:	return unpack_int(s)
 #	else:			print "unpack error: unknow length", len(s)
 def pack_int(i):
-	return struct.pack(">i", i) #signed int
+	return struct.pack(">i", i)
 def pack_short(i):
-	return struct.pack(">h", i) #signed short
+	return struct.pack(">h", i)
 def pack_byte(i):
-	return struct.pack(">b", i) #signed byte
+	return struct.pack(">b", i)
 def unpack_int(s):
-	return struct.unpack(">i", s)[0] #signed int
+	return struct.unpack(">i", s)[0]
 def unpack_short(s):
-	return struct.unpack(">h", s)[0] #signed short
+	return struct.unpack(">h", s)[0]
 def unpack_byte(s):
-	return struct.unpack(">b", s)[0] #signed byte
+	return struct.unpack(">b", s)[0]
+def pack_unsigned_int(i):
+	return struct.pack(">I", i)
+def pack_unsigned_short(i):
+	return struct.pack(">H", i)
+def pack_unsigned_byte(i):
+	return struct.pack(">B", i)
+def unpack_unsigned_int(s):
+	return struct.unpack(">I", s)[0]
+def unpack_unsigned_short(s):
+	return struct.unpack(">H", s)[0]
+def unpack_unsigned_byte(s):
+	return struct.unpack(">B", s)[0]
 def pack_str(string):
 	#65636f -> 04 65636f00
 	if not string:

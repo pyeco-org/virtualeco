@@ -227,8 +227,10 @@ class PC:
 	
 	def set_coord(self, x, y):
 		with self.lock:
-			self.x = x
-			self.y = y
+			self.x = x #unsigned byte
+			self.y = y #unsigned byte
+			if self.x < 0: self.x += 256
+			if self.y < 0: self.y += 256
 			if not self.map_obj:
 				return
 			self.rawx = int((self.x - self.map_obj.centerx)*100.0)
@@ -241,6 +243,8 @@ class PC:
 				return
 			self.x = int(self.map_obj.centerx + rawx/100.0)
 			self.y = int(self.map_obj.centery - rawy/100.0)
+			if self.x < 0: self.x += 256
+			if self.y < 0: self.y += 256
 	
 	def set_dir(self, d):
 		with self.lock:

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from lib import general
 from lib import db
@@ -366,8 +366,8 @@ def make_01ff(pc):
 	result += general.pack_byte(pc.wing) #転生翼
 	result += general.pack_byte(pc.wingcolor) #転生翼色
 	result += general.pack_int(pc.map_id) #マップ
-	result += general.pack_byte(pc.x)
-	result += general.pack_byte(pc.y)
+	result += general.pack_unsigned_byte(pc.x)
+	result += general.pack_unsigned_byte(pc.y)
 	result += general.pack_byte(pc.dir)
 	result += general.pack_int(pc.status.hp)
 	result += general.pack_int(pc.status.maxhp)
@@ -718,8 +718,8 @@ def make_0259(pc):
 def make_120c(pc):
 	"""他キャラ情報/他キャラの憑依やHP等の情報"""
 	result = general.pack_int(pc.id) #サーバキャラID
-	result += general.pack_byte(pc.x) #x
-	result += general.pack_byte(pc.y) #y
+	result += general.pack_unsigned_byte(pc.x) #x
+	result += general.pack_unsigned_byte(pc.y) #y
 	result += general.pack_short(pc.status.speed) #キャラの足の早さ
 	result += general.pack_byte(pc.dir) #向き
 	result += general.pack_int(-1) #憑依先のキャラID。（未憑依時:0xFFFFFFFF
@@ -737,8 +737,8 @@ def make_122f(pet):
 	result += general.pack_byte(pet.master.lv_base)
 	result += general.pack_int(pet.master.wrprank) #master wrprank
 	result += "\x00" #unknow
-	result += general.pack_byte(pet.x) #pet x
-	result += general.pack_byte(pet.y) #pet y
+	result += general.pack_unsigned_byte(pet.x) #pet x
+	result += general.pack_unsigned_byte(pet.y) #pet y
 	result += general.pack_short(pet.speed) #pet speed
 	result += general.pack_byte(pet.dir) #pet dir
 	result += general.pack_int(pet.hp) #pet hp
@@ -749,8 +749,8 @@ def make_1220(monster):
 	"""モンスター情報"""
 	result = general.pack_int(monster.id) #server id
 	result += general.pack_int(monster.monster_id) #mobid
-	result += general.pack_byte(monster.x) #x
-	result += general.pack_byte(monster.y) #y
+	result += general.pack_unsigned_byte(monster.x) #x
+	result += general.pack_unsigned_byte(monster.y) #y
 	result += general.pack_short(monster.speed) #speed
 	result += general.pack_byte(monster.dir) #dir
 	result += general.pack_int(monster.hp) #hp
@@ -907,4 +907,17 @@ def make_09e3(iid, part):
 	result = general.pack_int(iid) #移動元インベントリID
 	result += general.pack_byte(0) #成功時は0
 	result += general.pack_byte(part) #移動先保管場所(エラー時は-1
+	return result
+
+def make_11fd(pc):
+	"""マップ変更通知"""
+	result = general.pack_int(pc.map_id) #mapid
+	result += general.pack_unsigned_byte(pc.x) #x
+	result += general.pack_unsigned_byte(pc.y) #y
+	result += general.pack_byte(pc.dir) #dir
+	result += "\x04" #常に0x04
+	result += "\xff" #常に0xff #インスDにおける移動後の部屋の位置x
+	result += "\xff" #常に0xff #インスDにおける移動後の部屋の位置y
+	result += general.pack_byte(0) #motion
+	result += general.pack_int(0) #大体0 #値が入ってるときはかなり大きめの値
 	return result

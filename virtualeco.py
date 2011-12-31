@@ -20,7 +20,7 @@ from lib import db
 from lib import server
 from lib import users
 from lib import script
-
+STARTUP_TIME = time.time()
 USE_LOG = False
 STDOUT = sys.stdout
 STDERR = sys.stderr
@@ -39,7 +39,8 @@ def save_user_data_every_min():
 		save_user_data()
 		time.sleep(60)
 def debugger():
-	print "debugger: you can input something and press return"
+	print "[debug] startup expend %s sec"%(time.time()-STARTUP_TIME)
+	print "[debug] you can input something and press return"
 	while True:
 		try:
 			exec raw_input()
@@ -53,6 +54,7 @@ def debugger():
 
 if __name__ == "__main__":
 	os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+	
 	if USE_LOG:
 		sys.stdout = lib.general.Log(STDOUT, STDOUT_LOG)
 		sys.stderr = lib.general.Log(STDERR, STDERR_LOG)
