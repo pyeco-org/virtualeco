@@ -57,7 +57,7 @@ class StandardClient(threading.Thread):
 				packet = self.socket.recv(1024)
 				#print packet.encode("hex")
 				if not self.running:
-					return
+					break
 				if not packet:
 					raise Exception
 				try:

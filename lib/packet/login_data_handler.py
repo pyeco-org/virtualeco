@@ -105,11 +105,9 @@ class LoginDataHandler:
 			if self.user.pc_list[num]:
 				self.send("00a1", "slotexist") #キャラクター作成結果
 				return
-			for pc in users.get_pc_list():
-				with pc.lock:
-					if pc.name == name:
-						self.send("00a1", "nameexist") #キャラクター作成結果
-						return
+			if users.get_pc_from_name(name):
+				self.send("00a1", "nameexist") #キャラクター作成結果
+				return
 			if hair > 15 or hair_color < 50:
 				raise ValueError(
 					"user %s hair %s hair_color %s"%(

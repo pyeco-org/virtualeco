@@ -168,6 +168,7 @@ class MapDataHandler:
 		self.pc.motion_id = 111
 		self.pc.motion_loop = False
 		self.pc.set_map()
+		self.pc.set_coord(self.pc.x, self.pc.y) #on login
 		self.send("1239", self.pc, 10) #キャラ速度通知・変更 #マップ読み込み中は10
 		self.send("1a5f") #右クリ設定
 		self.send_item_list() #インベントリ情報

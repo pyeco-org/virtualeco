@@ -20,6 +20,7 @@ from lib import db
 from lib import server
 from lib import users
 from lib import script
+from lib import web
 STARTUP_TIME = time.time()
 USE_LOG = False
 STDOUT = sys.stdout
@@ -61,6 +62,7 @@ if __name__ == "__main__":
 	db.load()
 	script.load()
 	server.load()
+	web.load()
 	users.load()
 	
 	thread.start_new_thread(save_user_data_every_min, ())

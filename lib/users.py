@@ -3,6 +3,7 @@
 import sys
 import os
 import threading
+import hashlib
 import ConfigParser
 USER_DIR = "./user"
 USER_CONFIG_NAME = "user.ini"
@@ -29,8 +30,7 @@ class User:
 			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
 	
 	def load(self):
-		cfg = ConfigParser.SafeConfigParser()
-		cfg.readfp(general.get_config_io(os.path.join(self.path, USER_CONFIG_NAME)))
+		cfg = general.get_config(os.path.join(self.path, USER_CONFIG_NAME))
 		self.password = cfg.get("main","password")
 		self.delpassword = cfg.get("main","delpassword")
 		self.user_id = cfg.getint("main","user_id")
@@ -55,7 +55,7 @@ class User:
 		cfg.add_section("main")
 		cfg.set("main", "password", self.password)
 		cfg.set("main", "delpassword", self.delpassword)
-		cfg.set("main", "user_id", self.user_id)
+		cfg.set("main", "user_id", str(self.user_id))
 		cfg.write(open(os.path.join(self.path, USER_CONFIG_NAME), "wb"))
 	
 	def reset_login(self):
@@ -79,6 +79,58 @@ class User:
 				pc.reset_map()
 			self.map_client = None
 
+def make_new_user(user_name, password, delpassword):
+	if get_user_from_name(user_name):
+		return False
+	with next_id_lock:
+		global next_user_id
+		user_id = next_user_id
+		next_user_id += 1
+		print "[users] next_user_id", next_user_id
+	cfg = general.get_config()
+	cfg.add_section("main")
+	cfg.set("main", "user_id", str(user_id))
+	cfg.set("main", "password", hashlib.md5(password).hexdigest())
+	cfg.set("main", "delpassword", hashlib.md5(delpassword).hexdigest())
+	if not os.path.exists(os.path.join(USER_DIR, user_name)):
+		os.mkdir(os.path.join(USER_DIR, user_name))
+	cfg.write(open(os.path.join(USER_DIR, user_name, USER_CONFIG_NAME), "wb"))
+	with user_list_lock:
+		user_list.append(User(user_name, os.path.join(USER_DIR, user_name)))
+	return True
+
+def delete_user(user_name, password, delete_password):
+	user = get_user_from_name(user_name)
+	if not user: return 0x01 #user name not exist
+	with user.lock:
+		password_md5 = hashlib.md5(password).hexdigest()
+		delete_password_md5 = hashlib.md5(delete_password).hexdigest()
+		if user.password != password_md5: return 0x02 #password error
+		if user.delpassword != delete_password_md5: return 0x02 #password error
+		with user_list_lock:
+			user_list.remove(user)
+		user.reset_login() #close connection
+		for name in os.listdir(user.path):
+			os.remove(os.path.join(user.path, name))
+		os.rmdir(user.path)
+		del user
+	return 0x00 #success
+
+def modify_password(user_name,
+	old_password, old_delete_password, password, delete_password):
+	user = get_user_from_name(user_name)
+	if not user: return 0x01 #user name not exist
+	with user.lock:
+		old_password_md5 = hashlib.md5(old_password).hexdigest()
+		old_delete_password_md5 = hashlib.md5(old_delete_password).hexdigest()
+		print old_password_md5, old_delete_password_md5
+		if user.password != old_password_md5: return 0x02 #password error
+		if user.delpassword != old_delete_password_md5: return 0x02 #password error
+		user.password = hashlib.md5(password).hexdigest()
+		user.delpassword = hashlib.md5(delete_password).hexdigest()
+		user.save()
+	return 0x00 #success
+
 def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	with user.lock:
 		if user.pc_list[num]:
@@ -91,7 +143,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 		pc_id = next_pc_id
 		next_pc_id += 1
 		print "[users] next_pc_id", next_pc_id
-	cfg = ConfigParser.SafeConfigParser()
+	cfg = general.get_config()
 	cfg.add_section("main")
 	cfg.set("main", "id", str(pc_id))
 	cfg.set("main", "name", str(name))
@@ -215,12 +267,13 @@ def load():
 	from lib.obj.pc import PC
 	global server
 	from lib import server
-	for name in os.listdir(USER_DIR):
-		try:
-			user_list.append(User(name, os.path.join(USER_DIR, name)))
-		except:
-			print "load error:", name
-			raise
+	with user_list_lock:
+		for name in os.listdir(USER_DIR):
+			try:
+				user_list.append(User(name, os.path.join(USER_DIR, name)))
+			except:
+				print "load error:", name
+				raise
 	for user in get_user_list():
 		print user
 	for pc in get_pc_list():

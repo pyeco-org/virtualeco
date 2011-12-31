@@ -126,14 +126,17 @@ def msg(pc, message):
 			pc.user.map_client.send("03e9", -1, line)
 
 def servermsg(pc, message):
-	with pc.lock and pc.user.lock:
-		for line in message.replace("\r\n", "\n").split("\n"):
-			pc.user.map_client.send("03e9", 0, line)
+	for p in users.get_pc_list():
+		with p.lock and p.user.lock:
+			if not p.online:
+				continue
+			for line in message.replace("\r\n", "\n").split("\n"):
+				p.user.map_client.send("03e9", 0, line)
 
 def where(pc):
 	with pc.lock:
-		msg(pc, "[%s] x: %d y: %d rawx: %d rawy: %d"%(
-			pc.map_obj.name, pc.x, pc.y, pc.rawx, pc.rawy))
+		msg(pc, "[%s] map_id: %d x: %d y: %d rawx: %d rawy: %d"%(
+			pc.map_obj.name, pc.map_obj.map_id, pc.x, pc.y, pc.rawx, pc.rawy))
 
 def warp(pc, map_id, x=None, y=None):
 	if x != None and y != None:
