@@ -63,5 +63,8 @@ class Item:
 		self.petid = row[167]
 	
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.item_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s, %d>"%(
+			repr(self),
+			self.item_id,
+			self.name.decode("utf-8").encode(sys.getfilesystemencoding()),
+			self.count)

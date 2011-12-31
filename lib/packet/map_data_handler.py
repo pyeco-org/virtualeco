@@ -21,6 +21,7 @@ class MapDataHandler:
 	
 	def send(self, *args):
 		self.send_packet(packet.make(*args))
+	
 	def send_map_without_self(self, *args):
 		packet_data = packet.make(*args)
 		with self.pc.lock:
@@ -33,9 +34,18 @@ class MapDataHandler:
 					if self.pc == pc:
 						continue
 					pc.user.map_client.send_packet(packet_data)
+	
 	def send_map(self, *args):
 		self.send_map_without_self(*args)
 		self.send(*args)
+	
+	def send_server(self, *args):
+		packet_data = packet.make(*args)
+		for p in users.get_pc_list():
+			with p.lock and p.user.lock:
+				if not p.online:
+					continue
+				p.user.map_client.send_packet(packet_data)
 	
 	def stop(self):
 		if self.user:
@@ -164,9 +174,8 @@ class MapDataHandler:
 			with self.pc.lock:
 				self.pc.online = True
 				print "[ map ] set", self.pc
-		self.pc.visible = False
-		self.pc.motion_id = 111
-		self.pc.motion_loop = False
+		self.pc.set_visible(False)
+		self.pc.set_motion(111, False)
 		self.pc.set_map()
 		self.pc.set_coord(self.pc.x, self.pc.y) #on login
 		self.send("1239", self.pc, 10) #キャラ速度通知・変更 #マップ読み込み中は10
@@ -204,7 +213,7 @@ class MapDataHandler:
 	def do_11fe(self, data):
 		#MAPワープ完了通知
 		print "[ map ]", "map load"
-		self.pc.visible = True
+		self.pc.set_visible(True)
 		self.send("1239", self.pc) #キャラ速度通知・変更
 		self.send("196e", self.pc) #クエスト回数・時間
 		self.send("0259", self.pc) #ステータス試算結果
@@ -232,8 +241,9 @@ class MapDataHandler:
 		motion_id = general.unpack_short(data[:2])
 		loop = general.unpack_byte(data[2]) and True or False
 		print "[ map ] motion %d loop %s"%(motion_id, loop)
-		self.pc.set_motion(motion_id, loop)
-		self.send_map("121c", self.pc) #モーション通知
+		#self.pc.set_motion(motion_id, loop)
+		#self.send_map("121c", self.pc) #モーション通知
+		script.motion(self.pc, motion_id, loop)
 		if motion_id == 135 and loop: #ログアウト開始
 			print "[ map ]", "start logout"
 			self.send("0020", self.pc, "logoutstart")
@@ -277,10 +287,9 @@ class MapDataHandler:
 	def do_13ba(self, data):
 		#座る/立つの通知
 		if self.pc.motion_id != 135:
-			self.pc.set_motion(135, False) #座る
+			script.motion(self.pc, 135, False) #座る
 		else:
-			self.pc.set_motion(111, False) #立つ
-		self.send_map("121c", self.pc) #モーション通知
+			script.motion(self.pc, 111, False) #立つ
 	
 	def do_03e8(self, data):
 		#オープンチャット送信
@@ -317,15 +326,79 @@ class MapDataHandler:
 				print "[ map ] do_09e7 iid %d not in item list"%iid
 				return
 			unset_iid_list, set_part = self.pc.set_equip(iid)
-			print "[ map ]", "item setup", self.pc.item.get(iid)
+			print "[ map ] item setup", self.pc.item.get(iid)
 			#print unset_iid_list, set_part
 			for i in unset_iid_list:
 				self.pc.sort.item.remove(i)
 				self.pc.sort.item.append(i)
-				self.send("09e3", iid, 0x02) #アイテム保管場所変更 #body
+				self.send("09e3", i, 0x02) #アイテム保管場所変更 #body
+				#self.send("0203", pc.item[i], i, 0x02) #インベントリ情報
 			if not set_part:
 				#装備しようとする装備タイプが不明の場合
 				self.send("09e8", iid, -1, -2, 1) #アイテム装備
 			else:
 				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
 				self.send("09e9", self.pc) #キャラの見た目を変更
+	
+	def do_0a16(self, data):
+		#トレードキャンセル
+		print "[ map ] trade: send cancel"
+		self.send("0a19", self.pc) #自分・相手がOKやキャンセルを押した際に双方に送信される
+		self.pc.reset_trade()
+		self.send("0a1c") #トレード終了通知
+	
+	def do_0a14(self, data):
+		#トレードのOK状態
+		print "[ map ] trade: send ok"
+		with self.pc.lock:
+			self.pc.trade_state = -1
+	
+	def do_0a15(self, data):
+		#トレードのTradeを押した際に送信
+		print "[ map ]","trade: send trade"
+		with self.pc.lock:
+			self.pc.trade_state = 1
+			self.pc.trade_return_list = []
+			if self.pc.trade:
+				for iid, count in self.pc.trade_list:
+					item = self.pc.item.get(iid)
+					if not item:
+						continue
+					if item.count < count:
+						continue
+					if self.pc.in_equip(iid):
+						continue
+					item.count -= count
+					if item.count > 0:
+						item_return = general.copy(item)
+						item_return.count = count
+						self.pc.trade_return_list.append(item_return)
+						#self.send("09cf", item, iid) #アイテム個数変化
+					else:
+						self.pc.sort.item.remove(iid)
+						item_return = self.pc.item.pop(iid)
+						item_return.count = count
+						self.pc.trade_return_list.append(item_return)
+						self.send("09ce", iid) #インベントリからアイテム消去
+			self.pc.trade = False
+			self.pc.trade_list = []
+			self.pc.trade_state = 0
+			self.send("0a1c") #トレード終了通知
+	
+	def do_0a1b(self, data):
+		#トレードウィンドウに置いたアイテム・金の情報を送信？
+		print "[ map ]","trade send item list"
+		iid_list = []
+		count_list = []
+		iid_count = general.unpack_byte(data[:1]); data = data[1:]
+		#print "iid_count", iid_count
+		for i in xrange(iid_count):
+			iid_list.append(general.unpack_int(data[:4])); data = data[4:]
+		count_count = general.unpack_byte(data[:1]); data = data[1:]
+		#print "count_count", count_count
+		for i in xrange(iid_count):
+			count_list.append(general.unpack_short(data[:2])); data = data[2:]
+		self.pc.trade_gold = general.unpack_int(data[:4])
+		self.pc.trade_list = zip(iid_list, count_list)
+		print "[ map ] self.pc.trade_list", self.pc.trade_list
+		print "[ map ] self.pc.trade_gold", self.pc.trade_gold

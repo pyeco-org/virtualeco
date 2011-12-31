@@ -776,7 +776,7 @@ def make_121c(pc):
 	"""モーション通知"""
 	result = general.pack_int(pc.id) #サーバキャラID
 	result += general.pack_short(pc.motion_id) #モーションID
-	result += general.pack_byte(pc.motion_loop) #ループさせるかどうか
+	result += general.pack_byte(pc.motion_loop) #ループさせるかどうか #and 1 or 0
 	result += general.pack_byte(0) #不明
 	return result
 
@@ -921,3 +921,43 @@ def make_11fd(pc):
 	result += general.pack_byte(0) #motion
 	result += general.pack_int(0) #大体0 #値が入ってるときはかなり大きめの値
 	return result
+
+def make_09d4(item, iid, part):
+	"""アイテム取得"""
+	result = make_0203(item, iid, part)[1:]
+	result += general.pack_byte(0) #unknow
+	return result
+
+def make_09cf(item, iid):
+	"""アイテム個数変化"""
+	result = general.pack_int(iid) #インベントリID
+	result += general.pack_short(item.count) #変化後の個数
+	return result
+
+def make_09ce(iid):
+	"""インベントリからアイテム消去"""
+	return general.pack_int(iid)
+
+def make_0a0f(name, npc=False):
+	"""トレードウィンドウ表示"""
+	result = general.pack_str(name) #相手の名前
+	result += general.pack_int(npc and 1 or 0) #00だと人間? 01だとNPC?
+	return result
+
+def make_0a19(pc):
+	"""自分・相手がOKやキャンセルを押した際に双方に送信される"""
+	result = general.pack_byte(pc.trade_state) #state1 #自分と相手分?
+	result += general.pack_byte(0) #state2 #自分と相手分?
+	#state1
+	#00:OK押してない状態?
+	#FF:OK押した状態?
+	#01:トレード完了してる状態?
+	#state2
+	#00:OK押してない状態?
+	#FF:OK押した状態?
+	return result
+
+def make_0a1c():
+	"""トレード終了通知
+	トレードが成立・キャンセルされた場合などに受信"""
+	return ""

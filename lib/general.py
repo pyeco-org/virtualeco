@@ -6,7 +6,7 @@ import time
 import struct
 import marshal
 import traceback
-import copy
+import copy as py_copy
 import ConfigParser
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
@@ -92,11 +92,14 @@ def list_to_str(l):
 def str_to_list(string):
 	return list(map(int, filter(None, string.split(","))))
 
+def copy(obj):
+	return py_copy.copy(obj)
+
 def get_item(item_id):
 	item = db.item.get(int(item_id))
 	if not item:
 		item = db.item.get(10000000)
-	return copy.copy(item)
+	return copy(item)
 
 def get_config_io(path):
 	with open(path, "rb") as r:

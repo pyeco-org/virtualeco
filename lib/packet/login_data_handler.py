@@ -82,7 +82,7 @@ class LoginDataHandler:
 				self.send("0029", user) #4キャラクターの装備
 				break
 		else:
-			self.send("0020", "loginfaild") #アカウント認証結果
+			self.send("0020", user, "loginfaild") #アカウント認証結果
 	
 	def do_000a(self, data):
 		#接続確認

@@ -220,10 +220,14 @@ class PC:
 				self.map_obj.pc_list.append(self)
 		return True
 	
+	def set_visible(self, visible):
+		with self.lock:
+			self.visible = visible and True or False
+	
 	def set_motion(self, motion_id, motion_loop):
 		with self.lock:
 			self.motion_id = motion_id
-			self.motion_loop = motion_loop
+			self.motion_loop = motion_loop and True or False
 	
 	def set_coord(self, x, y):
 		with self.lock:
@@ -359,6 +363,39 @@ class PC:
 			self.equip.pet = 0
 			#self.unset_pet(self)
 	
+	def in_equip(self, iid):
+		if iid == 0: return
+		elif self.equip.head == iid: return True
+		elif self.equip.face == iid: return True
+		elif self.equip.chestacce == iid: return True
+		elif self.equip.tops == iid: return True
+		elif self.equip.bottoms == iid: return True
+		elif self.equip.backpack == iid: return True
+		elif self.equip.right == iid: return True
+		elif self.equip.left == iid: return True
+		elif self.equip.shoes == iid: return True
+		elif self.equip.socks == iid: return True
+		elif self.equip.pet == iid: return True
+		else: return False
+	
+	def get_new_iid(self):
+		last_iid = 0
+		with self.lock:
+			for iid in sorted(self.sort.item+self.sort.warehouse):
+				if iid > last_iid+1:
+					return last_iid+1
+				else:
+					last_iid = iid
+		return last_iid+1
+	
+	def reset_trade(self):
+		with self.lock:
+			self.trade = False
+			self.trade_state = 0
+			self.trade_gold = 0
+			self.trade_list = []
+			self.trade_return_list = []
+	
 	def reset_login(self):
 		self.reset_map()
 	
@@ -384,6 +421,7 @@ class PC:
 			self.pet = None #Pet()
 			self.kanban = ""
 			self.map_obj = None
+			self.reset_trade()
 	
 	def __init__(self, user, path):
 		self.path = path
