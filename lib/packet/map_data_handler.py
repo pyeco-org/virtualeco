@@ -17,22 +17,22 @@ DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
 class MapDataHandler:
 	def __init__(self):
 		self.user = None
-		self.player = None
+		self.pc = None
 	
 	def send(self, *args):
 		self.send_packet(packet.make(*args))
 	def send_map_without_self(self, *args):
 		packet_data = packet.make(*args)
-		with self.player.lock:
-			if not self.player.map_obj:
+		with self.pc.lock:
+			if not self.pc.map_obj:
 				return
-			with self.player.map_obj.lock:
-				for player in self.player.map_obj.player_list:
-					if not player.online:
+			with self.pc.map_obj.lock:
+				for pc in self.pc.map_obj.pc_list:
+					if not pc.online:
 						continue
-					if self.player == player:
+					if self.pc == pc:
 						continue
-					player.user.map_client.send_packet(packet_data)
+					pc.user.map_client.send_packet(packet_data)
 	def send_map(self, *args):
 		self.send_map_without_self(*args)
 		self.send(*args)
@@ -67,52 +67,52 @@ class MapDataHandler:
 				print traceback.format_exc()
 	
 	def send_item_list(self):
-		with self.player.lock:
+		with self.pc.lock:
 			self._send_item_list()
 	def _send_item_list(self):
-		for iid in self.player.sort.item:
+		for iid in self.pc.sort.item:
 			self.send("0203",
-					self.player.item[iid],
+					self.pc.item[iid],
 					iid,
-					self.player.get_item_part(iid)
+					self.pc.get_item_part(iid)
 					)
 	
 	def sync_map(self):
-		with self.player.lock:
-			if self.player.map_obj:
-				with self.player.map_obj.lock:
-					for player in self.player.map_obj.player_list:
-						if not player.online:
+		with self.pc.lock:
+			if self.pc.map_obj:
+				with self.pc.map_obj.lock:
+					for pc in self.pc.map_obj.pc_list:
+						if not pc.online:
 							continue
-						if not player.visible:
+						if not pc.visible:
 							continue
-						if self.player == player:
+						if self.pc == pc:
 							continue
-						print "sync_map", self.player, "<->", player
+						print "sync_map", self.pc, "<->", pc
 						#他キャラ情報→自キャラ
-						self.send("120c", player)
+						self.send("120c", pc)
 						#自キャラ情報→他キャラ
-						player.user.map_client.send("120c", self.player)
-					for pet in self.player.map_obj.pet_list:
+						pc.user.map_client.send("120c", self.pc)
+					for pet in self.pc.map_obj.pet_list:
 						if not pet.master:
 							continue
 						self.send("122f", pet) #pet info
-					for monster in self.player.map_obj.monster_list:
+					for monster in self.pc.map_obj.monster_list:
 						if monster.hp <= 0:
 							continue
 						self.send("122a", (monster.id,)) #モンスターID通知
 						self.send("1220", monster) #モンスター情報
 	
 	def send_object_detail(self, i):
-		for player in users.get_player_list():
-			with player.lock:
-				if not player.online:
+		for pc in users.get_pc_list():
+			with pc.lock:
+				if not pc.online:
 					continue
-				if not player.visible:
+				if not pc.visible:
 					continue
-				if player.id == i:
-					self.send("020e", player) #キャラ情報
-					self.send("041b", player) #kanban
+				if pc.id == i:
+					self.send("020e", pc) #キャラ情報
+					self.send("041b", pc) #kanban
 					return
 	
 	def do_000a(self, data):
@@ -153,96 +153,96 @@ class MapDataHandler:
 	
 	def do_01fd(self, data):
 		#選択したキャラ番号通知
-		if not self.player:
+		if not self.pc:
 			num = general.unpack_byte(data[4:5])
 			with self.user.lock:
-				if not self.user.player[num]:
+				if not self.user.pc_list[num]:
 					self.stop()
 					return
-				self.player = self.user.player[num]
-			self.player.reset_map()
-			with self.player.lock:
-				self.player.online = True
-				print "[ map ] set", self.player
-		self.player.visible = False
-		self.player.motion_id = 111
-		self.player.motion_loop = False
-		self.player.set_map()
-		self.send("1239", self.player, 10) #キャラ速度通知・変更 #マップ読み込み中は10
+				self.pc = self.user.pc_list[num]
+			self.pc.reset_map()
+			with self.pc.lock:
+				self.pc.online = True
+				print "[ map ] set", self.pc
+		self.pc.visible = False
+		self.pc.motion_id = 111
+		self.pc.motion_loop = False
+		self.pc.set_map()
+		self.send("1239", self.pc, 10) #キャラ速度通知・変更 #マップ読み込み中は10
 		self.send("1a5f") #右クリ設定
 		self.send_item_list() #インベントリ情報
-		self.send("01ff", self.player) #自分のキャラクター情報
+		self.send("01ff", self.pc) #自分のキャラクター情報
 		self.send("03f2", 0x04) #システムメッセージ #構えが「叩き」に変更されました
-		self.send("09ec", self.player) #ゴールド入手 
-		self.send("0221", self.player) #最大HP/MP/SP
-		self.send("021c", self.player) #現在のHP/MP/SP/EP
-		self.send("0212", self.player) #ステータス・補正・ボーナスポイント
-		self.send("0217", self.player) #詳細ステータス
-		self.send("0230", self.player) #現在CAPA/PAYL
-		self.send("0231", self.player) #最大CAPA/PAYL
-		self.send("0244", self.player) #ステータスウィンドウの職業 
-		self.send("0226", self.player, 0) #スキル一覧 一次職
-		self.send("0226", self.player, 1) #スキル一覧 エキスパ
-		self.send("022e", self.player) #リザーブスキル
-		self.send("023a", self.player) #Lv JobLv ボーナスポイント スキルポイント
-		self.send("0235", self.player) #EXP/JOBEXP
-		self.send("09e9", self.player) #キャラの見た目を変更
-		self.send("0fa7", self.player) #キャラのモード変更
+		self.send("09ec", self.pc) #ゴールド入手 
+		self.send("0221", self.pc) #最大HP/MP/SP
+		self.send("021c", self.pc) #現在のHP/MP/SP/EP
+		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
+		self.send("0217", self.pc) #詳細ステータス
+		self.send("0230", self.pc) #現在CAPA/PAYL
+		self.send("0231", self.pc) #最大CAPA/PAYL
+		self.send("0244", self.pc) #ステータスウィンドウの職業 
+		self.send("0226", self.pc, 0) #スキル一覧 一次職
+		self.send("0226", self.pc, 1) #スキル一覧 エキスパ
+		self.send("022e", self.pc) #リザーブスキル
+		self.send("023a", self.pc) #Lv JobLv ボーナスポイント スキルポイント
+		self.send("0235", self.pc) #EXP/JOBEXP
+		self.send("09e9", self.pc) #キャラの見た目を変更
+		self.send("0fa7", self.pc) #キャラのモード変更
 		self.send("1f72") #もてなしタイニーアイコン
-		self.send("157c", self.player) #キャラの状態
-		self.send("022d", self.player) #HEARTスキル
-		self.send("0223", self.player) #属性値
+		self.send("157c", self.pc) #キャラの状態
+		self.send("022d", self.pc) #HEARTスキル
+		self.send("0223", self.pc) #属性値
 		self.send("122a") #モンスターID通知
 		self.send("1bbc") #スタンプ帳詳細
 		self.send("025d") #不明
 		self.send("0695") #不明
-		self.send("0236", self.player) #wrp ranking関係
-		self.send("1b67", self.player) #MAPログイン時に基本情報を全て受信した後に受信される
-		print "[ map ] send player info success"
+		self.send("0236", self.pc) #wrp ranking関係
+		self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
+		print "[ map ] send pc info success"
 	
 	def do_11fe(self, data):
 		#MAPワープ完了通知
 		print "[ map ]", "map load"
-		self.player.visible = True
-		self.send("1239", self.player) #キャラ速度通知・変更
-		self.send("196e", self.player) #クエスト回数・時間
-		self.send("0259", self.player) #ステータス試算結果
-		#self.send("1b67", self.player) #MAPログイン時に基本情報を全て受信した後に受信される
-		self.send("157c", self.player) #キャラの状態
-		self.send("0226", self.player, 0) #スキル一覧0
-		self.send("0226", self.player, 1) #スキル一覧1
-		self.send("022e", self.player) #リザーブスキル
-		self.send("022d", self.player) #HEARTスキル
-		self.send("09e9", self.player) #キャラの見た目を変更
-		self.send("021c", self.player) #現在のHP/MP/SP/EP
+		self.pc.visible = True
+		self.send("1239", self.pc) #キャラ速度通知・変更
+		self.send("196e", self.pc) #クエスト回数・時間
+		self.send("0259", self.pc) #ステータス試算結果
+		#self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
+		self.send("157c", self.pc) #キャラの状態
+		self.send("0226", self.pc, 0) #スキル一覧0
+		self.send("0226", self.pc, 1) #スキル一覧1
+		self.send("022e", self.pc) #リザーブスキル
+		self.send("022d", self.pc) #HEARTスキル
+		self.send("09e9", self.pc) #キャラの見た目を変更
+		self.send("021c", self.pc) #現在のHP/MP/SP/EP
 		self.sync_map()
-		#self.player.unset_pet()
-		#self.player.set_pet()
+		#self.pc.unset_pet()
+		#self.pc.set_pet()
 	
 	def do_0fa5(self, data):
 		#戦闘状態変更通知
-		with self.player.lock:
-			self.player.battlestatus = general.unpack_byte(data[:1])
+		with self.pc.lock:
+			self.pc.battlestatus = general.unpack_byte(data[:1])
 		#戦闘状態変更通知
-		self.send("0fa6", self.player)
+		self.send("0fa6", self.pc)
 	
 	def do_121b(self, data):
 		#モーションセット＆ログアウト
 		motion_id = general.unpack_short(data[:2])
 		loop = general.unpack_byte(data[2]) and True or False
 		print "[ map ] motion %d loop %s"%(motion_id, loop)
-		self.player.set_motion(motion_id, loop)
-		self.send_map("121c", self.player) #モーション通知
+		self.pc.set_motion(motion_id, loop)
+		self.send_map("121c", self.pc) #モーション通知
 		if motion_id == 135 and loop: #ログアウト開始
 			print "[ map ]", "start logout"
-			self.send("0020", self.player, "logoutstart")
-			self.player.logout = True
+			self.send("0020", self.pc, "logoutstart")
+			self.pc.logout = True
 	
 	def do_001e(self, data):
 		#ログアウト(PASS鍵リセット・マップサーバーとのみ通信)
 		print "[ map ] logout"
-		#self.player.unset_pet()
-		self.send_map_without_self("1211", self.player) #PC消去
+		#self.pc.unset_pet()
+		self.send_map_without_self("1211", self.pc) #PC消去
 	
 	def do_001f(self, data):
 		#ログアウト開始&ログアウト失敗
@@ -253,9 +253,9 @@ class MapDataHandler:
 	
 	def do_11f8(self, data):
 		#自キャラの移動
-		if self.player.logout:
-			self.player.logout = False
-			self.send("0020", self.player, "logoutcancel")
+		if self.pc.logout:
+			self.pc.logout = False
+			self.send("0020", self.pc, "logoutcancel")
 			print "[ map ] logout cancel"
 		rawx = general.unpack_short(data[:2]); data = data[2:]
 		rawy = general.unpack_short(data[:2]); data = data[2:]
@@ -263,9 +263,9 @@ class MapDataHandler:
 		move_type = general.unpack_short(data[:2]); data = data[2:]
 		#print "[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
 		#	rawx, rawy, rawdir, move_type)
-		self.player.set_raw_coord(rawx, rawy)
-		self.player.set_raw_dir(rawdir)
-		self.send_map_without_self("11f9", self.player, move_type)
+		self.pc.set_raw_coord(rawx, rawy)
+		self.pc.set_raw_dir(rawdir)
+		self.send_map_without_self("11f9", self.pc, move_type)
 	
 	def do_020d(self, data):
 		#キャラクタ情報要求
@@ -275,18 +275,55 @@ class MapDataHandler:
 	
 	def do_13ba(self, data):
 		#座る/立つの通知
-		if self.player.motion_id != 135:
-			self.player.set_motion(135, False) #座る
+		if self.pc.motion_id != 135:
+			self.pc.set_motion(135, False) #座る
 		else:
-			self.player.set_motion(111, False) #立つ
-		self.send_map("121c", self.player) #モーション通知
+			self.pc.set_motion(111, False) #立つ
+		self.send_map("121c", self.pc) #モーション通知
 	
 	def do_03e8(self, data):
 		#オープンチャット送信
 		message = general.unpack_str(data)[0]
-		self.send_map("03e9", self.player.id, message) #オープンチャット・システムメッセージ
+		self.send_map("03e9", self.pc.id, message) #オープンチャット・システムメッセージ
 	
 	def do_05e6(self, data):
 		#イベント実行
 		event_id = general.unpack_int(data[:4])
-		script.run(self.player, event_id)
+		script.run(self.pc, event_id)
+	
+	def do_09e2(self, data):
+		#インベントリ移動
+		iid = general.unpack_int(data[:4])
+		part = general.unpack_byte(data[4])
+		count = general.unpack_short(data[5:7])
+		with self.pc.lock:
+			if iid not in self.pc.item:
+				print "[ map ] do_09e2 iid %d not in item list"%iid
+				return
+			self.pc.unset_equip(iid)
+			self.pc.sort.item.remove(iid)
+			self.pc.sort.item.append(iid)
+			self.send("09e3", iid, part) #アイテム保管場所変更
+		self.send("09e8", -1, -1, 1, 1) #アイテムを外す
+		self.send("09e9", self.pc) #キャラの見た目を変更
+	
+	def do_09e7(self, data):
+		#アイテム装備
+		iid = general.unpack_int(data[:4])
+		with self.pc.lock:
+			if iid not in self.pc.item:
+				print "[ map ] do_09e7 iid %d not in item list"%iid
+				return
+			unset_iid_list, set_part = self.pc.set_equip(iid)
+			print "[ map ]", "item setup", self.pc.item.get(iid)
+			#print unset_iid_list, set_part
+			for i in unset_iid_list:
+				self.pc.sort.item.remove(i)
+				self.pc.sort.item.append(i)
+				self.send("09e3", iid, 0x02) #アイテム保管場所変更 #body
+			if not set_part:
+				#装備しようとする装備タイプが不明の場合
+				self.send("09e8", iid, -1, -2, 1) #アイテム装備
+			else:
+				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
+				self.send("09e9", self.pc) #キャラの見た目を変更

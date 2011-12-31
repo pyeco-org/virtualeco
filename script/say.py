@@ -5,5 +5,5 @@ from lib import script
 ID = 0x112a887
 SCRIPT_PATH = "./script/say.py"
 
-def main(player):
-	script.say(player, SCRIPT_PATH)
+def main(pc):
+	script.say(pc, SCRIPT_PATH)

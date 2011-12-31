@@ -6,6 +6,7 @@ import time
 import struct
 import marshal
 import traceback
+import copy
 import ConfigParser
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
@@ -16,7 +17,7 @@ ACCESORY_TYPE_LIST = ("ACCESORY_NECK",
 				"JOINT_SYMBOL",
 				)
 UPPER_TYPE_LIST = ("ARMOR_UPPER",
-				"ONEPIECE",
+				#"ONEPIECE",
 				"COSTUME",
 				"BODYSUIT",
 				"WEDDING",
@@ -95,7 +96,7 @@ def get_item(item_id):
 	item = db.item.get(int(item_id))
 	if not item:
 		item = db.item.get(10000000)
-	return item.copy()
+	return copy.copy(item)
 
 def get_config_io(path):
 	with open(path, "rb") as r:

@@ -13,7 +13,7 @@ class Map:
 		self.name = row[1]
 		self.centerx = row[2]
 		self.centery = row[3]
-		self.player_list = []
+		self.pc_list = []
 		self.pet_list = []
 		self.monster_list = []
 		self.lock = threading.RLock()

@@ -6,19 +6,19 @@ import threading
 import ConfigParser
 USER_DIR = "./user"
 USER_CONFIG_NAME = "user.ini"
-PLAYER_CONIG_NAME = "%d.ini"
-PLAYER_CONFIG_MAX = 4
+PC_CONIG_NAME = "%d.ini"
+PC_CONFIG_MAX = 4
 user_list = []
 user_list_lock = threading.RLock()
 next_id_lock = threading.RLock()
 next_user_id = 1
-next_player_id = 1
+next_pc_id = 1
 
 class User:
 	def __init__(self, name, path):
 		self.name = name
 		self.path = path
-		self.player = []
+		self.pc_list = []
 		self.login_client = None
 		self.map_client = None
 		self.lock = threading.RLock()
@@ -34,21 +34,21 @@ class User:
 		self.password = cfg.get("main","password")
 		self.delpassword = cfg.get("main","delpassword")
 		self.user_id = cfg.getint("main","user_id")
-		for i in xrange(PLAYER_CONFIG_MAX):
-			path = os.path.join(self.path, PLAYER_CONIG_NAME%i)
+		for i in xrange(PC_CONFIG_MAX):
+			path = os.path.join(self.path, PC_CONIG_NAME%i)
 			if not os.path.exists(path):
-				self.player.append(None)
+				self.pc_list.append(None)
 				continue
-			self.player.append(Player(self, path))
+			self.pc_list.append(PC(self, path))
 		with next_id_lock:
 			global next_user_id
-			global next_player_id
+			global next_pc_id
 			if next_user_id <= self.user_id:
 				next_user_id = self.user_id+1
-			for player in self.player:
-				if not player: continue
-				if next_player_id <= player.id:
-					next_player_id = player.id+1
+			for pc in self.pc_list:
+				if not pc: continue
+				if next_pc_id <= pc.id:
+					next_pc_id = pc.id+1
 	
 	def save(self):
 		cfg = ConfigParser.SafeConfigParser()
@@ -62,10 +62,10 @@ class User:
 		with self.lock:
 			if self.login_client:
 				self.login_client._stop()
-			for player in self.player:
-				if not player: continue
-				if player.online: player.save()
-				player.reset_login()
+			for pc in self.pc_list:
+				if not pc: continue
+				if pc.online: pc.save()
+				pc.reset_login()
 			self.login_client = None
 		self.reset_map()
 	
@@ -73,27 +73,27 @@ class User:
 		with self.lock:
 			if self.map_client:
 				self.map_client._stop()
-			for player in self.player:
-				if not player: continue
-				if player.online: player.save()
-				player.reset_map()
+			for pc in self.pc_list:
+				if not pc: continue
+				if pc.online: pc.save()
+				pc.reset_map()
 			self.map_client = None
 
-def make_new_player(user, num, name, race, gender, hair, hair_color, face):
+def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	with user.lock:
-		if user.player[num]:
+		if user.pc_list[num]:
 			return False
-	path = os.path.join(user.path, PLAYER_CONIG_NAME%num)
+	path = os.path.join(user.path, PC_CONIG_NAME%num)
 	if os.path.exists(path):
 		return False
 	with next_id_lock:
-		global next_player_id
-		player_id = next_player_id
-		next_player_id += 1
-		print "[users] next_player_id", next_player_id
+		global next_pc_id
+		pc_id = next_pc_id
+		next_pc_id += 1
+		print "[users] next_pc_id", next_pc_id
 	cfg = ConfigParser.SafeConfigParser()
 	cfg.add_section("main")
-	cfg.set("main", "id", str(player_id))
+	cfg.set("main", "id", str(pc_id))
 	cfg.set("main", "name", str(name))
 	cfg.set("main", "gmlevel", str(server.config.defaultgmlevel))
 	cfg.set("main", "race", str(race))
@@ -165,7 +165,7 @@ def make_new_player(user, num, name, race, gender, hair, hair_color, face):
 	cfg.set("skill", "list", "")
 	cfg.write(open(path, "wb"))
 	with user.lock:
-		user.player[num] = Player(user, path)
+		user.pc_list[num] = PC(user, path)
 	return True
 
 def get_user_list():
@@ -175,20 +175,44 @@ def get_user_list():
 			l.append(user)
 	return l
 
-def get_player_list():
+def get_user_from_name(name):
+	for user in get_user_list():
+		with user.lock:
+			if user.name == name:
+				return user
+
+def get_user_from_id(i):
+	for user in get_user_list():
+		with user.lock:
+			if user.user_id == i:
+				return user
+
+def get_pc_list():
 	l = []
 	with user_list_lock:
 		for user in user_list:
 			with user.lock:
-				for player in filter(None, user.player):
-					l.append(player)
+				for pc in filter(None, user.pc_list):
+					l.append(pc)
 	return l
+
+def get_pc_from_name(name):
+	for pc in get_pc_list():
+		with pc.lock:
+			if pc.name == name:
+				return pc
+
+def get_pc_from_id(i):
+	for pc in get_pc_list():
+		with pc.lock:
+			if pc.id == i:
+				return pc
 
 def load():
 	global general
 	from lib import general
-	global Player
-	from lib.obj.player import Player
+	global PC
+	from lib.obj.pc import PC
 	global server
 	from lib import server
 	for name in os.listdir(USER_DIR):
@@ -199,7 +223,7 @@ def load():
 			raise
 	for user in get_user_list():
 		print user
-	for player in get_player_list():
-		print player
+	for pc in get_pc_list():
+		print pc
 	print "[users] next_user_id", next_user_id
-	print "[users] next_player_id", next_player_id
+	print "[users] next_pc_id", next_pc_id

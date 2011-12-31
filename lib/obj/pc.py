@@ -6,7 +6,7 @@ from lib import general
 from lib import server
 from lib import db
 
-class Player:
+class PC:
 	def __str__(self):
 		return "%s<%s, %s>"%(repr(self), self.id,
 			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
@@ -213,11 +213,11 @@ class Player:
 		self.map_id = map_id
 		if self.map_obj:
 			with self.map_obj.lock:
-				self.map_obj.player_list.remove(self)
+				self.map_obj.pc_list.remove(self)
 		self.map_obj = map_obj
 		with self.map_obj.lock:
-			if self not in self.map_obj.player_list:
-				self.map_obj.player_list.append(self)
+			if self not in self.map_obj.pc_list:
+				self.map_obj.pc_list.append(self)
 		return True
 	
 	def set_motion(self, motion_id, motion_loop):
@@ -251,6 +251,110 @@ class Player:
 			self.rawdir = rawdir
 			self.dir = int(rawdir/45)
 	
+	def set_equip(self, *args):
+		with self.lock:
+			return self._set_equip(*args)
+	def _set_equip(self, iid):
+		unset_iid_list = []
+		set_part = 0
+		item = self.item.get(iid)
+		if not item: return unset_iid_list, set_part
+		if item.type == "HELM": #頭
+			unset_iid_list.append(self.equip.head)
+			self.equip.head = iid
+			set_part = 6
+		elif item.type == "ACCESORY_HEAD": #頭
+			unset_iid_list.append(self.equip.head)
+			self.equip.head = iid
+			set_part = 7
+		elif item.type == "FULLFACE": #顔
+			unset_iid_list.append(self.equip.face)
+			self.equip.face = iid
+			set_part = 6 #8 before ver315
+		elif item.type == "ACCESORY_FACE": #顔
+			unset_iid_list.append(self.equip.face)
+			self.equip.face = iid
+			set_part = 8 #9 before ver315
+		elif item.type in general.ACCESORY_TYPE_LIST: #胸アクセサリ
+			unset_iid_list.append(self.equip.chestacce)
+			self.equip.chestacce = iid
+			set_part = 10
+		elif item.type == "ONEPIECE": #...
+			unset_iid_list.append(self.equip.tops)
+			unset_iid_list.append(self.equip.bottoms)
+			self.equip.tops = iid
+			self.equip.bottoms = 0
+			set_part = 11
+		elif item.type in general.UPPER_TYPE_LIST: #上半身
+			unset_iid_list.append(self.equip.tops)
+			self.equip.tops = iid
+			set_part = 11
+		elif item.type in general.LOWER_TYPE_LIST: #下半身
+			item_tops = self.item.get(self.equip.tops)
+			if item_tops and item_tops.type == "ONEPIECE":
+				unset_iid_list.append(self.equip.tops)
+				self.equip.tops = 0
+			unset_iid_list.append(self.equip.bottoms)
+			self.equip.bottoms = iid
+			set_part = 12
+		elif item.type == "BACKPACK": #背中
+			unset_iid_list.append(self.equip.backpack)
+			self.equip.backpack = iid
+			set_part = 13
+		elif item.type in general.RIGHT_TYPE_LIST: #右手装備
+			unset_iid_list.append(self.equip.right)
+			self.equip.right = iid
+			set_part = 14
+		elif item.type in general.LEFT_TYPE_LIST: #左手装備
+			unset_iid_list.append(self.equip.left)
+			self.equip.left = iid
+			set_part = 15
+		elif item.type in general.BOOTS_TYPE_LIST: #靴
+			unset_iid_list.append(self.equip.shoes)
+			self.equip.shoes = iid
+			set_part = 16
+		elif item.type == "SOCKS": #靴下
+			unset_iid_list.append(self.equip.socks)
+			self.equip.socks = iid
+			set_part = 17
+		elif item.type in general.PET_TYPE_LIST: #ペット
+			unset_iid_list.append(self.equip.pet)
+			#self.unset_pet()
+			self.equip.pet = iid
+			#self.set_pet()
+			set_part = 18
+		return filter(None, unset_iid_list), set_part
+	
+	def unset_equip(self, *args):
+		with self.lock:
+			return self._unset_equip(*args)
+	def _unset_equip(self, iid):
+		if iid == 0:
+			return
+		elif self.equip.head == iid:
+			self.equip.head = 0
+		elif self.equip.face == iid:
+			self.equip.face = 0
+		elif self.equip.chestacce == iid:
+			self.equip.chestacce = 0
+		elif self.equip.tops == iid:
+			self.equip.tops = 0
+		elif self.equip.bottoms == iid:
+			self.equip.bottoms = 0
+		elif self.equip.backpack == iid:
+			self.equip.backpack = 0
+		elif self.equip.right == iid:
+			self.equip.right = 0
+		elif self.equip.left == iid:
+			self.equip.left = 0
+		elif self.equip.shoes == iid:
+			self.equip.shoes = 0
+		elif self.equip.socks == iid:
+			self.equip.socks = 0
+		elif self.equip.pet == iid:
+			self.equip.pet = 0
+			#self.unset_pet(self)
+	
 	def reset_login(self):
 		self.reset_map()
 	
@@ -260,7 +364,7 @@ class Player:
 				self.user.map_client.send_map_without_self("1211", self) #PC消去
 			if self.map_obj:
 				with self.map_obj.lock:
-					self.map_obj.player_list.remove(self)
+					self.map_obj.pc_list.remove(self)
 			self.online = False
 			self.visible = False
 			self.motion_id = 111
@@ -284,9 +388,9 @@ class Player:
 		self.online = False
 		self.visible = False
 		self.map_obj = None
-		self.sort = Player.Sort()
-		self.equip = Player.Equip()
-		self.status = Player.Status()
+		self.sort = PC.Sort()
+		self.equip = PC.Equip()
+		self.status = PC.Status()
 		self.reset_login()
 		self.load()
 	

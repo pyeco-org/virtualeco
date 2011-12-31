@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import copy
+import sys
 
 class Monster:
 	def __init__(self, row):
@@ -33,5 +33,6 @@ class Monster:
 		self.die = 0 #hide after 5 sec
 		self.damagedic = None #if set {} , will bug on copy.copy
 	
-	def copy(self):
-		return copy.copy(self)
+	def __str__(self):
+		return "%s<%s, %s>"%(repr(self), self.monster_id,
+			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))

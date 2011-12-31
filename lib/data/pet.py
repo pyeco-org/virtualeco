@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import copy
+import sys
 
 class Pet:
 	def __init__ (self, row):
@@ -38,11 +38,14 @@ class Pet:
 		self.item = {1: Pet.Item(self.pictid)}
 		self.equip = Pet.Equip()
 	
+	def __str__(self):
+		return "%s<%s, %s>"%(repr(self), self.pet_id,
+			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+	
 	class Item:
 		def __init__(self, i):
 			self.id = i
 			self.type = "HELM"
-	
 	class Equip:
 		def __init__(self):
 			self.head = 1

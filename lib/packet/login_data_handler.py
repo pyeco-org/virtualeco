@@ -14,7 +14,7 @@ DATA_TYPE_NOT_PRINT = (	"000a", #接続確認
 class LoginDataHandler:
 	def __init__(self):
 		self.user = None
-		self.player = None
+		self.pc = None
 	
 	def send(self, *args):
 		self.send_packet(packet.make(*args))
@@ -102,12 +102,12 @@ class LoginDataHandler:
 		print "race", race, "gender", gender, "hair", hair,
 		print "haircolor", hair_color, "face", face
 		try:
-			if self.user.player[num]:
+			if self.user.pc_list[num]:
 				self.send("00a1", "slotexist") #キャラクター作成結果
 				return
-			for player in users.get_player_list():
-				with player.lock:
-					if player.name == name:
+			for pc in users.get_pc_list():
+				with pc.lock:
+					if pc.name == name:
 						self.send("00a1", "nameexist") #キャラクター作成結果
 						return
 			if hair > 15 or hair_color < 50:
@@ -115,7 +115,7 @@ class LoginDataHandler:
 					"user %s hair %s hair_color %s"%(
 					self.user.name, hair, hair_color))
 				return
-			if not users.make_new_player(
+			if not users.make_new_pc(
 				self.user, num, name, race, gender, hair, hair_color, face):
 				self.send("00a1", "slotexist") #キャラクター作成結果
 				return
@@ -138,8 +138,8 @@ class LoginDataHandler:
 			if self.user.delpassword != delpassword_md5:
 				raise (Exception, "delpassword error")
 			with self.user.lock:
-				os.remove(self.user.player[num].path)
-				self.user.player[num] = None
+				os.remove(self.user.pc_list[num].path)
+				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
 		except:
 			print "do_00a5 error:", traceback.format_exc()
@@ -151,8 +151,8 @@ class LoginDataHandler:
 		num = general.unpack_byte(data[:1])
 		print "[login] select character", num
 		with self.user.lock:
-			self.player = self.user.player[num]
-		self.send("00a8", self.player) #キャラクターマップ通知
+			self.pc = self.user.pc_list[num]
+		self.send("00a8", self.pc) #キャラクターマップ通知
 	
 	def do_0032(self, data):
 		mapid = general.unpack_int(data[:4])
@@ -160,5 +160,5 @@ class LoginDataHandler:
 	
 	def do_002a(self, data):
 		print "[login]", "request friend list"
-		if self.player:
-			self.send("00dd", self.player) #フレンドリスト(自キャラ)
+		if self.pc:
+			self.send("00dd", self.pc) #フレンドリスト(自キャラ)

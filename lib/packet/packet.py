@@ -20,8 +20,8 @@ def make(data_type, *args):
 
 def pack_user_data(pack, user, attr):
 	result = "\x04"
-	for player in user.player:
-		result += pack((player and getattr(player, attr) or 0))
+	for pc in user.pc_list:
+		result += pack((pc and getattr(pc, attr) or 0))
 	return result
 def pack_user_byte(*args):
 	return pack_user_data(general.pack_byte, *args)
@@ -93,15 +93,15 @@ def make_00a6(sucess):
 	"""キャラクター削除結果"""
 	return sucess and "\x00" or "\x9c"
 
-def make_00a8(player):
+def make_00a8(pc):
 	"""キャラクターマップ通知"""
-	return general.pack_int(player.map_id)
+	return general.pack_int(pc.map_id)
 
 def make_0028(user):
 	"""4キャラクターの基本属性"""
-	result = general.pack_byte(len(user.player)) #キャラ数
-	for player in user.player:
-		result += player and general.pack_str(player.name) or "\x00" #名前
+	result = general.pack_byte(len(user.pc_list)) #キャラ数
+	for pc in user.pc_list:
+		result += pc and general.pack_str(pc.name) or "\x00" #名前
 	result += pack_user_byte(user, "race") #種族
 	result += pack_user_byte(user, "form") #フォーム（DEMの）
 	result += pack_user_byte(user, "gender") #性別
@@ -109,25 +109,25 @@ def make_0028(user):
 	result += pack_user_byte(user, "haircolor") #髪色
 	#ウィング #ない時は\xFF\xFF
 	result += pack_user_short(user, "wig")
-	result += general.pack_byte(len(user.player)) #不明
-	for player in user.player:
-		result += general.pack_byte((player and -1 or 0))
+	result += general.pack_byte(len(user.pc_list)) #不明
+	for pc in user.pc_list:
+		result += general.pack_byte((pc and -1 or 0))
 	result += pack_user_short(user, "face") #顔
 	#転生前のレベル #付ければ上位種族になる
 	result += pack_user_byte(user, "base_lv")
 	result += pack_user_byte(user, "ex") #転生特典？
-	#if player.race = 1 than player.ex = 32 or 111+
+	#if pc.race = 1 than pc.ex = 32 or 111+
 	result += pack_user_byte(user, "wing") #転生翼？
-	#if player.race = 1 than player.wing = 35 ~ 39
+	#if pc.race = 1 than pc.wing = 35 ~ 39
 	result += pack_user_byte(user, "wingcolor") #転生翼色？
-	#if player.race = 1 than player.wingcolor = 45 ~ 55
+	#if pc.race = 1 than pc.wingcolor = 45 ~ 55
 	result += pack_user_byte(user, "job") #職業
 	result += pack_user_int(user, "map_id") #マップ
 	result += pack_user_byte(user, "lv_base") #レベル
 	result += pack_user_byte(user, "lv_job1") #1次職レベル
-	result += general.pack_byte(len(user.player)) #残りクエスト数
-	for player in user.player:
-		result += general.pack_short((player and 3 or 0))
+	result += general.pack_byte(len(user.pc_list)) #残りクエスト数
+	for pc in user.pc_list:
+		result += general.pack_short((pc and 3 or 0))
 	result += pack_user_byte(user, "lv_job2x") #2次職レベル
 	result += pack_user_byte(user, "lv_job2t") #2.5次職レベル
 	result += pack_user_byte(user, "lv_job3") #3次職レベル
@@ -144,21 +144,21 @@ def make_0033(reply_ping=False):
 		result += general.pack_int(server.config.mapserverport)
 	return result
 
-def make_09e9(player):
+def make_09e9(pc):
 	"""装備情報 IDのキャラの見た目を変更"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += "\x0d" #装備の数(常に0x0d) #13
-	item_head = player.item.get(player.equip.head)
-	item_face = player.item.get(player.equip.face)
-	item_chestacce = player.item.get(player.equip.chestacce)
-	item_tops = player.item.get(player.equip.tops)
-	item_buttoms = player.item.get(player.equip.bottoms)
-	item_backpack = player.item.get(player.equip.backpack)
-	item_right = player.item.get(player.equip.right)
-	item_left = player.item.get(player.equip.left)
-	item_shoes = player.item.get(player.equip.shoes)
-	item_sock = player.item.get(player.equip.socks)
-	item_pet = player.item.get(player.equip.pet)
+	item_head = pc.item.get(pc.equip.head)
+	item_face = pc.item.get(pc.equip.face)
+	item_chestacce = pc.item.get(pc.equip.chestacce)
+	item_tops = pc.item.get(pc.equip.tops)
+	item_buttoms = pc.item.get(pc.equip.bottoms)
+	item_backpack = pc.item.get(pc.equip.backpack)
+	item_right = pc.item.get(pc.equip.right)
+	item_left = pc.item.get(pc.equip.left)
+	item_shoes = pc.item.get(pc.equip.shoes)
+	item_sock = pc.item.get(pc.equip.socks)
+	item_pet = pc.item.get(pc.equip.pet)
 	#頭
 	result += general.pack_int((item_head and
 			item_head.type == "HELM" and
@@ -225,25 +225,25 @@ def make_09e9(player):
 def make_0029(user):
 	"""4キャラクターの装備"""
 	result = ""
-	for player in user.player:
-		if player:
-			result += "\x0d"+make_09e9(player)[5:5+13*4]
+	for pc in user.pc_list:
+		if pc:
+			result += "\x0d"+make_09e9(pc)[5:5+13*4]
 		else:
 			result += "\x0d"+general.pack_int(0)*13
 	return result
 
-def make_1239(player, speed=None):
+def make_1239(pc, speed=None):
 	"""キャラ速度通知・変更"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	if speed != None:
 		general.pack_short(speed)
 	else:
-		general.pack_short(player.status.speed)
+		general.pack_short(pc.status.speed)
 	return result
 
-def make_0fa7(player, mode=0x02):
+def make_0fa7(pc, mode=0x02):
 	"""キャラのモード変更"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += general.pack_int(mode) #通常 00000002
 	result += general.pack_int(0)
 	return result
@@ -348,43 +348,43 @@ def make_0203(item, iid, part):
 	result += general.pack_byte(0) #unknow
 	return result
 
-def make_01ff(player):
+def make_01ff(pc):
 	"""自分のキャラクター情報"""
-	result = general.pack_int(player.id)
-	result += general.pack_int(player.id) #固有ID
-	result += general.pack_str(player.name) #名前
-	result += general.pack_byte(player.race) #種族
-	result += general.pack_byte(player.form) #フォーム
-	result += general.pack_byte(player.gender) #性別
-	result += general.pack_short(player.hair) #髪型
-	result += general.pack_byte(player.haircolor) #髪色
-	result += general.pack_short(player.wig) #ウィング
+	result = general.pack_int(pc.id)
+	result += general.pack_int(pc.id) #固有ID
+	result += general.pack_str(pc.name) #名前
+	result += general.pack_byte(pc.race) #種族
+	result += general.pack_byte(pc.form) #フォーム
+	result += general.pack_byte(pc.gender) #性別
+	result += general.pack_short(pc.hair) #髪型
+	result += general.pack_byte(pc.haircolor) #髪色
+	result += general.pack_short(pc.wig) #ウィング
 	result += "\xff" #不明
-	result += general.pack_short(player.face) #顔
-	result += general.pack_byte(player.base_lv) #転生前のレベル
-	result += general.pack_byte(player.ex) #転生特典
-	result += general.pack_byte(player.wing) #転生翼
-	result += general.pack_byte(player.wingcolor) #転生翼色
-	result += general.pack_int(player.map_id) #マップ
-	result += general.pack_byte(player.x)
-	result += general.pack_byte(player.y)
-	result += general.pack_byte(player.dir)
-	result += general.pack_int(player.status.hp)
-	result += general.pack_int(player.status.maxhp)
-	result += general.pack_int(player.status.mp)
-	result += general.pack_int(player.status.maxmp)
-	result += general.pack_int(player.status.sp)
-	result += general.pack_int(player.status.maxsp)
-	result += general.pack_int(player.status.ep)
-	result += general.pack_int(player.status.maxep)
+	result += general.pack_short(pc.face) #顔
+	result += general.pack_byte(pc.base_lv) #転生前のレベル
+	result += general.pack_byte(pc.ex) #転生特典
+	result += general.pack_byte(pc.wing) #転生翼
+	result += general.pack_byte(pc.wingcolor) #転生翼色
+	result += general.pack_int(pc.map_id) #マップ
+	result += general.pack_byte(pc.x)
+	result += general.pack_byte(pc.y)
+	result += general.pack_byte(pc.dir)
+	result += general.pack_int(pc.status.hp)
+	result += general.pack_int(pc.status.maxhp)
+	result += general.pack_int(pc.status.mp)
+	result += general.pack_int(pc.status.maxmp)
+	result += general.pack_int(pc.status.sp)
+	result += general.pack_int(pc.status.maxsp)
+	result += general.pack_int(pc.status.ep)
+	result += general.pack_int(pc.status.maxep)
 	result += general.pack_short(9) #不明
 	result += "\x08" #ステータス数#常に0x08
-	result += general.pack_short(player.str) #str
-	result += general.pack_short(player.dex) #dex
-	result += general.pack_short(player.int) #int
-	result += general.pack_short(player.vit) #vit
-	result += general.pack_short(player.agi) #agi
-	result += general.pack_short(player.mag) #mag
+	result += general.pack_short(pc.str) #str
+	result += general.pack_short(pc.dex) #dex
+	result += general.pack_short(pc.int) #int
+	result += general.pack_short(pc.vit) #vit
+	result += general.pack_short(pc.agi) #agi
+	result += general.pack_short(pc.mag) #mag
 	result += general.pack_short(0) #luk
 	result += general.pack_short(0) #cha
 	result += "\x14" #equip_len?
@@ -401,8 +401,8 @@ def make_01ff(player):
 	result += general.pack_int(0) #不明
 	result += general.pack_int(-1) #憑依対象サーバーキャラID
 	result += general.pack_byte(0) #憑依場所 ( r177b等も参照
-	result += general.pack_int(player.gold) #所持金
-	result += make_09e9(player)[4:] #装備の\x0dから乗り物の染色値まで
+	result += general.pack_int(pc.gold) #所持金
+	result += make_09e9(pc)[4:] #装備の\x0dから乗り物の染色値まで
 	result += general.pack_byte(1) #不明
 	result += general.pack_int(0) #不明
 	result += general.pack_int(2) #不明
@@ -417,48 +417,48 @@ def make_03f2(msg_id):
 	"""システムメッセージ""" #msg_id 0x04: 構えが「叩き」に変更されました
 	return general.pack_short(msg_id)
 
-def make_09ec(player):
+def make_09ec(pc):
 	"""ゴールドを更新する、値は更新後の値"""
-	return general.pack_int(player.gold)
+	return general.pack_int(pc.gold)
 
-def make_0221(player):
+def make_0221(pc):
 	"""最大HP/MP/SP"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += "\x04"
-	result += general.pack_int(player.status.maxhp)
-	result += general.pack_int(player.status.maxmp)
-	result += general.pack_int(player.status.maxsp)
-	result += general.pack_int(player.status.maxep)
+	result += general.pack_int(pc.status.maxhp)
+	result += general.pack_int(pc.status.maxmp)
+	result += general.pack_int(pc.status.maxsp)
+	result += general.pack_int(pc.status.maxep)
 	return result
 
-def make_021c(player):
+def make_021c(pc):
 	"""現在のHP/MP/SP/EP"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += "\x04"
-	result += general.pack_int(player.status.hp)
-	result += general.pack_int(player.status.mp)
-	result += general.pack_int(player.status.sp)
-	result += general.pack_int(player.status.ep)
+	result += general.pack_int(pc.status.hp)
+	result += general.pack_int(pc.status.mp)
+	result += general.pack_int(pc.status.sp)
+	result += general.pack_int(pc.status.ep)
 	return result
 
-def make_0212(player):
+def make_0212(pc):
 	"""ステータス・補正・ボーナスポイント"""
 	result = "\x08" #base
-	result += general.pack_short(player.str) #str
-	result += general.pack_short(player.dex) #dex
-	result += general.pack_short(player.int) #int
-	result += general.pack_short(player.vit) #vit
-	result += general.pack_short(player.agi) #agi
-	result += general.pack_short(player.mag) #mag
+	result += general.pack_short(pc.str) #str
+	result += general.pack_short(pc.dex) #dex
+	result += general.pack_short(pc.int) #int
+	result += general.pack_short(pc.vit) #vit
+	result += general.pack_short(pc.agi) #agi
+	result += general.pack_short(pc.mag) #mag
 	result += general.pack_short(0) #luk
 	result += general.pack_short(0) #cha
 	result += "\x08" #revise
-	result += general.pack_short(player.stradd) #str
-	result += general.pack_short(player.dexadd) #dex
-	result += general.pack_short(player.intadd) #int
-	result += general.pack_short(player.vitadd) #vit
-	result += general.pack_short(player.agiadd) #agi
-	result += general.pack_short(player.magadd) #mag
+	result += general.pack_short(pc.stradd) #str
+	result += general.pack_short(pc.dexadd) #dex
+	result += general.pack_short(pc.intadd) #int
+	result += general.pack_short(pc.vitadd) #vit
+	result += general.pack_short(pc.agiadd) #agi
+	result += general.pack_short(pc.magadd) #mag
 	result += general.pack_short(0) #luk
 	result += general.pack_short(0) #cha
 	result += "\x08" #bounus
@@ -472,91 +472,91 @@ def make_0212(player):
 	result += general.pack_short(0) #cha
 	return result
 
-def make_0217(player):
+def make_0217(pc):
 	"""詳細ステータス"""
 	result = "\x1e" #30
-	result += general.pack_short(player.status.speed) #歩く速度
-	result += general.pack_short(player.status.minatk1) #最小ATK1
-	result += general.pack_short(player.status.minatk2) #最小ATK2
-	result += general.pack_short(player.status.minatk3) #最小ATK3
-	result += general.pack_short(player.status.maxatk1) #最大ATK1
-	result += general.pack_short(player.status.maxatk2) #最大ATK2
-	result += general.pack_short(player.status.maxatk3) #最大ATK3
-	result += general.pack_short(player.status.minmatk) #最小MATK
-	result += general.pack_short(player.status.maxmatk) #最大MATK
-	result += general.pack_short(player.status.leftdef) #基本DEF
-	result += general.pack_short(player.status.rightdef) #追加DEF
-	result += general.pack_short(player.status.leftmdef) #基本MDEF
-	result += general.pack_short(player.status.rightmdef) #追加MDEF
-	result += general.pack_short(player.status.shit) #S.HIT(近距離命中率)
-	result += general.pack_short(player.status.lhit) #L.HIT(遠距離命中率)
-	result += general.pack_short(player.status.mhit) #魔法命中
-	result += general.pack_short(player.status.chit) #クリティカル命中
-	result += general.pack_short(player.status.savoid) #S.AVOID(近距離回避力)
-	result += general.pack_short(player.status.lavoid) #L.AVOID(遠距離回避力)
+	result += general.pack_short(pc.status.speed) #歩く速度
+	result += general.pack_short(pc.status.minatk1) #最小ATK1
+	result += general.pack_short(pc.status.minatk2) #最小ATK2
+	result += general.pack_short(pc.status.minatk3) #最小ATK3
+	result += general.pack_short(pc.status.maxatk1) #最大ATK1
+	result += general.pack_short(pc.status.maxatk2) #最大ATK2
+	result += general.pack_short(pc.status.maxatk3) #最大ATK3
+	result += general.pack_short(pc.status.minmatk) #最小MATK
+	result += general.pack_short(pc.status.maxmatk) #最大MATK
+	result += general.pack_short(pc.status.leftdef) #基本DEF
+	result += general.pack_short(pc.status.rightdef) #追加DEF
+	result += general.pack_short(pc.status.leftmdef) #基本MDEF
+	result += general.pack_short(pc.status.rightmdef) #追加MDEF
+	result += general.pack_short(pc.status.shit) #S.HIT(近距離命中率)
+	result += general.pack_short(pc.status.lhit) #L.HIT(遠距離命中率)
+	result += general.pack_short(pc.status.mhit) #魔法命中
+	result += general.pack_short(pc.status.chit) #クリティカル命中
+	result += general.pack_short(pc.status.savoid) #S.AVOID(近距離回避力)
+	result += general.pack_short(pc.status.lavoid) #L.AVOID(遠距離回避力)
 	result += general.pack_short(0) #魔法回避力
-	result += general.pack_short(player.status.hpheal) #HP回復率
-	result += general.pack_short(player.status.mpheal) #MP回復率
-	result += general.pack_short(player.status.spheal) #SP回復率
+	result += general.pack_short(pc.status.hpheal) #HP回復率
+	result += general.pack_short(pc.status.mpheal) #MP回復率
+	result += general.pack_short(pc.status.spheal) #SP回復率
 	result += general.pack_short(0) #不明
-	result += general.pack_short(player.status.aspd) #A.SPD(攻撃速度)
-	result += general.pack_short(player.status.cspd) #C.SPD(詠唱速度)
+	result += general.pack_short(pc.status.aspd) #A.SPD(攻撃速度)
+	result += general.pack_short(pc.status.cspd) #C.SPD(詠唱速度)
 	result += general.pack_short(0) #不明
 	result += general.pack_short(0) #不明
 	result += general.pack_short(0) #不明
 	result += general.pack_short(0) #不明
 	return result
 
-def make_0230(player):
+def make_0230(pc):
 	"""現在CAPA/PAYL"""
 	result = "\x04"
-	result += general.pack_int(player.status.capa) #CAPA(x0.1)
-	result += general.pack_int(player.status.rightcapa) #右手かばんCAPA(x0.1)
-	result += general.pack_int(player.status.leftcapa) #左手かばんCAPA(x0.1)
-	result += general.pack_int(player.status.backcapa) #背中CAPA(x0.1)
+	result += general.pack_int(pc.status.capa) #CAPA(x0.1)
+	result += general.pack_int(pc.status.rightcapa) #右手かばんCAPA(x0.1)
+	result += general.pack_int(pc.status.leftcapa) #左手かばんCAPA(x0.1)
+	result += general.pack_int(pc.status.backcapa) #背中CAPA(x0.1)
 	result += "\x04"
-	result += general.pack_int(player.status.payl) #PAYL(x0.1)
-	result += general.pack_int(player.status.rightpayl) #右手かばんPAYL(x0.1)
-	result += general.pack_int(player.status.leftpayl) #左手かばんPAYL(x0.1)
-	result += general.pack_int(player.status.backpayl) #背中PAYL(x0.1)
+	result += general.pack_int(pc.status.payl) #PAYL(x0.1)
+	result += general.pack_int(pc.status.rightpayl) #右手かばんPAYL(x0.1)
+	result += general.pack_int(pc.status.leftpayl) #左手かばんPAYL(x0.1)
+	result += general.pack_int(pc.status.backpayl) #背中PAYL(x0.1)
 	return result
 
-def make_0231(player):
+def make_0231(pc):
 	"""最大CAPA/PAYL"""
 	result = "\x04"
-	result += general.pack_int(player.status.maxcapa) #CAPA(x0.1)
-	result += general.pack_int(player.status.maxrightcapa) #右手かばんCAPA(x0.1)
-	result += general.pack_int(player.status.maxleftcapa) #左手かばんCAPA(x0.1)
-	result += general.pack_int(player.status.maxbackcapa) #背中CAPA(x0.1)
+	result += general.pack_int(pc.status.maxcapa) #CAPA(x0.1)
+	result += general.pack_int(pc.status.maxrightcapa) #右手かばんCAPA(x0.1)
+	result += general.pack_int(pc.status.maxleftcapa) #左手かばんCAPA(x0.1)
+	result += general.pack_int(pc.status.maxbackcapa) #背中CAPA(x0.1)
 	result += "\x04"
-	result += general.pack_int(player.status.maxpayl) #PAYL(x0.1)
-	result += general.pack_int(player.status.maxrightpayl) #右手かばんPAYL(x0.1)
-	result += general.pack_int(player.status.maxleftpayl) #左手かばんPAYL(x0.1)
-	result += general.pack_int(player.status.maxbackpayl) #背中PAYL(x0.1)
+	result += general.pack_int(pc.status.maxpayl) #PAYL(x0.1)
+	result += general.pack_int(pc.status.maxrightpayl) #右手かばんPAYL(x0.1)
+	result += general.pack_int(pc.status.maxleftpayl) #左手かばんPAYL(x0.1)
+	result += general.pack_int(pc.status.maxbackpayl) #背中PAYL(x0.1)
 	return result
 
-def make_0244(player):
+def make_0244(pc):
 	"""ステータスウィンドウの職業"""
-	result = general.pack_int(player.job) #職業ID
+	result = general.pack_int(pc.job) #職業ID
 	result += general.pack_int(0) #ジョイントジョブID
 	return result
 
-def make_0226(player, job):
+def make_0226(pc, job):
 	"""スキル一覧"""
 	result = ""
 	if job == 0:
-		skill_list_length = general.pack_byte(len(player.skill_list))
+		skill_list_length = general.pack_byte(len(pc.skill_list))
 		result += skill_list_length #スキルID
-		for skill_id in player.skill_list:
+		for skill_id in pc.skill_list:
 			result += general.pack_short(skill_id)
 		result += skill_list_length #習得Lv
-		for skill_id in player.skill_list:
+		for skill_id in pc.skill_list:
 			result += general.pack_short(db.skill[skill_id].maxlv)
 		result += skill_list_length #不明
-		for skill_id in player.skill_list:
+		for skill_id in pc.skill_list:
 			result += general.pack_short(0)
 		result += skill_list_length #習得可能Lv
-		for skill_id in player.skill_list:
+		for skill_id in pc.skill_list:
 			result += general.pack_short(1)
 	else:
 		skill_list_length = general.pack_byte(0)
@@ -568,17 +568,17 @@ def make_0226(player, job):
 	result += skill_list_length #習得スキル数 #TODO#レベル０のスキルを計算から外す
 	return result
 
-def make_022e(player):
+def make_022e(pc):
 	"""リザーブスキル"""
 	return general.pack_short(0)
 
-def make_023a(player):
+def make_023a(pc):
 	"""Lv JobLv ボーナスポイント スキルポイント"""
-	result = general.pack_byte(player.lv_base) #Lv
-	result += general.pack_byte(player.lv_job1) #JobLv(1次職)
-	result += general.pack_byte(player.lv_job2x) #JobLv(エキスパート)
-	result += general.pack_byte(player.lv_job2t) #JobLv(テクニカル)
-	result += general.pack_byte(player.lv_job3) #三次職のレベル？
+	result = general.pack_byte(pc.lv_base) #Lv
+	result += general.pack_byte(pc.lv_job1) #JobLv(1次職)
+	result += general.pack_byte(pc.lv_job2x) #JobLv(エキスパート)
+	result += general.pack_byte(pc.lv_job2t) #JobLv(テクニカル)
+	result += general.pack_byte(pc.lv_job3) #三次職のレベル？
 	result += general.pack_byte(1) #JobLv(ジョイント？ブリーダー？)
 	result += general.pack_short(1) #ボーナスポイント
 	result += general.pack_short(3) #スキルポイント(1次職)
@@ -587,7 +587,7 @@ def make_023a(player):
 	result += general.pack_short(0) #三次職のポイント？
 	return result
 
-def make_0235(player):
+def make_0235(pc):
 	"""EXP/JOBEXP"""
 	result = general.pack_int(0) #EXP(x0.1%)
 	result += general.pack_int(0) #JobEXP(x0.1%)
@@ -601,7 +601,7 @@ def make_1f72(show=False):
 	"""もてなしタイニーアイコン""" #before login
 	return general.pack_byte((show and 1 or 0))
 
-def make_157c(player,
+def make_157c(pc,
 			state01=0, state02=0, state03=0,
 			state04=0, state05=0, state06=0,
 			state07=0, state08=0, state09=0):
@@ -609,7 +609,7 @@ def make_157c(player,
 	#キャラの自然回復や状態異常等、様々な状態を更新する
 	#状態に応じて画面上にアイコンが出る
 	#毒などの場合エフェクトも出る
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += general.pack_int(state01)
 	result += general.pack_int(state02)
 	result += general.pack_int(state03)
@@ -621,7 +621,7 @@ def make_157c(player,
 	result += general.pack_int(state09)
 	return result
 
-def make_022d(player):
+def make_022d(pc):
 	"""HEARTスキル""" #send when loading map and after load
 	result = "\x03" #スキルの数
 	result += "\x27\x74"
@@ -629,7 +629,7 @@ def make_022d(player):
 	result += "\x27\x76"
 	return result
 
-def make_0223(player):
+def make_0223(pc):
 	"""属性値""" #send when loading map
 	result = "\x07" #攻撃
 	result += general.pack_short(0) #新生属性？
@@ -684,48 +684,48 @@ def make_0695():
 	"""不明""" #send when loading map
 	return "\x00\x00\x00\x02\x00" #不明
 
-def make_0236(player):
+def make_0236(pc):
 	"""wrp ranking""" #send when loading map
 	result = general.pack_int(0)
-	result += general.pack_int(player.wrprank) #wrpの順位
+	result += general.pack_int(pc.wrprank) #wrpの順位
 	return result
 
-def make_1b67(player):
+def make_1b67(pc):
 	"""マップ情報完了通知
 	MAPログイン時に基本情報を全て受信した後に受信される"""
-	result = general.pack_int(player.id)
+	result = general.pack_int(pc.id)
 	result += general.pack_byte(0) #unknow
 	return result
 
-def make_196e(player):
+def make_196e(pc):
 	"""クエスト回数・時間"""
 	result = general.pack_short(3) #残り数
 	result += general.pack_int(1) #何時間後に3追加されるか
 	result += general.pack_int(0) #不明#常に0？
 	return result
 
-def make_0259(player):
+def make_0259(pc):
 	"""ステータス試算結果"""
-	result = make_0217(player) #詳細ステータス
+	result = make_0217(pc) #詳細ステータス
 	result += "\x03" #03固定 #次のdwordの数？
-	result += general.pack_int(player.status.maxhp) #最大hp
-	result += general.pack_int(player.status.maxmp) #最大mp
-	result += general.pack_int(player.status.maxsp) #最大sp
-	result += general.pack_short(player.status.maxcapa) #最大Capa
-	result += general.pack_short(player.status.maxpayl) #最大payload
+	result += general.pack_int(pc.status.maxhp) #最大hp
+	result += general.pack_int(pc.status.maxmp) #最大mp
+	result += general.pack_int(pc.status.maxsp) #最大sp
+	result += general.pack_short(pc.status.maxcapa) #最大Capa
+	result += general.pack_short(pc.status.maxpayl) #最大payload
 	return result
 
-def make_120c(player):
+def make_120c(pc):
 	"""他キャラ情報/他キャラの憑依やHP等の情報"""
-	result = general.pack_int(player.id) #サーバキャラID
-	result += general.pack_byte(player.x) #x
-	result += general.pack_byte(player.y) #y
-	result += general.pack_short(player.status.speed) #キャラの足の早さ
-	result += general.pack_byte(player.dir) #向き
+	result = general.pack_int(pc.id) #サーバキャラID
+	result += general.pack_byte(pc.x) #x
+	result += general.pack_byte(pc.y) #y
+	result += general.pack_short(pc.status.speed) #キャラの足の早さ
+	result += general.pack_byte(pc.dir) #向き
 	result += general.pack_int(-1) #憑依先のキャラID。（未憑依時:0xFFFFFFFF
 	result += general.pack_byte(-1) #憑依箇所。(0:右手 1:左手 2:胸 3:鎧) (未憑依:FF)
-	result += general.pack_int(player.status.hp) #現在HP
-	result += general.pack_int(player.status.maxhp) #最大HP
+	result += general.pack_int(pc.status.hp) #現在HP
+	result += general.pack_int(pc.status.maxhp) #最大HP
 	return result
 
 def make_122f(pet):
@@ -757,7 +757,7 @@ def make_1220(monster):
 	result += general.pack_int(monster.maxhp) #maxhp
 	return result
 
-def make_00dd(player):
+def make_00dd(pc):
 	"""フレンドリスト(自キャラ)"""
 	result = "\x01"#現在の状態
 	#0-12:オフライン、オンライン、募集中、取り込み中、
@@ -766,30 +766,30 @@ def make_00dd(player):
 	result += "\x01"+"\x00"#コメント
 	return result
 
-def make_0fa6(player):
+def make_0fa6(pc):
 	"""戦闘状態変更通知"""
-	result = general.pack_int(player.id)
-	result += general.pack_byte(player.battlestatus) #00: 通常状態 01: 戦闘状態
+	result = general.pack_int(pc.id)
+	result += general.pack_byte(pc.battlestatus) #00: 通常状態 01: 戦闘状態
 	return result
 
-def make_121c(player):
+def make_121c(pc):
 	"""モーション通知"""
-	result = general.pack_int(player.id) #サーバキャラID
-	result += general.pack_short(player.motion_id) #モーションID
-	result += general.pack_byte(player.motion_loop) #ループさせるかどうか
+	result = general.pack_int(pc.id) #サーバキャラID
+	result += general.pack_short(pc.motion_id) #モーションID
+	result += general.pack_byte(pc.motion_loop) #ループさせるかどうか
 	result += general.pack_byte(0) #不明
 	return result
 
-def make_1211(player):
+def make_1211(pc):
 	"""PC消去"""
-	return general.pack_int(player.id)
+	return general.pack_int(pc.id)
 
-def make_11f9(player, move_type=7):
+def make_11f9(pc, move_type=7):
 	"""キャラ移動アナウンス"""
-	result = general.pack_int(player.id) #server id
-	result += general.pack_short(player.rawx) #raw x
-	result += general.pack_short(player.rawy) #raw y
-	result += general.pack_short(player.rawdir) #raw dir
+	result = general.pack_int(pc.id) #server id
+	result += general.pack_short(pc.rawx) #raw x
+	result += general.pack_short(pc.rawy) #raw y
+	result += general.pack_short(pc.rawdir) #raw dir
 	result += general.pack_short(move_type) #type
 	#move_type
 	#0001: 向き変更のみ
@@ -799,24 +799,24 @@ def make_11f9(player, move_type=7):
 	#0014: ワープ(ソーサラースキル・テレポート等)
 	return result
 
-def make_020e(player):
+def make_020e(pc):
 	"""キャラ情報"""
-	result = general.pack_int(player.id)
-	result += general.pack_int(player.id)
-	result += general.pack_str(player.name)
-	result += general.pack_byte(player.race) #種族
-	result += general.pack_byte(player.form) #フォーム
-	result += general.pack_byte(player.gender) #性別
-	result += general.pack_short(player.hair) #髪型
-	result += general.pack_byte(player.haircolor) #髪色
-	result += general.pack_short(player.wig) #ウィング
+	result = general.pack_int(pc.id)
+	result += general.pack_int(pc.id)
+	result += general.pack_str(pc.name)
+	result += general.pack_byte(pc.race) #種族
+	result += general.pack_byte(pc.form) #フォーム
+	result += general.pack_byte(pc.gender) #性別
+	result += general.pack_short(pc.hair) #髪型
+	result += general.pack_byte(pc.haircolor) #髪色
+	result += general.pack_short(pc.wig) #ウィング
 	result += general.pack_byte(-1) #不明
-	result += general.pack_short(player.face) #顔
-	result += general.pack_byte(player.base_lv) #転生前のレベル
-	result += general.pack_byte(player.ex) #転生特典
-	result += general.pack_byte(player.wing) #転生翼
-	result += general.pack_byte(player.wingcolor) #転生翼色
-	result += make_09e9(player)[4:] #装備情報 IDのキャラの見た目を変更
+	result += general.pack_short(pc.face) #顔
+	result += general.pack_byte(pc.base_lv) #転生前のレベル
+	result += general.pack_byte(pc.ex) #転生特典
+	result += general.pack_byte(pc.wing) #転生翼
+	result += general.pack_byte(pc.wingcolor) #転生翼色
+	result += make_09e9(pc)[4:] #装備情報 IDのキャラの見た目を変更
 	result += general.pack_str("") #パーティー名
 	result += general.pack_byte(1) #パーティーリーダーor未所属なら1、それ以外は0
 	result += general.pack_int(0) #リングID #変更時はr1ad1
@@ -826,7 +826,7 @@ def make_020e(player):
 	result += general.pack_str("") #露店看板
 	result += general.pack_byte(0) #プレイヤー露店かどうか
 	result += general.pack_int(1000) #chara size (1000が標準
-	result += general.pack_short(player.motion_id) #モーション#ただし座り(135)や移動や
+	result += general.pack_short(pc.motion_id) #モーション#ただし座り(135)や移動や
 										#武器・騎乗ペットによるモーションの場合0
 	result += general.pack_int(0) #不明
 	result += general.pack_int(2) #2 r0fa7参照
@@ -837,17 +837,17 @@ def make_020e(player):
 							#（マリオネット変身時。）2にすると〜
 	result += general.pack_byte(0) #不明
 	result += general.pack_byte(0) #ゲストIDかどうか
-	result += general.pack_byte(player.lv_base) #レベル（ペットは1固定
-	result += general.pack_int(player.wrprank) #WRP順位（ペットは -1固定。
+	result += general.pack_byte(pc.lv_base) #レベル（ペットは1固定
+	result += general.pack_int(pc.wrprank) #WRP順位（ペットは -1固定。
 									#別のパケで主人の値が送られてくる
 	result += general.pack_int(0) #不明
 	result += general.pack_byte(-1) #不明
 	return result
 
-def make_041b(player):
+def make_041b(pc):
 	"""kanban"""
-	result = general.pack_int(player.id)
-	result += general.pack_str(player.kanban)
+	result = general.pack_int(pc.id)
+	result += general.pack_str(pc.kanban)
 	return result
 
 def make_03e9(speaker_id, message):
@@ -894,6 +894,17 @@ def make_03f7(message, npc_name, npc_motion_id, npc_id, npc_visible=True):
 	result += general.pack_str(npc_name)
 	return result
 
+def make_09e8(iid, part, _result, r):
+	"""アイテム装備"""
+	result = general.pack_int(iid) #インベントリID, 装備をはずしたときは-1
+	result += general.pack_byte(part) #アイテムの装備先, 装備をはずしたときは-1
+	result += general.pack_byte(_result) #通常0, noやpartが-1のとき1
+	result += general.pack_int(r) #射程
+	return result
 
-
-
+def make_09e3(iid, part):
+	"""アイテム保管場所変更"""
+	result = general.pack_int(iid) #移動元インベントリID
+	result += general.pack_byte(0) #成功時は0
+	result += general.pack_byte(part) #移動先保管場所(エラー時は-1
+	return result

@@ -36,39 +36,39 @@ def _load():
 				print "script.load", path, traceback.format_exc()
 	print "		%d	script	load."%len(script_list)
 
-def run_script(player, event_id):
+def run_script(pc, event_id):
 	#print "run script id", hex(event_id)
-	with player.lock and player.user.lock:
-		player.event_id = event_id
-		player.user.map_client.send("05dc") #イベント開始の通知
-		player.user.map_client.send("05e8", event_id) #EventID通知 Event送信に対する応答
+	with pc.lock and pc.user.lock:
+		pc.event_id = event_id
+		pc.user.map_client.send("05dc") #イベント開始の通知
+		pc.user.map_client.send("05e8", event_id) #EventID通知 Event送信に対する応答
 	with script_list_lock:
 		event = script_list.get(event_id)
 	try:
 		if event:
-			event["main"](player)
+			event["main"](pc)
 		else:
-			say(player, "Script id %s not exist."%hex(event_id), "")
+			say(pc, "Script id %s not exist."%hex(event_id), "")
 			raise ValueError("Script id not exist")
 	except:
 		print "run_script", hex(event_id), traceback.format_exc()
-	with player.lock and player.user.lock:
-		player.event_id = 0
-		player.user.map_client.send("05dd") #イベント終了の通知
+	with pc.lock and pc.user.lock:
+		pc.event_id = 0
+		pc.user.map_client.send("05dd") #イベント終了の通知
 
 def run(*args):
 	thread.start_new_thread(run_script, args)
 
-def say(player, message, npc_name=None, npc_motion_id=131, npc_id=None):
+def say(pc, message, npc_name=None, npc_motion_id=131, npc_id=None):
 	if npc_id == None:
-		npc_id = player.event_id
+		npc_id = pc.event_id
 	if npc_name == None:
-		npc = db.npc.get(player.event_id)
+		npc = db.npc.get(pc.event_id)
 		if npc: npc_name = npc.name
 		else: npc_name = ""
-	player.user.map_client.send("03f8") #NPCメッセージのヘッダー
+	pc.user.map_client.send("03f8") #NPCメッセージのヘッダー
 	message = message.replace("$r", "$R").replace("$p", "$P")
 	for message_line in message.split("$R"):
-		player.user.map_client.send("03f7", 
+		pc.user.map_client.send("03f7", 
 			message_line+"$R", npc_name, npc_motion_id, npc_id) #NPCメッセージ
-	player.user.map_client.send("03f9") #NPCメッセージのフッター
+	pc.user.map_client.send("03f9") #NPCメッセージのフッター

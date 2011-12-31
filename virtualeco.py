@@ -29,9 +29,9 @@ STDERR_LOG = "./stderr.log"
 
 def save_user_data():
 		try:
-			for player in users.get_player_list():
-				if player.online:
-					player.save()
+			for pc in users.get_pc_list():
+				if pc.online:
+					pc.save()
 		except:
 			print "save_user_data", traceback.format_exc()
 def save_user_data_every_min():
