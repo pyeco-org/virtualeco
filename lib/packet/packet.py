@@ -961,3 +961,80 @@ def make_0a1c():
 	"""トレード終了通知
 	トレードが成立・キャンセルされた場合などに受信"""
 	return ""
+
+def make_09f6(warehouse_id, num_here, num_all, num_max):
+	"""倉庫インベントリーヘッダ"""
+	result = general.pack_int(warehouse_id) #倉庫の場所
+	result += general.pack_int(num_here) #開いている倉庫にあるインベントリ数
+	result += general.pack_int(num_all) #すべての倉庫にあるインベントリ数
+	result += general.pack_int(num_max) #倉庫に入る最大インベントリ数
+	#GAME_WARE_NAME_0,";アクロポリスシティ";
+	#GAME_WARE_NAME_1,";ファーイースト国境駐在員";
+	#GAME_WARE_NAME_2,";アイアンサウス国境駐在員";
+	#GAME_WARE_NAME_3,";ノーザン国境駐在員";
+	#GAME_WARE_NAME_4,";廃炭鉱キャンプ	";
+	#GAME_WARE_NAME_5,";モーグシティ";
+	#GAME_WARE_NAME_6,";アイアンサウス連邦";
+	#GAME_WARE_NAME_7,";ノーザン王国";
+	#GAME_WARE_NAME_8,";トンカシティ";
+	#GAME_WARE_NAME_9,";";
+	#GAME_WARE_NAME_10,";";
+	#GAME_WARE_NAME_11,";";
+	#GAME_WARE_NAME_12,";ファーイースト共和国";"""
+	return result
+
+def make_09f9(item, iid, part):
+	"""倉庫インベントリーデータ"""
+	result = make_0203(item, iid, part)[1:]
+	#partが30(0x1e)の場合は開いた倉庫に、0の場合は別の倉庫にある。
+	result += general.pack_byte(0)
+	return result
+
+def make_09fa():
+	"""倉庫インベントリーフッタ"""
+	return ""
+
+def make_09fc(result_id):
+	"""倉庫から取り出した時の結果"""
+	#0
+	#成功
+	#-1〜-8
+	#GAME_SMSG_WAREHOUSE_ERR1,";倉庫を開けていません";
+	#GAME_SMSG_WAREHOUSE_ERR2,";指定されたアイテムは存在しません";
+	#GAME_SMSG_WAREHOUSE_ERR3,";指定された数量が不正です";
+	#GAME_SMSG_WAREHOUSE_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
+	#GAME_SMSG_WAREHOUSE_ERR5,";キャラのアイテム数が100個を超えてしまうためキャンセルされました";
+	#GAME_SMSG_WAREHOUSE_ERR6,";イベントアイテムは預けられません";
+	#GAME_SMSG_WAREHOUSE_ERR7,";指定した格納場所は使用できません";
+	#GAME_SMSG_WAREHOUSE_ERR8,";変身中のマリオネットは預ける事ができません";
+	#それ以外
+	#GAME_SMSG_WAREHOUSE_ERR99,";倉庫移動に失敗しました";
+	return general.pack_int(result_id)
+
+def make_09fe(result_id):
+	"""倉庫に預けた時の結果"""
+	#0
+	#成功
+	#-1〜-8
+	#GAME_SMSG_WAREHOUSE_ERR1,";倉庫を開けていません";
+	#GAME_SMSG_WAREHOUSE_ERR2,";指定されたアイテムは存在しません";
+	#GAME_SMSG_WAREHOUSE_ERR3,";指定された数量が不正です";
+	#GAME_SMSG_WAREHOUSE_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
+	#GAME_SMSG_WAREHOUSE_ERR5,";キャラのアイテム数が100個を超えてしまうためキャンセルされました";
+	#GAME_SMSG_WAREHOUSE_ERR6,";イベントアイテムは預けられません";
+	#GAME_SMSG_WAREHOUSE_ERR7,";指定した格納場所は使用できません";
+	#GAME_SMSG_WAREHOUSE_ERR8,";変身中のマリオネットは預ける事ができません";
+	#それ以外
+	#GAME_SMSG_WAREHOUSE_ERR99,";倉庫移動に失敗しました";
+	return general.pack_int(result_id)
+
+def make_0a08(result_id):
+	"""搬送結果"""
+	#0
+	#GAME_SMSG_TRANSPORT_ERR0,";アイテムを搬送しました";
+	#-1〜-4
+	#GAME_SMSG_TRANSPORT_ERR1,";倉庫を開けていません";
+	#GAME_SMSG_TRANSPORT_ERR2,";指定されたアイテムは存在しません";
+	#GAME_SMSG_TRANSPORT_ERR3,";指定された数量が不正です";
+	#GAME_SMSG_TRANSPORT_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
+	return general.pack_int(result_id)

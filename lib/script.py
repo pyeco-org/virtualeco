@@ -94,6 +94,7 @@ NAME_WITH_TYPE = {
 	"printitem": (),
 	"takeitem": (int, int), #item_id, item_count
 	"dustbox": (),
+	"warehouse": (int,), #warehouse_id
 	}
 
 def help(pc):
@@ -122,6 +123,7 @@ def help(pc):
 /printitem
 /takeitem item_id item_count
 /dustbox
+/warehouse warehouse_id
 """)
 
 def handle_cmd(pc, cmd):
@@ -408,3 +410,25 @@ def npctrade(pc): #not for command
 		time.sleep(0.1)
 	update_item(pc)
 	return pc.trade_return_list
+
+def warehouse(pc, warehouse_id):
+	num_max = 300
+	num_here = 0
+	num_all = 0
+	with pc.lock:
+		for item in pc.warehouse.itervalues():
+			num_all += 1
+			if item.warehouse == warehouse_id:
+				num_here += 1
+	with pc.lock and pc.user.lock:
+		#倉庫インベントリーヘッダ
+		pc.user.map_client.send("09f6", warehouse_id, num_here, num_all, num_max)
+		for iid, item in pc.warehouse.iteritems():
+			if item.warehouse == warehouse_id:
+				part = 30 #倉庫
+			else:
+				part = item.warehouse
+			#倉庫インベントリーデータ
+			pc.user.map_client.send("09f9", item, iid, part)
+		pc.warehouse_open = warehouse_id
+		pc.user.map_client.send("09fa") #倉庫インベントリーフッタ

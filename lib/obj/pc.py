@@ -421,6 +421,7 @@ class PC:
 			self.pet = None #Pet()
 			self.kanban = ""
 			self.map_obj = None
+			self.warehouse_open = None
 			self.reset_trade()
 	
 	def __init__(self, user, path):

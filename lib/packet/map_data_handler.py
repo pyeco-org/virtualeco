@@ -402,3 +402,77 @@ class MapDataHandler:
 		self.pc.trade_list = zip(iid_list, count_list)
 		print "[ map ] self.pc.trade_list", self.pc.trade_list
 		print "[ map ] self.pc.trade_gold", self.pc.trade_gold
+	
+	def do_09f7(self, data):
+		#倉庫を閉じる
+		print "[ map ] warehouse closed"
+		self.pc.warehouse_open = None
+	
+	def do_09fb(self, data):
+		#倉庫から取り出す
+		item_iid = general.unpack_int(data[:4]); data = data[4:]
+		item_count = general.unpack_short(data[:2])
+		print "[ map ] take item from warehouse", item_iid, item_count
+		with self.pc.lock:
+			if self.pc.warehouse_open == None:
+				#倉庫から取り出した時の結果 #倉庫を開けていません
+				self.send("09fc", -1)
+				return
+			if item_iid not in self.pc.warehouse:
+				#倉庫から取り出した時の結果 #指定されたアイテムは存在しません
+				self.send("09fc", -2)
+				return
+			item = self.pc.warehouse[item_iid]
+			if item.count < item_count:
+				#倉庫から取り出した時の結果 #指定された数量が不正です
+				self.send("09fc", -3)
+				return
+			item.count -= item_count
+			if item.count <= 0:
+				self.pc.sort.warehouse.remove(item_iid)
+				self.pc.warehouse.pop(item_iid)
+			if item.stock:
+				script.item(self.pc, item.item_id, item_count)
+			else:
+				item_iid = self.pc.get_new_iid()
+				item_take = general.copy(item)
+				item_take.count = item_count
+				self.pc.sort.item.append(item_iid)
+				self.pc.item[item_iid] = item_take
+				self.send("09d4", item_take, item_iid, 0x02) #アイテム取得 #0x02: body
+			#倉庫から取り出した時の結果 #成功
+			self.send("09fc", 0)
+	
+	def do_09fd(self, data):
+		#倉庫に預ける
+		item_iid = general.unpack_int(data[:4]); data = data[4:]
+		item_count = general.unpack_short(data[:2])
+		print "[ map ] store item to warehouse", item_iid, item_count
+		with self.pc.lock:
+			if self.pc.warehouse_open == None:
+				#倉庫に預けた時の結果 #倉庫を開けていません
+				self.send("09fe", -1)
+				return
+			if item_iid not in self.pc.item:
+				#倉庫に預けた時の結果 #指定されたアイテムは存在しません
+				self.send("09fe", -2)
+				return
+			item = self.pc.item[item_iid]
+			if item.count < item_count:
+				#倉庫に預けた時の結果 #指定された数量が不正です
+				self.send("09fe", -3)
+			item.count -= item_count
+			if item.count <= 0:
+				self.pc.sort.item.remove(item_iid)
+				self.pc.item.pop(item_iid)
+				self.send("09ce", item_iid) #インベントリからアイテム消去
+			else:
+				self.send("09cf", item, item_iid) #アイテム個数変化
+			item_iid = self.pc.get_new_iid()
+			item_store = general.copy(item)
+			item_store.count = item_count
+			self.pc.sort.warehouse.append(item_iid)
+			self.pc.warehouse[item_iid] = item_store
+			self.send("09f9", item_store, item_iid, 30) #倉庫インベントリーデータ
+			#倉庫に預けた時の結果 #成功
+			self.send("09fe", 0)
