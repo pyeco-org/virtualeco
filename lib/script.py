@@ -14,6 +14,8 @@ script_list = {}
 script_list_lock = threading.RLock()
 
 def load():
+	global server
+	from lib import server
 	with script_list_lock:
 		_load()
 def _load():
@@ -64,9 +66,9 @@ def run_script(pc, event_id):
 			pc.user.map_client.send("05dd") #イベント終了の通知
 
 def run(pc, event_id):
-	if pc.event_id:
-		print "script.run error: event duplicate", pc, pc.event_id
-		return
+	#if pc.event_id:
+	#	print "script.run error: event duplicate", pc, pc.event_id
+	#	return
 	thread.start_new_thread(run_script, (pc, event_id))
 
 NAME_WITH_TYPE = {
@@ -133,10 +135,15 @@ def handle_cmd(pc, cmd):
 	if not l:
 		return
 	name, args = l[0], l[1:]
-	if name not in NAME_WITH_TYPE:
+	types = NAME_WITH_TYPE.get(name)
+	if types == None:
 		return
 	try:
-		types = NAME_WITH_TYPE[name]
+		request_gmlevel = server.config.gmlevel.get(name)
+		if request_gmlevel == None:
+			raise Exception("server.config.gmlevel[%s] not exist"%name)
+		if pc.gmlevel < request_gmlevel:
+			raise Exception("pc.gmlevel < request_gmlevel")
 		try:
 			for i, arg in enumerate(args):
 				if not types[i]: continue
@@ -145,8 +152,9 @@ def handle_cmd(pc, cmd):
 			pass
 		eval(name)(pc, *args)
 	except:
-		msg(pc, filter(None, traceback.format_exc().split("\n"))[-1])
-		print "script.handle_cmd [%s] error:\n"%cmd, traceback.format_exc()
+		exc_info = traceback.format_exc()
+		msg(pc, filter(None, exc_info.split("\n"))[-1])
+		print "script.handle_cmd [%s] error:\n"%cmd, exc_info
 	return True
 
 def reloadscript(pc):
@@ -208,7 +216,6 @@ def warp(pc, map_id, x=None, y=None):
 				raise ValueError("map_id %d not found."%map_id)
 			if x != None and y != None: pc.set_coord(x, y)
 			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
-			#pc.unset_pet()
 			pc.set_dir(0)
 			pc.user.map_client.send_map_without_self("1211", pc) #PC消去
 			pc.user.map_client.send("11fd", pc) #マップ変更通知
@@ -216,7 +223,9 @@ def warp(pc, map_id, x=None, y=None):
 		else:
 			if x != None and y != None: pc.set_coord(x, y)
 			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
+			pc.unset_pet()
 			pc.user.map_client.send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
+			pc.set_pet()
 
 def warpraw(pc, rawx, rawy):
 	if rawx > 32767 or rawx < -32768:
@@ -225,7 +234,9 @@ def warpraw(pc, rawx, rawy):
 		raise ValueError("rawy > 32767 or < -32768 [%d]"%rawy)
 	with pc.lock and pc.user.lock:
 		pc.set_raw_coord(rawx, rawy)
+		pc.unset_pet()
 		pc.user.map_client.send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
+		pc.set_pet()
 
 def update(pc):
 	with pc.lock and pc.user.lock:
@@ -432,3 +443,19 @@ def warehouse(pc, warehouse_id):
 			pc.user.map_client.send("09f9", item, iid, part)
 		pc.warehouse_open = warehouse_id
 		pc.user.map_client.send("09fa") #倉庫インベントリーフッタ
+
+def select(pc, option_list, title=""): #not for command
+	option_list = filter(None, option_list)
+	if len(option_list) > 65:
+		raise ValueError("len(option_list) > 65")
+	with pc.lock and pc.user.lock:
+		pc.select_result = None
+		#NPCのメッセージのうち、選択肢から選ぶもの
+		pc.user.map_client.send("0604", option_list, title)
+	while True:
+		with pc.lock:
+			if not pc.online:
+				return
+			if pc.select_result != None:
+				return pc.select_result
+		time.sleep(0.1)

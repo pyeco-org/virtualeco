@@ -7,6 +7,7 @@ from lib import general
 from lib.packet import packet
 from lib import users
 from lib import script
+from lib import pets
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
 DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
@@ -114,16 +115,24 @@ class MapDataHandler:
 						self.send("1220", monster) #モンスター情報
 	
 	def send_object_detail(self, i):
-		for pc in users.get_pc_list():
+		if i >= pets.PET_ID_START_FROM:
+			pet = pets.get_pet_from_id(i)
+			if not pet:
+				return
+			if not pet.master:
+				return
+			self.send("020e", pet)
+		else:
+			pc = users.get_pc_from_id(i)
+			if not pc:
+				return
 			with pc.lock:
 				if not pc.online:
-					continue
-				if not pc.visible:
-					continue
-				if pc.id == i:
-					self.send("020e", pc) #キャラ情報
-					self.send("041b", pc) #kanban
 					return
+				if not pc.visible:
+					return
+				self.send("020e", pc) #キャラ情報
+				self.send("041b", pc) #kanban
 	
 	def do_000a(self, data):
 		#接続・接続確認
@@ -226,8 +235,8 @@ class MapDataHandler:
 		self.send("09e9", self.pc) #キャラの見た目を変更
 		self.send("021c", self.pc) #現在のHP/MP/SP/EP
 		self.sync_map()
-		#self.pc.unset_pet()
-		#self.pc.set_pet()
+		self.pc.unset_pet()
+		self.pc.set_pet()
 	
 	def do_0fa5(self, data):
 		#戦闘状態変更通知
@@ -252,7 +261,7 @@ class MapDataHandler:
 	def do_001e(self, data):
 		#ログアウト(PASS鍵リセット・マップサーバーとのみ通信)
 		print "[ map ] logout"
-		#self.pc.unset_pet()
+		self.pc.unset_pet()
 		self.send_map_without_self("1211", self.pc) #PC消去
 	
 	def do_001f(self, data):
@@ -277,6 +286,13 @@ class MapDataHandler:
 		self.pc.set_raw_coord(rawx, rawy)
 		self.pc.set_raw_dir(rawdir)
 		self.send_map_without_self("11f9", self.pc, move_type)
+		with self.pc.lock:
+			if not self.pc.pet:
+				return
+			with self.pc.pet.lock:
+				self.pc.pet.set_raw_coord(rawx, rawy)
+				self.pc.pet.set_raw_dir(rawdir)
+				self.send_map("11f9", self.pc.pet, 0x06) #歩き
 	
 	def do_020d(self, data):
 		#キャラクタ情報要求
@@ -437,6 +453,7 @@ class MapDataHandler:
 				item_iid = self.pc.get_new_iid()
 				item_take = general.copy(item)
 				item_take.count = item_count
+				item_take.warehouse = 0
 				self.pc.sort.item.append(item_iid)
 				self.pc.item[item_iid] = item_take
 				self.send("09d4", item_take, item_iid, 0x02) #アイテム取得 #0x02: body
@@ -471,8 +488,36 @@ class MapDataHandler:
 			item_iid = self.pc.get_new_iid()
 			item_store = general.copy(item)
 			item_store.count = item_count
+			item_store.warehouse = self.pc.warehouse_open
 			self.pc.sort.warehouse.append(item_iid)
 			self.pc.warehouse[item_iid] = item_store
 			self.send("09f9", item_store, item_iid, 30) #倉庫インベントリーデータ
 			#倉庫に預けた時の結果 #成功
 			self.send("09fe", 0)
+	
+	def do_09c4(self, data):
+		#アイテム使用
+		item_iid = general.unpack_int(data[:4]); data = data[4:]
+		target_id = general.unpack_int(data[:4])
+		with self.pc.lock:
+			item = self.pc.item.get(item_iid)
+			if not item:
+				return
+			event_id = item.eventid
+		pc = users.get_pc_from_id(target_id)
+		with pc.lock:
+			if not pc.online:
+				return
+			script.run(pc, event_id)
+	
+	def do_0605(self, data):
+		#NPCメッセージ(選択肢)の返信
+		self.send("0606") #s0605で選択結果が通知された場合の応答
+		with self.pc.lock:
+			self.pc.select_result = general.unpack_byte(data[:1])
+	
+	def do_041a(self, data):
+		#set kanban
+		with self.pc.lock:
+			self.pc.kanban = general.unpack_str(data)[0]
+			self.send_map("041b", self.pc)

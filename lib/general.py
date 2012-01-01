@@ -96,10 +96,16 @@ def copy(obj):
 	return py_copy.copy(obj)
 
 def get_item(item_id):
-	item = db.item.get(int(item_id))
+	item = db.item.get(item_id)
 	if not item:
 		item = db.item.get(10000000)
 	return copy(item)
+
+def get_pet(pet_id):
+	pet = db.pet.get(pet_id)
+	if not pet:
+		return
+	return copy(pet)
 
 def get_config_io(path):
 	with open(path, "rb") as r:

@@ -728,23 +728,6 @@ def make_120c(pc):
 	result += general.pack_int(pc.status.maxhp) #最大HP
 	return result
 
-def make_122f(pet):
-	"""pet info"""
-	result = general.pack_int(pet.id)
-	result += "\x03" #unknow
-	result += general.pack_int(pet.master.id)
-	result += general.pack_int(pet.master.id)
-	result += general.pack_byte(pet.master.lv_base)
-	result += general.pack_int(pet.master.wrprank) #master wrprank
-	result += "\x00" #unknow
-	result += general.pack_unsigned_byte(pet.x) #pet x
-	result += general.pack_unsigned_byte(pet.y) #pet y
-	result += general.pack_short(pet.speed) #pet speed
-	result += general.pack_byte(pet.dir) #pet dir
-	result += general.pack_int(pet.hp) #pet hp
-	result += general.pack_int(pet.maxhp) #pet maxhp
-	return result
-
 def make_1220(monster):
 	"""モンスター情報"""
 	result = general.pack_int(monster.id) #server id
@@ -1038,3 +1021,49 @@ def make_0a08(result_id):
 	#GAME_SMSG_TRANSPORT_ERR3,";指定された数量が不正です";
 	#GAME_SMSG_TRANSPORT_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
 	return general.pack_int(result_id)
+
+def make_0604(option_list, title):
+	"""NPCのメッセージのうち、選択肢から選ぶもの
+	選択結果はs0605で通知する"""
+	result = general.pack_str(title) #ウィンドウタイトル
+	result += general.pack_byte(len(option_list)) #選択肢の数 65以上でエラー
+	for option in option_list:
+		result += general.pack_str(option)
+	result += general.pack_str("") #選んだときに確認するメッセージのタイトル
+	result += general.pack_byte(0) #キャンセルできるかどうか
+	result += general.pack_int(0) #timeout秒に選ばないとキャンセルしたことになる。0の場合制限無し
+	return result
+
+def make_0606():
+	"""s0605で選択結果が通知された場合の応答
+	箱を開けた場合は返答しない"""
+	return general.pack_byte(0) #常に0
+
+def make_122f(pet):
+	"""pet info"""
+	result = general.pack_int(pet.id)
+	result += "\x03" #unknow
+	result += general.pack_int(pet.master.id)
+	result += general.pack_int(pet.master.id)
+	result += general.pack_byte(pet.master.lv_base)
+	result += general.pack_int(pet.master.wrprank)
+	result += "\x00" #unknow
+	result += general.pack_unsigned_byte(pet.x)
+	result += general.pack_unsigned_byte(pet.y)
+	result += general.pack_short(pet.speed)
+	result += general.pack_byte(pet.dir)
+	result += general.pack_int(pet.hp)
+	result += general.pack_int(pet.maxhp)
+	return result
+
+def make_1234(pet):
+	"""hide pet"""
+	result = general.pack_int(pet.id)
+	result += general.pack_byte(0) #unknow
+	return result
+
+def make_041b(pc):
+	"""kanban"""
+	result = general.pack_int(pc.id)
+	result += general.pack_str(pc.kanban)
+	return result

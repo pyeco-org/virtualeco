@@ -5,6 +5,7 @@ import threading
 from lib import general
 from lib import server
 from lib import db
+from lib import pets
 
 class PC:
 	def __str__(self):
@@ -210,6 +211,10 @@ class PC:
 		if not map_obj:
 			return False
 		#print self, "set_map", map_obj
+		with self.user.lock:
+			if self.user.map_client:
+				self.unset_pet()
+				self.user.map_client.send_map_without_self("1211", self) #PC消去
 		self.map_id = map_id
 		if self.map_obj:
 			with self.map_obj.lock:
@@ -327,9 +332,9 @@ class PC:
 			set_part = 17
 		elif item.type in general.PET_TYPE_LIST: #ペット
 			unset_iid_list.append(self.equip.pet)
-			#self.unset_pet()
+			self.unset_pet()
 			self.equip.pet = iid
-			#self.set_pet()
+			self.set_pet()
 			set_part = 18
 		return filter(None, unset_iid_list), set_part
 	
@@ -361,7 +366,7 @@ class PC:
 			self.equip.socks = 0
 		elif self.equip.pet == iid:
 			self.equip.pet = 0
-			#self.unset_pet(self)
+			self.unset_pet()
 	
 	def in_equip(self, iid):
 		if iid == 0: return
@@ -402,6 +407,7 @@ class PC:
 	def reset_map(self):
 		with self.lock:
 			if self.user.map_client:
+				self.unset_pet(True)
 				self.user.map_client.send_map_without_self("1211", self) #PC消去
 			if self.map_obj:
 				with self.map_obj.lock:
@@ -422,7 +428,14 @@ class PC:
 			self.kanban = ""
 			self.map_obj = None
 			self.warehouse_open = None
+			self.select_result = None
 			self.reset_trade()
+	
+	def set_pet(self):
+		return pets.set_pet(self)
+	
+	def unset_pet(self, logout=False):
+		return pets.unset_pet(self, logout)
 	
 	def __init__(self, user, path):
 		self.path = path
