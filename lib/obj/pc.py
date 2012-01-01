@@ -39,8 +39,8 @@ class PC:
 		self.lv_job2t = cfg.getint("main","lv_job2t")
 		self.lv_job3 = cfg.getint("main","lv_job3")
 		self.gold = cfg.getint("main","gold")
-		self.x = cfg.getint("main","x")
-		self.y = cfg.getint("main","y")
+		self.x = cfg.getfloat("main","x")
+		self.y = cfg.getfloat("main","y")
 		self.dir = cfg.getint("main","dir")
 		self.str = cfg.getint("status","str")
 		self.dex = cfg.getint("status","dex")
@@ -236,8 +236,8 @@ class PC:
 	
 	def set_coord(self, x, y):
 		with self.lock:
-			self.x = x #unsigned byte
-			self.y = y #unsigned byte
+			self.x = x #float, pack with unsigned byte
+			self.y = y #float, pack with unsigned byte
 			if self.x < 0: self.x += 256
 			if self.y < 0: self.y += 256
 			if not self.map_obj:
@@ -250,8 +250,8 @@ class PC:
 			self.rawy = rawy
 			if not self.map_obj:
 				return
-			self.x = int(self.map_obj.centerx + rawx/100.0)
-			self.y = int(self.map_obj.centery - rawy/100.0)
+			self.x = self.map_obj.centerx + rawx/100.0 #no int()
+			self.y = self.map_obj.centery - rawy/100.0 #no int()
 			if self.x < 0: self.x += 256
 			if self.y < 0: self.y += 256
 	
@@ -262,7 +262,7 @@ class PC:
 	def set_raw_dir(self, rawdir):
 		with self.lock:
 			self.rawdir = rawdir
-			self.dir = int(rawdir/45)
+			self.dir = int(round(rawdir/45.0, 0))
 	
 	def set_equip(self, *args):
 		with self.lock:

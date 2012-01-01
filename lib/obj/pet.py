@@ -72,10 +72,30 @@ class Pet:
 				self.map_obj.pet_list.append(self)
 		return True
 	
+	def set_coord_from_master(self):
+		with self.lock and self.master.lock:
+			if self.master.dir == 0:
+				self.set_coord(self.master.x, self.master.y-0.5)
+			elif self.master.dir == 1:
+				self.set_coord(self.master.x+0.5, self.master.y-0.5)
+			elif self.master.dir == 2:
+				self.set_coord(self.master.x+0.5, self.master.y)
+			elif self.master.dir == 3:
+				self.set_coord(self.master.x+0.5, self.master.y+0.5)
+			elif self.master.dir == 4:
+				self.set_coord(self.master.x, self.master.y+0.5)
+			elif self.master.dir == 5:
+				self.set_coord(self.master.x-0.5, self.master.y+0.5)
+			elif self.master.dir == 6:
+				self.set_coord(self.master.x-0.5, self.master.y)
+			elif self.master.dir == 7:
+				self.set_coord(self.master.x-0.5, self.master.y-0.5)
+			else:
+				self.set_coord(self.master.x, self.master.y)
 	def set_coord(self, x, y):
 		with self.lock:
-			self.x = x #unsigned byte
-			self.y = y #unsigned byte
+			self.x = x #float, pack with unsigned byte
+			self.y = y #float, pack with unsigned byte
 			if self.x < 0: self.x += 256
 			if self.y < 0: self.y += 256
 			if not self.map_obj:
@@ -88,8 +108,8 @@ class Pet:
 			self.rawy = rawy
 			if not self.map_obj:
 				return
-			self.x = int(self.map_obj.centerx + rawx/100.0)
-			self.y = int(self.map_obj.centery - rawy/100.0)
+			self.x = self.map_obj.centerx + rawx/100.0 #no int()
+			self.y = self.map_obj.centery - rawy/100.0 #no int()
 			if self.x < 0: self.x += 256
 			if self.y < 0: self.y += 256
 	
@@ -100,7 +120,7 @@ class Pet:
 	def set_raw_dir(self, rawdir):
 		with self.lock:
 			self.rawdir = rawdir
-			self.dir = int(rawdir/45)
+			self.dir = int(round(rawdir/45.0, 0))
 	
 	class Item:
 		def __init__(self, i):

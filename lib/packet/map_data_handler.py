@@ -121,7 +121,8 @@ class MapDataHandler:
 				return
 			if not pet.master:
 				return
-			self.send("020e", pet)
+			self.send("020e", pet) #キャラ情報
+			#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス
 		else:
 			pc = users.get_pc_from_id(i)
 			if not pc:
@@ -283,16 +284,25 @@ class MapDataHandler:
 		move_type = general.unpack_short(data[:2]); data = data[2:]
 		#print "[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
 		#	rawx, rawy, rawdir, move_type)
+		with self.pc.lock:
+			old_x, old_y = self.pc.x, self.pc.y
 		self.pc.set_raw_coord(rawx, rawy)
 		self.pc.set_raw_dir(rawdir)
-		self.send_map_without_self("11f9", self.pc, move_type)
+		with self.pc.lock:
+			new_x, new_y = self.pc.x, self.pc.y
+		self.send_map_without_self("11f9", self.pc, move_type) #キャラ移動アナウンス
 		with self.pc.lock:
 			if not self.pc.pet:
 				return
+			if old_x == new_x and old_y == new_y:
+				return
 			with self.pc.pet.lock:
-				self.pc.pet.set_raw_coord(rawx, rawy)
+				#pet_x = self.pc.pet.x+(new_x-old_x)
+				#pet_y = self.pc.pet.y+(new_y-old_y)
+				#self.pc.pet.set_coord(pet_x, pet_y)
+				self.pc.pet.set_coord_from_master()
 				self.pc.pet.set_raw_dir(rawdir)
-				self.send_map("11f9", self.pc.pet, 0x06) #歩き
+				self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
 	def do_020d(self, data):
 		#キャラクタ情報要求

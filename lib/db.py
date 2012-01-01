@@ -58,8 +58,8 @@ def load():
 	monster = load_database("monster", data.monster.Monster, 3)
 	global npc
 	npc = load_database("npc", data.npc.Npc, 3)
-	global pet
-	pet = load_database("pet", data.pet.Pet, 20)
+	global pet_obj
+	pet_obj = load_database("pet", obj.pet.Pet, 20)
 	global shop
 	shop = load_database("shop", data.shop.Shop, 1)
 	global skill

@@ -80,7 +80,7 @@ NAME_WITH_TYPE = {
 	"msg": (str,), #message
 	"servermsg": (str,), #message
 	"where": (),
-	"warp": (int, int, int), #map_id, x, y
+	"warp": (int, float, float), #map_id, x, y
 	"warpraw": (int, int), #rawx, rawy
 	"update": (),
 	"hair": (int,), #hair_id
@@ -203,8 +203,9 @@ def servermsg(pc, message):
 
 def where(pc):
 	with pc.lock:
-		msg(pc, "[%s] map_id: %d x: %d y: %d rawx: %d rawy: %d"%(
-			pc.map_obj.name, pc.map_obj.map_id, pc.x, pc.y, pc.rawx, pc.rawy))
+		msg(pc, "[%s] map_id: %s x: %s y: %s dir: %s rawx: %s rawy: %d rawdir: %s"%(
+			pc.map_obj.name, pc.map_obj.map_id, pc.x, pc.y, pc.dir,
+			pc.rawx, pc.rawy, pc.rawdir))
 
 def warp(pc, map_id, x=None, y=None):
 	if x != None and y != None:

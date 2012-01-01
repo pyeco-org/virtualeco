@@ -102,7 +102,7 @@ def get_item(item_id):
 	return copy(item)
 
 def get_pet(pet_id):
-	pet = db.pet.get(pet_id)
+	pet = db.pet_obj.get(pet_id)
 	if not pet:
 		return
 	return copy(pet)
