@@ -235,10 +235,7 @@ def make_0029(user):
 def make_1239(pc, speed=None):
 	"""キャラ速度通知・変更"""
 	result = general.pack_int(pc.id)
-	if speed != None:
-		general.pack_short(speed)
-	else:
-		general.pack_short(pc.status.speed)
+	result += general.pack_short((speed == None and pc.status.speed or speed))
 	return result
 
 def make_0fa7(pc, mode=0x02):
@@ -755,11 +752,15 @@ def make_0fa6(pc):
 	result += general.pack_byte(pc.battlestatus) #00: 通常状態 01: 戦闘状態
 	return result
 
-def make_121c(pc):
+def make_121c(pc, npc_id=None, npc_motion_id=None, npc_motion_loop=None):
 	"""モーション通知"""
-	result = general.pack_int(pc.id) #サーバキャラID
-	result += general.pack_short(pc.motion_id) #モーションID
-	result += general.pack_byte(pc.motion_loop) #ループさせるかどうか #and 1 or 0
+	result = general.pack_int((
+		npc_id == None and pc.id or npc_id)) #サーバキャラID
+	result += general.pack_short((
+		npc_motion_id == None and pc.motion_id or npc_motion_id)) #モーションID
+	result += general.pack_byte((
+		npc_motion_loop == None and pc.motion_loop or
+		(npc_motion_loop and 1 or 0))) #ループさせるかどうか #and 1 or 0
 	result += general.pack_byte(0) #不明
 	return result
 
@@ -1066,4 +1067,68 @@ def make_041b(pc):
 	"""kanban"""
 	result = general.pack_int(pc.id)
 	result += general.pack_str(pc.kanban)
+	return result
+
+def make_05eb(time_ms):
+	"""イベント関連のウェイト"""
+	return general.pack_int(time_ms) #ミリセカンド
+
+def make_05f0(sound_id, loop=1, volume=100):
+	"""音楽を再生する"""
+	result = general.pack_int(sound_id) #MusicID #play(";data/sound/bgm_%d.wma";)
+	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(0) #00固定
+	result += general.pack_int(volume) #音量 (100がMax)
+	return result
+
+def make_05f5(sound_id, loop=0, volume=100, balance=50):
+	"""効果音を再生する"""
+	result = general.pack_int(sound_id) #SoundID #play(";data/sound/se_%d.wav";)
+	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(0) #00固定
+	result += general.pack_int(volume) #音量 (100がMax)
+	result += general.pack_byte(balance) #バランス(0で左から50で中央100で右から)
+	return result
+
+def make_05fa(sound_id, loop=0, volume=100, balance=50):
+	"""ジングルを再生する"""
+	result = general.pack_int(sound_id) #SoundID #play(";data/sound/jin_%d.wav";)
+	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(0) #00固定
+	result += general.pack_int(volume) #音量 (100がMax)
+	result += general.pack_byte(balance) #バランス(0で左から50で中央100で右から)
+	return result
+
+def make_060e(pc, effect_id, id=None, x=None, y=None, dir=None):
+	"""エフェクト受信"""
+	result = general.pack_int((id == None and pc.id or id))
+	result += general.pack_int(effect_id) #エフェクトID(EFFECT.dat&attr.dat
+	#自キャラに掛かった場合 x, yは255
+	result += general.pack_unsigned_byte(int(x == None and 255 or x))
+	result += general.pack_unsigned_byte(int(y == None and 255 or y))
+	result += general.pack_byte((dir == None and pc.dir or dir))
+	#result = general.pack_int(pc.id)
+	#result += general.pack_int(effect_id) #エフェクトID(EFFECT.
+	#result += "\xff"
+	#result += "\xff"
+	#result += "\x00"
+	return result
+
+def make_0613(pc, item_id_list, magnification=100):
+	"""NPCのショップウィンドウ"""
+	result = general.pack_int(magnification) #アイテムの販売価格の倍率(単位%)(100で標準)
+	result += general.pack_byte(len(item_id_list)) #個数
+	for item_id in item_id_list:
+		result += general.pack_int(item_id) #アイテムID（13個以上はエラー
+	result += general.pack_int(pc.gold) #所持金
+	result += general.pack_int(0) #銀行に預けてる金
+	result += general.pack_byte(0) #0普通の店1CPの店2ecoin
+	return result
+
+def make_0615():
+	"""NPCショップウィンドウ（売却）"""
+	result = general.pack_int(10) #不明
+	result += general.pack_int(4000) #不明
+	result += general.pack_int(0) #不明
+	result += general.pack_byte(1)+general.pack_int(0) #不明
 	return result

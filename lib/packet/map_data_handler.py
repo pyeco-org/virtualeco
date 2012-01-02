@@ -8,6 +8,7 @@ from lib.packet import packet
 from lib import users
 from lib import script
 from lib import pets
+from lib import db
 WORD_FRONT = "0000"
 WORD_BACK = "0000"
 DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
@@ -55,25 +56,25 @@ class MapDataHandler:
 		self._stop()
 	
 	def handle_data(self, data_decode):
-		#000a 000a 0000040d2e159d00
-		while data_decode:
-			data_length = general.unpack_short(data_decode[:2])
-			data_type = data_decode[2:4].encode("hex")
-			data = data_decode[4:data_length+2]
-			data_decode = data_decode[data_length+2:]
+		#000a 0001 000003f91e07e221
+		data_decode_io = general.stringio(data_decode)
+		while True:
+			data = general.io_unpack_short_raw(data_decode_io)
+			if not data:
+				break
+			data_io = general.stringio(data)
+			data_type = data_io.read(2).encode("hex")
 			if data_type not in DATA_TYPE_NOT_PRINT:
-				general.log("[ map ] %s %s %s"%(
-					general.pack_short(data_length).encode("hex"),
-					data_type,
-					data.encode("hex")))
+				general.log("[ map ]",
+					data[:2].encode("hex"), data[2:].encode("hex"))
 			try:
 				handler = getattr(self, "do_%s"%data_type)
 			except AttributeError:
 				general.log_error("[ map ] unknow packet type",
-					data_type, data.encode("hex"))
+					data[:2].encode("hex"), data[2:].encode("hex"))
 				return
 			try:
-				handler(data)
+				handler(data_io)
 			except:
 				general.log_error("[ map ] handle_data error:", data.encode("hex"))
 				general.log_error(traceback.format_exc())
@@ -136,21 +137,22 @@ class MapDataHandler:
 				self.send("020e", pc) #キャラ情報
 				self.send("041b", pc) #kanban
 	
-	def do_000a(self, data):
+	def do_000a(self, data_io):
 		#接続・接続確認
+		data = data_io.read()
 		general.log("[ map ] eco version", general.unpack_int(data[:4]))
 		self.send("000b", data)
 		self.send("000f", WORD_FRONT+WORD_BACK)
 	
-	def do_0032(self, data):
+	def do_0032(self, data_io):
 		#接続確認(マップサーバとのみ) 20秒一回
 		self.send("0033", True) #reply_ping=True
 	
-	def do_0010(self, data):
+	def do_0010(self, data_io):
 		#マップサーバーに認証情報の送信
 		general.log_line("[ map ]", "login")
-		username, username_length = general.unpack_str(data)
-		password_sha1 = general.unpack_str(data[username_length:])[0]
+		username = general.io_unpack_str(data_io)
+		password_sha1 = general.io_unpack_raw(data_io)[:40]
 		general.log(username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
@@ -172,10 +174,11 @@ class MapDataHandler:
 		else:
 			self.stop()
 	
-	def do_01fd(self, data):
+	def do_01fd(self, data_io):
 		#選択したキャラ番号通知
+		unknow = general.io_unpack_int(data_io)
 		if not self.pc:
-			num = general.unpack_byte(data[4:5])
+			num = general.io_unpack_byte(data_io)
 			with self.user.lock:
 				if not self.user.pc_list[num]:
 					self.stop()
@@ -221,7 +224,7 @@ class MapDataHandler:
 		self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
 		general.log("[ map ] send pc info success")
 	
-	def do_11fe(self, data):
+	def do_11fe(self, data_io):
 		#MAPワープ完了通知
 		general.log("[ map ]", "map load")
 		self.pc.set_visible(True)
@@ -240,17 +243,17 @@ class MapDataHandler:
 		self.pc.unset_pet()
 		self.pc.set_pet()
 	
-	def do_0fa5(self, data):
+	def do_0fa5(self, data_io):
 		#戦闘状態変更通知
 		with self.pc.lock:
-			self.pc.battlestatus = general.unpack_byte(data[:1])
+			self.pc.battlestatus = general.io_unpack_byte(data_io)
 		#戦闘状態変更通知
 		self.send("0fa6", self.pc)
 	
-	def do_121b(self, data):
+	def do_121b(self, data_io):
 		#モーションセット＆ログアウト
-		motion_id = general.unpack_short(data[:2])
-		loop = general.unpack_byte(data[2]) and True or False
+		motion_id = general.io_unpack_short(data_io)
+		loop = general.io_unpack_byte(data_io) and True or False
 		general.log("[ map ] motion %d loop %s"%(motion_id, loop))
 		#self.pc.set_motion(motion_id, loop)
 		#self.send_map("121c", self.pc) #モーション通知
@@ -260,29 +263,29 @@ class MapDataHandler:
 			self.send("0020", self.pc, "logoutstart")
 			self.pc.logout = True
 	
-	def do_001e(self, data):
+	def do_001e(self, data_io):
 		#ログアウト(PASS鍵リセット・マップサーバーとのみ通信)
 		general.log("[ map ] logout")
 		self.pc.unset_pet()
 		self.send_map_without_self("1211", self.pc) #PC消去
 	
-	def do_001f(self, data):
+	def do_001f(self, data_io):
 		#ログアウト開始&ログアウト失敗
-		if general.unpack_byte(data[:1]) == 0:
+		if general.io_unpack_byte(data_io) == 0:
 			general.log("[ map ] logout success")
 		else:
 			general.log("[ map ] logout failed")
 	
-	def do_11f8(self, data):
+	def do_11f8(self, data_io):
 		#自キャラの移動
 		if self.pc.logout:
 			self.pc.logout = False
 			self.send("0020", self.pc, "logoutcancel")
 			general.log("[ map ] logout cancel")
-		rawx = general.unpack_short(data[:2]); data = data[2:]
-		rawy = general.unpack_short(data[:2]); data = data[2:]
-		rawdir = general.unpack_short(data[:2]); data = data[2:]
-		move_type = general.unpack_short(data[:2]); data = data[2:]
+		rawx = general.io_unpack_short(data_io)
+		rawy = general.io_unpack_short(data_io)
+		rawdir = general.io_unpack_short(data_io)
+		move_type = general.io_unpack_short(data_io)
 		#general.log("[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
 		#	rawx, rawy, rawdir, move_type))
 		with self.pc.lock:
@@ -305,35 +308,35 @@ class MapDataHandler:
 				self.pc.pet.set_raw_dir(rawdir)
 				self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
-	def do_020d(self, data):
+	def do_020d(self, data_io):
 		#キャラクタ情報要求
-		obj_id = general.unpack_int(data[:4])
+		obj_id = general.io_unpack_int(data_io)
 		general.log("[ map ] request object id", obj_id)
 		self.send_object_detail(obj_id)
 	
-	def do_13ba(self, data):
+	def do_13ba(self, data_io):
 		#座る/立つの通知
 		if self.pc.motion_id != 135:
 			script.motion(self.pc, 135, False) #座る
 		else:
 			script.motion(self.pc, 111, False) #立つ
 	
-	def do_03e8(self, data):
+	def do_03e8(self, data_io):
 		#オープンチャット送信
-		message = general.unpack_str(data)[0]
+		message = general.io_unpack_str(data_io)
 		if not script.handle_cmd(self.pc, message):
 			self.send_map("03e9", self.pc.id, message) #オープンチャット・システムメッセージ
 	
-	def do_05e6(self, data):
+	def do_05e6(self, data_io):
 		#イベント実行
-		event_id = general.unpack_int(data[:4])
+		event_id = general.io_unpack_int(data_io)
 		script.run(self.pc, event_id)
 	
-	def do_09e2(self, data):
+	def do_09e2(self, data_io):
 		#インベントリ移動
-		iid = general.unpack_int(data[:4])
-		part = general.unpack_byte(data[4])
-		count = general.unpack_short(data[5:7])
+		iid = general.io_unpack_int(data_io)
+		part = general.io_unpack_byte(data_io)
+		count = general.io_unpack_short(data_io)
 		with self.pc.lock:
 			if iid not in self.pc.item:
 				general.log_error(
@@ -346,9 +349,9 @@ class MapDataHandler:
 		self.send("09e8", -1, -1, 1, 1) #アイテムを外す
 		self.send("09e9", self.pc) #キャラの見た目を変更
 	
-	def do_09e7(self, data):
+	def do_09e7(self, data_io):
 		#アイテム装備
-		iid = general.unpack_int(data[:4])
+		iid = general.io_unpack_int(data_io)
 		with self.pc.lock:
 			if iid not in self.pc.item:
 				general.log_error(
@@ -369,20 +372,20 @@ class MapDataHandler:
 				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
 				self.send("09e9", self.pc) #キャラの見た目を変更
 	
-	def do_0a16(self, data):
+	def do_0a16(self, data_io):
 		#トレードキャンセル
 		general.log("[ map ] trade: send cancel")
 		self.send("0a19", self.pc) #自分・相手がOKやキャンセルを押した際に双方に送信される
 		self.pc.reset_trade()
 		self.send("0a1c") #トレード終了通知
 	
-	def do_0a14(self, data):
+	def do_0a14(self, data_io):
 		#トレードのOK状態
 		general.log("[ map ] trade: send ok")
 		with self.pc.lock:
 			self.pc.trade_state = -1
 	
-	def do_0a15(self, data):
+	def do_0a15(self, data_io):
 		#トレードのTradeを押した際に送信
 		general.log("[ map ]","trade: send trade")
 		with self.pc.lock:
@@ -414,33 +417,33 @@ class MapDataHandler:
 			self.pc.trade_state = 0
 			self.send("0a1c") #トレード終了通知
 	
-	def do_0a1b(self, data):
+	def do_0a1b(self, data_io):
 		#トレードウィンドウに置いたアイテム・金の情報を送信？
 		general.log("[ map ] trade send item list")
 		iid_list = []
 		count_list = []
-		iid_count = general.unpack_byte(data[:1]); data = data[1:]
+		iid_count = general.io_unpack_byte(data_io)
 		#general.log("iid_count", iid_count)
 		for i in xrange(iid_count):
-			iid_list.append(general.unpack_int(data[:4])); data = data[4:]
-		count_count = general.unpack_byte(data[:1]); data = data[1:]
+			iid_list.append(general.io_unpack_int(data_io))
+		count_count = general.io_unpack_byte(data_io)
 		#general.log("count_count", count_count)
 		for i in xrange(iid_count):
-			count_list.append(general.unpack_short(data[:2])); data = data[2:]
-		self.pc.trade_gold = general.unpack_int(data[:4])
+			count_list.append(general.io_unpack_short(data_io))
+		self.pc.trade_gold = general.io_unpack_int(data_io)
 		self.pc.trade_list = zip(iid_list, count_list)
 		general.log("[ map ] self.pc.trade_list", self.pc.trade_list)
 		general.log("[ map ] self.pc.trade_gold", self.pc.trade_gold)
 	
-	def do_09f7(self, data):
+	def do_09f7(self, data_io):
 		#倉庫を閉じる
 		general.log("[ map ] warehouse closed")
 		self.pc.warehouse_open = None
 	
-	def do_09fb(self, data):
+	def do_09fb(self, data_io):
 		#倉庫から取り出す
-		item_iid = general.unpack_int(data[:4]); data = data[4:]
-		item_count = general.unpack_short(data[:2])
+		item_iid = general.io_unpack_int(data_io)
+		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] take item from warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if self.pc.warehouse_open == None:
@@ -473,10 +476,10 @@ class MapDataHandler:
 			#倉庫から取り出した時の結果 #成功
 			self.send("09fc", 0)
 	
-	def do_09fd(self, data):
+	def do_09fd(self, data_io):
 		#倉庫に預ける
-		item_iid = general.unpack_int(data[:4]); data = data[4:]
-		item_count = general.unpack_short(data[:2])
+		item_iid = general.io_unpack_int(data_io)
+		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] store item to warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if self.pc.warehouse_open == None:
@@ -508,10 +511,10 @@ class MapDataHandler:
 			#倉庫に預けた時の結果 #成功
 			self.send("09fe", 0)
 	
-	def do_09c4(self, data):
+	def do_09c4(self, data_io):
 		#アイテム使用
-		item_iid = general.unpack_int(data[:4]); data = data[4:]
-		target_id = general.unpack_int(data[:4])
+		item_iid = general.io_unpack_int(data_io)
+		target_id = general.io_unpack_int(data_io)
 		with self.pc.lock:
 			item = self.pc.item.get(item_iid)
 			if not item:
@@ -523,14 +526,97 @@ class MapDataHandler:
 				return
 			script.run(pc, event_id)
 	
-	def do_0605(self, data):
+	def do_0605(self, data_io):
 		#NPCメッセージ(選択肢)の返信
 		self.send("0606") #s0605で選択結果が通知された場合の応答
 		with self.pc.lock:
-			self.pc.select_result = general.unpack_byte(data[:1])
+			self.pc.select_result = general.io_unpack_byte(data_io)
 	
-	def do_041a(self, data):
+	def do_041a(self, data_io):
 		#set kanban
 		with self.pc.lock:
-			self.pc.kanban = general.unpack_str(data)[0]
+			self.pc.kanban = general.io_unpack_str(data_io)
 			self.send_map("041b", self.pc)
+	
+	def do_0617(self, data_io):
+		#購入・売却のキャンセル
+		with self.pc.lock:
+			self.pc.shop_open = None
+		general.log("[ map ] npcshop / npcsell close")
+	
+	def do_0614(self, data_io):
+		#NPCショップのアイテム購入
+		general.log("[ map ] npcshop")
+		with self.pc.lock:
+			if self.pc.shop_open == None:
+				general.log_error("do_0614: shop_open == None")
+				return
+			shop = db.shop.get(self.pc.shop_open)
+			if not shop:
+				general.log_error("do_0614: shop_id not exist", self.pc.shop_open)
+				return
+		item_id_list = []
+		item_id_count = general.io_unpack_byte(data_io)
+		for i in xrange(item_id_count):
+			item_id_list.append(general.io_unpack_int(data_io))
+		item_count_list = []
+		item_count_count = general.io_unpack_byte(data_io)
+		for i in xrange(item_count_count):
+			item_count_list.append(general.io_unpack_int(data_io))
+		item_buy_list = zip(item_id_list, item_count_list)
+		general.log("[ map ] item_buy_list", item_buy_list)
+		for item_id, item_count in item_buy_list:
+			if not item_count:
+				general.log_error("do_0614: not item_count", item_count)
+				continue
+			if item_id not in shop.item:
+				general.log_error(
+					"do_0614: item_id not in shop.item", item_id, shop.item)
+				continue
+			item = db.item.get(item_id)
+			if not item:
+				general.log_error("do_0614: not item", item_id)
+				continue
+			if script.takegold(self.pc, (int(item.price/10.0) or 1)*item_count):
+				script.item(self.pc, item_id, item_count)
+	
+	def do_0616(self, data_io):
+		"""ショップで売却"""
+		general.log("[ map ] npcsell")
+		with self.pc.lock:
+			if self.pc.shop_open != 65535:
+				general.log_error("do_0616: shop_open != 65535", self.pc.shop_open)
+				return
+		item_iid_list = []
+		item_iid_count = general.io_unpack_byte(data_io)
+		for i in xrange(item_iid_count):
+			item_iid_list.append(general.io_unpack_int(data_io))
+		item_count_list = []
+		item_count_count = general.io_unpack_byte(data_io)
+		for i in xrange(item_count_count):
+			item_count_list.append(general.io_unpack_int(data_io))
+		item_sell_list = zip(item_iid_list, item_count_list)
+		general.log("[ map ] item_sell_list", item_sell_list)
+		with self.pc.lock:
+			for item_iid, item_count in item_sell_list:
+				if not item_count:
+					general.log_error("do_0616: not item_count", item_count)
+					continue
+				if self.pc.in_equip(item_iid):
+					general.log_error("do_0616: in_equip(item_iid)", item_iid)
+					continue
+				item = self.pc.item.get(item_iid)
+				if not item:
+					general.log_error("do_0616: not item", item_iid)
+					continue
+				if item.count < item_count:
+					general.log_error("do_0616: item.count < item_count")
+					continue
+				if script.gold(self.pc, (int(item.price/100.0) or 1)*item_count):
+					item.count -= item_count
+					if item.count <= 0:
+						self.pc.sort.item.remove(item_iid)
+						self.pc.item.pop(item_iid)
+						self.send("09ce", item_iid) #インベントリからアイテム消去
+					else:
+						self.send("09cf", item, item_iid) #アイテム個数変化

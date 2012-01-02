@@ -214,7 +214,8 @@ class PC:
 		with self.user.lock:
 			if self.user.map_client:
 				self.unset_pet()
-				self.user.map_client.send_map_without_self("1211", self) #PC消去
+				if map_id:
+					self.user.map_client.send_map_without_self("1211", self) #PC消去
 		self.map_id = map_id
 		if self.map_obj:
 			with self.map_obj.lock:
@@ -422,12 +423,13 @@ class PC:
 			self.battlestatus = 0
 			self.wrprank = 0
 			self.event_id = 0
-			self.loginevent = False
+			#self.loginevent = False
 			self.logout = False
 			self.pet = None #Pet()
 			self.kanban = ""
 			self.map_obj = None
-			self.warehouse_open = None
+			self.warehouse_open = None #warehouse_id
+			self.shop_open = None #shop_id
 			self.select_result = None
 			self.reset_trade()
 	

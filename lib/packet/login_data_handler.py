@@ -27,37 +27,40 @@ class LoginDataHandler:
 	
 	def handle_data(self, data_decode):
 		#000a 0001 000003f91e07e221
-		while data_decode:
-			data_length = general.unpack_short(data_decode[:2])
-			data_type = data_decode[2:4].encode("hex")
-			data = data_decode[4:data_length+2]
-			data_decode = data_decode[data_length+2:]
+		data_decode_io = general.stringio(data_decode)
+		while True:
+			data = general.io_unpack_short_raw(data_decode_io)
+			if not data:
+				break
+			data_io = general.stringio(data)
+			data_type = data_io.read(2).encode("hex")
 			if data_type not in DATA_TYPE_NOT_PRINT:
-				general.log("[login] %s %s %s"%(
-					general.pack_short(data_length).encode("hex"),
-					data_type,
-					data.encode("hex")))
+				general.log("[login]",
+					data[:2].encode("hex"), data[2:].encode("hex"))
 			try:
 				handler = getattr(self, "do_%s"%data_type)
 			except AttributeError:
 				general.log_error("[login] unknow packet type",
-					data_type, data.encode("hex"))
+					data[:2].encode("hex"), data[2:].encode("hex"))
 				return
 			try:
-				handler(data)
+				handler(data_io)
 			except:
 				general.log_error("[login] handle_data error:", data.encode("hex"))
 				general.log_error(traceback.format_exc())
 	
-	def do_0001(self, data):
+	def do_0001(self, data_io):
+		#接続・接続確認
+		data = data_io.read()
 		general.log("[login] eco version", general.unpack_int(data[:4]))
 		self.send("0002", data) #認証接続確認(s0001)の応答
 		self.send("001e", WORD_FRONT+WORD_BACK) #PASS鍵
 	
-	def do_001f(self, data):
+	def do_001f(self, data_io):
+		#認証情報
 		general.log_line("[login]", "login")
-		username, username_length = general.unpack_str(data)
-		password_sha1 = general.unpack_str(data[username_length:])[0]
+		username = general.io_unpack_str(data_io)
+		password_sha1 = general.io_unpack_raw(data_io)[:40]
 		general.log(username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
@@ -85,20 +88,20 @@ class LoginDataHandler:
 		else:
 			self.send("0020", user, "loginfaild") #アカウント認証結果
 	
-	def do_000a(self, data):
+	def do_000a(self, data_io):
 		#接続確認
-		self.send("000b", data) #接続・接続確認(s000a)の応答
-
-	def do_00a0(self, data):
+		self.send("000b", data_io.read()) #接続・接続確認(s000a)の応答
+	
+	def do_00a0(self, data_io):
 		#キャラクター作成
 		#02 03313100 00 00 0000 32 0000
-		num = general.unpack_byte(data[:1]); data = data[1:]
-		name, length = general.unpack_str(data); data = data[length:]
-		race = general.unpack_byte(data[:1]); data = data[1:]
-		gender = general.unpack_byte(data[:1]); data = data[1:]
-		hair = general.unpack_short(data[:2]); data = data[2:]
-		hair_color = general.unpack_byte(data[:1]); data = data[1:]
-		face = general.unpack_short(data[:2]); data = data[2:]
+		num = general.io_unpack_byte(data_io)
+		name = general.io_unpack_str(data_io)
+		race = general.io_unpack_byte(data_io)
+		gender = general.io_unpack_byte(data_io)
+		hair = general.io_unpack_short(data_io)
+		hair_color = general.io_unpack_byte(data_io)
+		face = general.io_unpack_short(data_io)
 		general.log("[login] new character:", "num", num, "name", name,
 			"race", race, "gender", gender, "hair", hair,
 			"haircolor", hair_color, "face", face)
@@ -119,19 +122,18 @@ class LoginDataHandler:
 				self.send("00a1", "slotexist") #キャラクター作成結果
 				return
 		except:
-			general.log_error("do_00a0 error:", data.encode("hex"))
-			general.log_error(traceback.format_exc())
 			self.send("00a1", "other") #キャラクター作成結果
+			raise Exception("do_00a0 error:", traceback.format_exc())
 			return
 		else:
 			self.send("00a1", "sucess") #キャラクター作成結果
 			self.send("0028", self.user) #4キャラクターの基本属性
 			self.send("0029", self.user) #4キャラクターの装備
 	
-	def do_00a5(self, data):
+	def do_00a5(self, data_io):
 		#キャラクター削除 #num + delpassword
-		num = general.unpack_byte(data[:1]); data = data[1:]
-		delpassword_md5, length = general.unpack_str(data); data = data[length:]
+		num = general.io_unpack_byte(data_io)
+		delpassword_md5 = general.io_unpack_raw(data_io)
 		general.log("[login] delete character", "num", num,
 			"delpassword", delpassword_md5)
 		try:
@@ -142,23 +144,26 @@ class LoginDataHandler:
 				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
 		except:
-			general.log_error("do_00a5 error:", traceback.format_exc())
 			self.send("00a6", False) #キャラクター削除結果
+			raise Exception("do_00a5 error:", traceback.format_exc())
 		self.send("0028", self.user) #4キャラクターの基本属性
 		self.send("0029", self.user) #4キャラクターの装備
 	
-	def do_00a7(self, data):
-		num = general.unpack_byte(data[:1])
+	def do_00a7(self, data_io):
+		#キャラクター選択
+		num = general.io_unpack_byte(data_io)
 		general.log("[login] select character", num)
 		with self.user.lock:
 			self.pc = self.user.pc_list[num]
 		self.send("00a8", self.pc) #キャラクターマップ通知
 	
-	def do_0032(self, data):
-		mapid = general.unpack_int(data[:4])
+	def do_0032(self, data_io):
+		#接続先通知要求
+		map_id = general.io_unpack_int(data_io)
 		self.send("0033") #接続先通知要求(ログインサーバ/0032)の応答
 	
-	def do_002a(self, data):
+	def do_002a(self, data_io):
+		#キャラ番号通知
 		general.log("[login]", "request friend list")
 		if self.pc:
 			self.send("00dd", self.pc) #フレンドリスト(自キャラ)

@@ -2,10 +2,14 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import time
+import thread
 import threading
 import hashlib
+import traceback
 import ConfigParser
 USER_DIR = "./user"
+USER_BAK_DIR = "./user_bak"
 USER_CONFIG_NAME = "user.ini"
 PC_CONIG_NAME = "%d.ini"
 PC_CONFIG_MAX = 4
@@ -226,13 +230,11 @@ def get_user_list():
 		for user in user_list:
 			l.append(user)
 	return l
-
 def get_user_from_name(name):
 	for user in get_user_list():
 		with user.lock:
 			if user.name == name:
 				return user
-
 def get_user_from_id(i):
 	for user in get_user_list():
 		with user.lock:
@@ -247,18 +249,55 @@ def get_pc_list():
 				for pc in filter(None, user.pc_list):
 					l.append(pc)
 	return l
-
 def get_pc_from_name(name):
 	for pc in get_pc_list():
 		with pc.lock:
 			if pc.name == name:
 				return pc
-
 def get_pc_from_id(i):
 	for pc in get_pc_list():
 		with pc.lock:
 			if pc.id == i:
 				return pc
+
+def backup_user_data():
+	try:
+		zip_path = os.path.join(USER_BAK_DIR, "%s.zip"%general.get_today())
+		if os.path.exists(zip_path):
+			return
+		if not os.path.exists(USER_BAK_DIR):
+			os.mkdir(USER_BAK_DIR)
+		general.save_zip(USER_DIR, zip_path)
+	except:
+		general.log_error("backup_user_data", traceback.format_exc())
+def backup_user_data_every_day_thread():
+	while True:
+		backup_user_data()
+		time.sleep(3600) #every hour
+backup_user_data_every_day_thread_running = False
+def backup_user_data_every_day():
+	global backup_user_data_every_day_thread_running
+	if not backup_user_data_every_day_thread_running:
+		backup_user_data_every_day_thread_running = True
+		thread.start_new_thread(backup_user_data_every_day_thread, ())
+
+def save_user_data():
+	try:
+		for pc in get_pc_list():
+			if pc.online:
+				pc.save()
+	except:
+		general.log_error("save_user_data", traceback.format_exc())
+def save_user_data_every_min_thread():
+	while True:
+		save_user_data()
+		time.sleep(60)
+save_user_data_every_min_thread_running = False
+def save_user_data_every_min():
+	global save_user_data_every_min_thread_running
+	if not save_user_data_every_min_thread_running:
+		save_user_data_every_min_thread_running = True
+		thread.start_new_thread(save_user_data_every_min_thread, ())
 
 def load():
 	global general

@@ -97,6 +97,18 @@ NAME_WITH_TYPE = {
 	"takeitem": (int, int), #item_id, item_count
 	"dustbox": (),
 	"warehouse": (int,), #warehouse_id
+	"playbgm": (int, int, int), #sound_id, loop, volume
+	"playse": (int, int, int, int), #sound_id, loop, volume, balance
+	"playjin": (int, int, int, int), #sound_id, loop, volume, balance
+	"effect": (int, int, int, int, int), #effect_id, id, x, y, dir
+	"speed": (int,), #speed
+	"setgold": (int,), #gold
+	"takegold": (int,), #gold_take
+	"gold": (int,), #gold_give
+	"npcmotion": (int, int, int), #npc_id, motion_id, motion_loop
+	"npcmotion_loop": (int, int), #npc_id, motion_id
+	"npcshop": (int,), #shop_id
+	"npcsell": (),
 	}
 
 def help(pc):
@@ -126,6 +138,18 @@ def help(pc):
 /takeitem item_id item_count
 /dustbox
 /warehouse warehouse_id
+/playbgm sound_id loop volume
+/playse sound_id loop volume balance
+/playjin sound_id loop volume balance
+/effect effect_id id x y dir
+/speed speed
+/setgold gold
+/takegold gold_take
+/gold gold_give
+/npcmotion npc_id motion_id motion_loop
+/npcmotion_loop npc_id motion_id
+/npcshop shop_id
+/npcsell
 """)
 
 def handle_cmd(pc, cmd):
@@ -300,8 +324,6 @@ def motion(pc, motion_id, motion_loop=False):
 		pc.user.map_client.send_map("121c", pc) #モーション通知
 
 def motion_loop(pc, motion_id):
-	if motion_id > 32767 or motion_id < -32768:
-		raise ValueError("motion_id > 32767 or < -32768 [%d]"%motion_id)
 	motion(pc, motion_id, True)
 
 def item(pc, item_id, item_count=1):
@@ -310,8 +332,8 @@ def item(pc, item_id, item_count=1):
 def _item(pc, item_id, item_count):
 	if item_count > 32767 or item_count < -32768:
 		raise ValueError("item_count > 32767 or < -32768 [%d]"%item_count)
-	if type(item_id) == long:
-		raise ValueError("type(item_id) == long [%d]"%item_id)
+	if isinstance(item_id, long):
+		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
 	while item_count:
 		item = general.get_item(item_id)
 		item_stock_exist = False
@@ -351,8 +373,8 @@ def printitem(pc):
 				item.name, iid, item.item_id, item.count))
 
 def countitem(pc, item_id): #not for command
-	if type(item_id) == long:
-		raise ValueError("type(item_id) == long [%d]"%item_id)
+	if isinstance(item_id, long):
+		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
 	item_count = 0
 	with pc.lock and pc.user.lock:
 		for iid, item in pc.item.iteritems():
@@ -369,8 +391,8 @@ def takeitem(pc, item_id, item_count=1):
 def _takeitem(pc, item_id, item_count):
 	if item_count > 32767 or item_count < -32768:
 		raise ValueError("item_count > 32767 or < -32768 [%d]"%item_count)
-	if type(item_id) == long:
-		raise ValueError("type(item_id) == long [%d]"%item_id)
+	if isinstance(item_id, long):
+		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
 	if countitem(pc, item_id) < item_count:
 		return False
 	while item_count:
@@ -466,3 +488,111 @@ def select(pc, option_list, title=""): #not for command
 			if pc.select_result != None:
 				return pc.select_result
 		time.sleep(0.1)
+
+def wait(pc, time_ms): #not for command
+	if isinstance(time_ms, long):
+		raise ValueError("isinstance(time_ms, long) [%d]"%time_ms)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("05eb", time_ms) #イベント関連のウェイト
+	time.sleep(time_ms/1000.0)
+
+def playbgm(pc, sound_id, loop=1, volume=100):
+	if isinstance(sound_id, long):
+		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
+	if volume > 100 or volume < 0:
+		raise ValueError("volume > 100 or < 0 [%d]"%volume)
+	with pc.lock and pc.user.lock:
+		#音楽を再生する
+		pc.user.map_client.send("05f0", sound_id, (loop and 1 or 0), volume)
+
+def playse(pc, sound_id, loop=0, volume=100, balance=50):
+	if isinstance(sound_id, long):
+		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
+	if volume > 100 or volume < 0:
+		raise ValueError("volume > 100 or < 0 [%d]"%volume)
+	if balance > 100 or balance < 0:
+		raise ValueError("balance > 100 or < 0 [%d]"%balance)
+	with pc.lock and pc.user.lock:
+		#効果音を再生する
+		pc.user.map_client.send("05f5", sound_id, (loop and 1 or 0), volume, balance)
+
+def playjin(pc, sound_id, loop=0, volume=100, balance=50):
+	if isinstance(sound_id, long):
+		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
+	if volume > 100 or volume < 0:
+		raise ValueError("volume > 100 or < 0 [%d]"%volume)
+	if balance > 100 or balance < 0:
+		raise ValueError("balance > 100 or < 0 [%d]"%balance)
+	with pc.lock and pc.user.lock:
+		#ジングルを再生する
+		pc.user.map_client.send("05fa", sound_id, (loop and 1 or 0), volume, balance)
+
+def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
+	if isinstance(effect_id, long):
+		raise ValueError("isinstance(effect_id, long) [%d]"%effect_id)
+	if id != None and isinstance(id, long):
+		raise ValueError("isinstance(id, long) [%d]"%id)
+	if x != None and (x > 255 or x < 0):
+		raise ValueError("x > 255 or < 0 [%d]"%x)
+	if y != None and (y > 255 or y < 0):
+		raise ValueError("y > 255 or < 0 [%d]"%y)
+	if dir != None and (dir > 127 or dir < -128):
+		raise ValueError("dir > 127 or < -128 [%d]"%dir)
+	with pc.lock and pc.user.lock:
+		#エフェクト受信
+		pc.user.map_client.send_map("060e", pc, effect_id, id, x, y, dir)
+
+def speed(pc, speed):
+	if speed > 32767 or speed < -32768:
+		raise ValueError("speed > 32767 or < -32768 [%d]"%speed)
+	with pc.lock and pc.user.lock:
+		pc.status.speed = speed
+		pc.user.map_client.send_map("1239", pc) #キャラ速度通知・変更
+
+def setgold(pc, gold):
+	if isinstance(gold, long):
+		raise ValueError("isinstance(gold, long) [%d]"%gold)
+	with pc.lock and pc.user.lock:
+		if gold < 0 or gold > 100000000:
+			msg(pc, "setgold error: gold < 0 or gold > 100000000 [%s]"%gold)
+			return False
+		else:
+			pc.gold = gold
+			pc.user.map_client.send_map("09ec", pc) #ゴールドを更新する、値は更新後の値
+			return True
+
+def takegold(pc, gold_take):
+	#general.log("takegold", gold_take)
+	with pc.lock and pc.user.lock:
+		return setgold(pc, pc.gold-gold_take)
+
+def gold(pc, gold_give):
+	#general.log("gold", gold_give)
+	with pc.lock and pc.user.lock:
+		return setgold(pc, pc.gold+gold_give)
+
+def npcmotion(pc, npc_id, motion_id, motion_loop=False):
+	if isinstance(npc_id, long):
+		raise ValueError("isinstance(npc_id, long) [%d]"%npc_id)
+	if motion_id > 32767 or motion_id < -32768:
+		raise ValueError("motion_id > 32767 or < -32768 [%d]"%motion_id)
+	with pc.lock and pc.user.lock:
+		#モーション通知
+		pc.user.map_client.send_map("121c", pc, npc_id, motion_id, motion_loop) 
+
+def npcmotion_loop(pc, npc_id, motion_id):
+	npcmotion(pc, npc_id, motion_id, True)
+
+def npcshop(pc, shop_id):
+	shop = db.shop.get(shop_id)
+	if not shop:
+		general.log_error("npc shop id %s not exist"%shop_id)
+		return
+	with pc.lock and pc.user.lock:
+		pc.shop_open = shop_id
+		pc.user.map_client.send_map("0613", pc, shop.item) #NPCのショップウィンドウ
+
+def npcsell(pc):
+	with pc.lock and pc.user.lock:
+		pc.shop_open = 65535 #sell
+		pc.user.map_client.send_map("0615") #NPCショップウィンドウ（売却）

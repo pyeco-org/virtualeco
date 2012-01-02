@@ -42,7 +42,7 @@ def load_database(name, obj, len_min):
 			d[row[0]] = obj(row)
 		except:
 			general.log_error("load error: line %d"%(i+1), traceback.format_exc())
-	general.log(" 	%d	%s	load."%(len(d), name))
+	general.log("	%d	%s	load."%(len(d), name))
 	return d
 
 def load():
