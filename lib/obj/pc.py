@@ -93,7 +93,7 @@ class PC:
 	def save(self):
 		with self.lock:
 			self._save()
-			#print self, "save"
+			#general.log(self, "save")
 	def _save(self):
 		cfg = general.get_config()
 		cfg.add_section("main")
@@ -210,7 +210,7 @@ class PC:
 		map_obj = db.map_obj.get(map_id)
 		if not map_obj:
 			return False
-		#print self, "set_map", map_obj
+		#general.log(self, "set_map", map_obj)
 		with self.user.lock:
 			if self.user.map_client:
 				self.unset_pet()

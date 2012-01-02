@@ -86,7 +86,7 @@ def make_new_user(user_name, password, delpassword):
 		global next_user_id
 		user_id = next_user_id
 		next_user_id += 1
-		print "[users] next_user_id", next_user_id
+		general.log("[users] next_user_id", next_user_id)
 	cfg = general.get_config()
 	cfg.add_section("main")
 	cfg.set("main", "user_id", str(user_id))
@@ -123,7 +123,7 @@ def modify_password(user_name,
 	with user.lock:
 		old_password_md5 = hashlib.md5(old_password).hexdigest()
 		old_delete_password_md5 = hashlib.md5(old_delete_password).hexdigest()
-		print old_password_md5, old_delete_password_md5
+		#general.log(old_password_md5, old_delete_password_md5)
 		if user.password != old_password_md5: return 0x02 #password error
 		if user.delpassword != old_delete_password_md5: return 0x02 #password error
 		user.password = hashlib.md5(password).hexdigest()
@@ -142,7 +142,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 		global next_pc_id
 		pc_id = next_pc_id
 		next_pc_id += 1
-		print "[users] next_pc_id", next_pc_id
+		general.log("[users] next_pc_id", next_pc_id)
 	cfg = general.get_config()
 	cfg.add_section("main")
 	cfg.set("main", "id", str(pc_id))
@@ -272,11 +272,11 @@ def load():
 			try:
 				user_list.append(User(name, os.path.join(USER_DIR, name)))
 			except:
-				print "load error:", name
+				general.log_error("load error:", name)
 				raise
 	for user in get_user_list():
-		print user
+		general.log(user)
 	for pc in get_pc_list():
-		print pc
-	print "[users] next_user_id", next_user_id
-	print "[users] next_pc_id", next_pc_id
+		general.log(pc)
+	general.log("[users] next_user_id", next_user_id)
+	general.log("[users] next_pc_id", next_pc_id)

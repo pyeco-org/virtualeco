@@ -135,7 +135,7 @@ def load_dump(path):
 				else:
 					return marshal.loads(dump.read())
 		except:
-			print "dump file %s broken."%dump_path, traceback.format_exc()
+			log_error("dump file %s broken."%dump_path, traceback.format_exc())
 
 def save_dump(path, obj):
 	dump_path = "%s.dump"%path
@@ -149,17 +149,29 @@ def save_dump(path, obj):
 		else	:
 			dump.write(marshal.dumps(obj))
 
+def log(*args):
+	sys.stdout.write("".join(map(lambda s: str(s)+" ", args))[:-1]+"\n")
+
+def log_line(*args):
+	sys.stdout.write("".join(map(lambda s: str(s)+" ", args))[:-1])
+
+def log_error(*args):
+	sys.stderr.write("".join(map(lambda s: str(s)+" ", args))[:-1]+"\n")
+
+def log_error_line(*args):
+	sys.stderr.write("".join(map(lambda s: str(s)+" ", args))[:-1])
+
 #def pack(s, length):
 #	i = int(s)
 #	if length == 1:	return pack_byte(i)
 #	elif length == 2:	return pack_short(i)
 #	elif length == 4:	return pack_int(i)
-#	else:			print "pack error: unknow length", length
+#	else:			log_error("pack error: unknow length", length)
 #def unpack(s):
 #	if len(s) == 1:	return unpack_byte(s)
 #	elif len(s) == 2:	return unpack_short(s)
 #	elif len(s) == 4:	return unpack_int(s)
-#	else:			print "unpack error: unknow length", len(s)
+#	else:			log_error("unpack error: unknow length", len(s))
 def pack_int(i):
 	return struct.pack(">i", i)
 def pack_short(i):
@@ -199,33 +211,31 @@ def unpack_str(code):
 
 def encode(string):
 	if not string:
-		print "encode error: not string"
+		log_error("encode error: not string", string)
 		return
 	key = "\x00"*16
 	string_size = len(string)
 	string += "\x00"*(16-len(string)%16)
 	r = rijndael.rijndael(key, block_size=16)
 	code = ""
-	while string:
-		code += r.encrypt(string[:16])
-		string = string[16:]
+	for i in xrange(len(string)/16):
+		code += r.encrypt(string[i*16:i*16+16])
 	code_size = len(code)
 	return pack_int(code_size)+pack_int(string_size)+code
 
 def decode(code):
 	if not code:
-		print "decode error: not code"
+		log_error("decode error: not code", code)
 		return
 	#00000010 0000000c 6677bcf44144b39e28281ae8777db574
 	string_size = unpack_int(code[4:8])
-	code = code[8:]
-	if len(code) % 16:
-		print "decode error: len(code) % 16 != 0", code.encode("hex")
+	#code = code[8:]
+	if (len(code)-8) % 16:
+		log_error("decode error: (len(code)-8) % 16 != 0", code.encode("hex"))
 		return
 	key = "\x00"*16
 	r = rijndael.rijndael(key, block_size=16)
 	string = ""
-	while code:
-		string += r.decrypt(code[:16])
-		code = code[16:]
+	for i in xrange(len(code)/16):
+		string += r.decrypt(code[i*16+8:i*16+24])
 	return string[:string_size]

@@ -19,14 +19,14 @@ def load():
 	with script_list_lock:
 		_load()
 def _load():
-	print "Load", SCRIPT_DIR, "...",
+	general.log_line("Load", SCRIPT_DIR, "...")
 	script_list.clear()
 	for root, dirs, files in os.walk(SCRIPT_DIR):
 		for name in files:
 			path = os.path.join(root, name)
 			if not path.endswith(".py"):
 				continue
-			#print "load script", path
+			#general.log("load script", path)
 			obj = general.load_dump(path)
 			try:
 				if not obj:
@@ -41,11 +41,11 @@ def _load():
 				else:
 					script_list[script_id] = namespace
 			except:
-				print "script.load", path, traceback.format_exc()
-	print "		%d	script	load."%len(script_list)
+				general.log_error("script.load", path, traceback.format_exc())
+	general.log("		%d	script	load."%len(script_list))
 
 def run_script(pc, event_id):
-	#print "run script id", event_id
+	#general.log("run script id", event_id)
 	with pc.lock and pc.user.lock:
 		pc.event_id = event_id
 		pc.user.map_client.send("05dc") #イベント開始の通知
@@ -59,7 +59,7 @@ def run_script(pc, event_id):
 			say(pc, "Script id %s not exist."%event_id, "")
 			raise ValueError("Script id not exist")
 	except:
-		print "run_script", event_id, traceback.format_exc()
+		general.log_error("run_script", event_id, traceback.format_exc())
 	with pc.lock and pc.user.lock:
 		pc.event_id = 0
 		if pc.online:
@@ -67,7 +67,7 @@ def run_script(pc, event_id):
 
 def run(pc, event_id):
 	#if pc.event_id:
-	#	print "script.run error: event duplicate", pc, pc.event_id
+	#	general.log_error("script.run error: event duplicate", pc, pc.event_id)
 	#	return
 	thread.start_new_thread(run_script, (pc, event_id))
 
@@ -154,7 +154,7 @@ def handle_cmd(pc, cmd):
 	except:
 		exc_info = traceback.format_exc()
 		msg(pc, filter(None, exc_info.split("\n"))[-1])
-		print "script.handle_cmd [%s] error:\n"%cmd, exc_info
+		general.log_error("script.handle_cmd [%s] error:\n"%cmd, exc_info)
 	return True
 
 def reloadscript(pc):
@@ -300,6 +300,8 @@ def motion(pc, motion_id, motion_loop=False):
 		pc.user.map_client.send_map("121c", pc) #モーション通知
 
 def motion_loop(pc, motion_id):
+	if motion_id > 32767 or motion_id < -32768:
+		raise ValueError("motion_id > 32767 or < -32768 [%d]"%motion_id)
 	motion(pc, motion_id, True)
 
 def item(pc, item_id, item_count=1):
@@ -349,6 +351,8 @@ def printitem(pc):
 				item.name, iid, item.item_id, item.count))
 
 def countitem(pc, item_id): #not for command
+	if type(item_id) == long:
+		raise ValueError("type(item_id) == long [%d]"%item_id)
 	item_count = 0
 	with pc.lock and pc.user.lock:
 		for iid, item in pc.item.iteritems():
@@ -377,7 +381,7 @@ def _takeitem(pc, item_id, item_count):
 			if item_exist.item_id != item_id:
 				continue
 			item_exist.count -= item_count
-			#print item_count, item_exist.count
+			#general.log(item_count, item_exist.count)
 			item_count = 0
 			if item_exist.count < 0:
 				item_count = 0-item_exist.count
@@ -424,6 +428,8 @@ def npctrade(pc): #not for command
 	return pc.trade_return_list
 
 def warehouse(pc, warehouse_id):
+	if warehouse_id > 127 or warehouse_id < -128:
+		raise ValueError("warehouse_id > 127 or < -128 [%d]"%warehouse_id)
 	num_max = 300
 	num_here = 0
 	num_all = 0

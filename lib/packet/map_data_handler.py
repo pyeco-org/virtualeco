@@ -62,20 +62,21 @@ class MapDataHandler:
 			data = data_decode[4:data_length+2]
 			data_decode = data_decode[data_length+2:]
 			if data_type not in DATA_TYPE_NOT_PRINT:
-				print "[ map ] %s %s %s"%(
+				general.log("[ map ] %s %s %s"%(
 					general.pack_short(data_length).encode("hex"),
 					data_type,
-					data.encode("hex"))
+					data.encode("hex")))
 			try:
 				handler = getattr(self, "do_%s"%data_type)
 			except AttributeError:
-				print "[ map ] unknow packet type", data_type, data.encode("hex")
+				general.log_error("[ map ] unknow packet type",
+					data_type, data.encode("hex"))
 				return
 			try:
 				handler(data)
 			except:
-				print "[ map ] handle_data error:", data.encode("hex")
-				print traceback.format_exc()
+				general.log_error("[ map ] handle_data error:", data.encode("hex"))
+				general.log_error(traceback.format_exc())
 	
 	def send_item_list(self):
 		with self.pc.lock:
@@ -99,7 +100,7 @@ class MapDataHandler:
 							continue
 						if self.pc == pc:
 							continue
-						print "sync_map", self.pc, "<->", pc
+						general.log("sync_map", self.pc, "<->", pc)
 						#他キャラ情報→自キャラ
 						self.send("120c", pc)
 						#自キャラ情報→他キャラ
@@ -137,7 +138,7 @@ class MapDataHandler:
 	
 	def do_000a(self, data):
 		#接続・接続確認
-		print "[ map ] eco version", general.unpack_int(data[:4])
+		general.log("[ map ] eco version", general.unpack_int(data[:4]))
 		self.send("000b", data)
 		self.send("000f", WORD_FRONT+WORD_BACK)
 	
@@ -147,10 +148,10 @@ class MapDataHandler:
 	
 	def do_0010(self, data):
 		#マップサーバーに認証情報の送信
-		print "[ map ]", "login",
+		general.log_line("[ map ]", "login")
 		username, username_length = general.unpack_str(data)
 		password_sha1 = general.unpack_str(data[username_length:])[0]
-		print username, password_sha1
+		general.log(username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
 				if user.name != username:
@@ -183,7 +184,7 @@ class MapDataHandler:
 			self.pc.reset_map()
 			with self.pc.lock:
 				self.pc.online = True
-				print "[ map ] set", self.pc
+				general.log("[ map ] set", self.pc)
 		self.pc.set_visible(False)
 		self.pc.set_motion(111, False)
 		self.pc.set_map()
@@ -218,11 +219,11 @@ class MapDataHandler:
 		self.send("0695") #不明
 		self.send("0236", self.pc) #wrp ranking関係
 		self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
-		print "[ map ] send pc info success"
+		general.log("[ map ] send pc info success")
 	
 	def do_11fe(self, data):
 		#MAPワープ完了通知
-		print "[ map ]", "map load"
+		general.log("[ map ]", "map load")
 		self.pc.set_visible(True)
 		self.send("1239", self.pc) #キャラ速度通知・変更
 		self.send("196e", self.pc) #クエスト回数・時間
@@ -250,40 +251,40 @@ class MapDataHandler:
 		#モーションセット＆ログアウト
 		motion_id = general.unpack_short(data[:2])
 		loop = general.unpack_byte(data[2]) and True or False
-		print "[ map ] motion %d loop %s"%(motion_id, loop)
+		general.log("[ map ] motion %d loop %s"%(motion_id, loop))
 		#self.pc.set_motion(motion_id, loop)
 		#self.send_map("121c", self.pc) #モーション通知
 		script.motion(self.pc, motion_id, loop)
 		if motion_id == 135 and loop: #ログアウト開始
-			print "[ map ]", "start logout"
+			general.log("[ map ]", "start logout")
 			self.send("0020", self.pc, "logoutstart")
 			self.pc.logout = True
 	
 	def do_001e(self, data):
 		#ログアウト(PASS鍵リセット・マップサーバーとのみ通信)
-		print "[ map ] logout"
+		general.log("[ map ] logout")
 		self.pc.unset_pet()
 		self.send_map_without_self("1211", self.pc) #PC消去
 	
 	def do_001f(self, data):
 		#ログアウト開始&ログアウト失敗
 		if general.unpack_byte(data[:1]) == 0:
-			print "[ map ] logout success"
+			general.log("[ map ] logout success")
 		else:
-			print "[ map ] logout failed"
+			general.log("[ map ] logout failed")
 	
 	def do_11f8(self, data):
 		#自キャラの移動
 		if self.pc.logout:
 			self.pc.logout = False
 			self.send("0020", self.pc, "logoutcancel")
-			print "[ map ] logout cancel"
+			general.log("[ map ] logout cancel")
 		rawx = general.unpack_short(data[:2]); data = data[2:]
 		rawy = general.unpack_short(data[:2]); data = data[2:]
 		rawdir = general.unpack_short(data[:2]); data = data[2:]
 		move_type = general.unpack_short(data[:2]); data = data[2:]
-		#print "[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
-		#	rawx, rawy, rawdir, move_type)
+		#general.log("[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
+		#	rawx, rawy, rawdir, move_type))
 		with self.pc.lock:
 			old_x, old_y = self.pc.x, self.pc.y
 		self.pc.set_raw_coord(rawx, rawy)
@@ -307,7 +308,7 @@ class MapDataHandler:
 	def do_020d(self, data):
 		#キャラクタ情報要求
 		obj_id = general.unpack_int(data[:4])
-		print "[ map ] request object id", obj_id
+		general.log("[ map ] request object id", obj_id)
 		self.send_object_detail(obj_id)
 	
 	def do_13ba(self, data):
@@ -335,7 +336,8 @@ class MapDataHandler:
 		count = general.unpack_short(data[5:7])
 		with self.pc.lock:
 			if iid not in self.pc.item:
-				print "[ map ] do_09e2 iid %d not in item list"%iid
+				general.log_error(
+					"[ map ] do_09e2 iid %d not in item list"%iid, self.pc)
 				return
 			self.pc.unset_equip(iid)
 			self.pc.sort.item.remove(iid)
@@ -349,11 +351,12 @@ class MapDataHandler:
 		iid = general.unpack_int(data[:4])
 		with self.pc.lock:
 			if iid not in self.pc.item:
-				print "[ map ] do_09e7 iid %d not in item list"%iid
+				general.log_error(
+					"[ map ] do_09e7 iid %d not in item list"%iid, self.pc)
 				return
 			unset_iid_list, set_part = self.pc.set_equip(iid)
-			print "[ map ] item setup", self.pc.item.get(iid)
-			#print unset_iid_list, set_part
+			general.log("[ map ] item setup", self.pc.item.get(iid))
+			#general.log(unset_iid_list, set_part)
 			for i in unset_iid_list:
 				self.pc.sort.item.remove(i)
 				self.pc.sort.item.append(i)
@@ -368,20 +371,20 @@ class MapDataHandler:
 	
 	def do_0a16(self, data):
 		#トレードキャンセル
-		print "[ map ] trade: send cancel"
+		general.log("[ map ] trade: send cancel")
 		self.send("0a19", self.pc) #自分・相手がOKやキャンセルを押した際に双方に送信される
 		self.pc.reset_trade()
 		self.send("0a1c") #トレード終了通知
 	
 	def do_0a14(self, data):
 		#トレードのOK状態
-		print "[ map ] trade: send ok"
+		general.log("[ map ] trade: send ok")
 		with self.pc.lock:
 			self.pc.trade_state = -1
 	
 	def do_0a15(self, data):
 		#トレードのTradeを押した際に送信
-		print "[ map ]","trade: send trade"
+		general.log("[ map ]","trade: send trade")
 		with self.pc.lock:
 			self.pc.trade_state = 1
 			self.pc.trade_return_list = []
@@ -413,32 +416,32 @@ class MapDataHandler:
 	
 	def do_0a1b(self, data):
 		#トレードウィンドウに置いたアイテム・金の情報を送信？
-		print "[ map ]","trade send item list"
+		general.log("[ map ] trade send item list")
 		iid_list = []
 		count_list = []
 		iid_count = general.unpack_byte(data[:1]); data = data[1:]
-		#print "iid_count", iid_count
+		#general.log("iid_count", iid_count)
 		for i in xrange(iid_count):
 			iid_list.append(general.unpack_int(data[:4])); data = data[4:]
 		count_count = general.unpack_byte(data[:1]); data = data[1:]
-		#print "count_count", count_count
+		#general.log("count_count", count_count)
 		for i in xrange(iid_count):
 			count_list.append(general.unpack_short(data[:2])); data = data[2:]
 		self.pc.trade_gold = general.unpack_int(data[:4])
 		self.pc.trade_list = zip(iid_list, count_list)
-		print "[ map ] self.pc.trade_list", self.pc.trade_list
-		print "[ map ] self.pc.trade_gold", self.pc.trade_gold
+		general.log("[ map ] self.pc.trade_list", self.pc.trade_list)
+		general.log("[ map ] self.pc.trade_gold", self.pc.trade_gold)
 	
 	def do_09f7(self, data):
 		#倉庫を閉じる
-		print "[ map ] warehouse closed"
+		general.log("[ map ] warehouse closed")
 		self.pc.warehouse_open = None
 	
 	def do_09fb(self, data):
 		#倉庫から取り出す
 		item_iid = general.unpack_int(data[:4]); data = data[4:]
 		item_count = general.unpack_short(data[:2])
-		print "[ map ] take item from warehouse", item_iid, item_count
+		general.log("[ map ] take item from warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if self.pc.warehouse_open == None:
 				#倉庫から取り出した時の結果 #倉庫を開けていません
@@ -474,7 +477,7 @@ class MapDataHandler:
 		#倉庫に預ける
 		item_iid = general.unpack_int(data[:4]); data = data[4:]
 		item_count = general.unpack_short(data[:2])
-		print "[ map ] store item to warehouse", item_iid, item_count
+		general.log("[ map ] store item to warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if self.pc.warehouse_open == None:
 				#倉庫に預けた時の結果 #倉庫を開けていません

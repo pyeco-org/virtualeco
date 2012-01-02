@@ -6,6 +6,7 @@ import time
 import SocketServer
 import BaseHTTPServer
 import SimpleHTTPServer
+from lib import general
 from lib import server
 from lib import users
 BIND_ADDRESS = "0.0.0.0"
@@ -44,8 +45,8 @@ class WebHandle(SimpleHTTPServer.SimpleHTTPRequestHandler):
 			return ""
 		return "web"+path
 	
-	#def log_message(self, *args):
-	#	pass
+	def log_message(self, *args):
+		pass
 	
 	def do_POST(self):
 		self.send_response(200)
@@ -177,4 +178,5 @@ def load():
 	webserver = ThreadingWebServer(
 		(BIND_ADDRESS, server.config.webserverport), WebHandle)
 	webserver.start()
-	print "Start web server with\t%s:%d"%(BIND_ADDRESS, server.config.webserverport)
+	general.log("Start web server with\t%s:%d"%(
+		BIND_ADDRESS, server.config.webserverport))

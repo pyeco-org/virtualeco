@@ -61,7 +61,7 @@ class Pet:
 		map_obj = db.map_obj.get(map_id)
 		if not map_obj:
 			return False
-		#print self, "set_map", map_obj
+		#general.log(self, "set_map", map_obj)
 		self.map_id = map_id
 		if self.map_obj:
 			with self.map_obj.lock:

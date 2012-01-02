@@ -35,14 +35,14 @@ def get_raw_list(path, len_min):
 
 def load_database(name, obj, len_min):
 	path = DATA_PATH[name]
-	print "Load %s ..."%path,
+	general.log_line("Load %s ..."%path)
 	d = {}
 	for i, row in enumerate(get_raw_list(path, len_min)):
 		try:
 			d[row[0]] = obj(row)
 		except:
-			print "load error: line %d"%(i+1), traceback.format_exc()
-	print "	%d	%s	load."%(len(d), name)
+			general.log_error("load error: line %d"%(i+1), traceback.format_exc())
+	general.log(" 	%d	%s	load."%(len(d), name))
 	return d
 
 def load():

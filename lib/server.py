@@ -35,7 +35,7 @@ class StandardServer(threading.Thread):
 				with self.lock:
 					self.handle_client(s)
 			except:
-				print traceback.format_exc()
+				general.log_error(traceback.format_exc())
 class StandardClient(threading.Thread):
 	def __init__(self, master, socket, address):
 		threading.Thread.__init__(self)
@@ -55,7 +55,7 @@ class StandardClient(threading.Thread):
 		while self.running:
 			try:
 				packet = self.socket.recv(1024)
-				#print packet.encode("hex")
+				#general.log(packet.encode("hex"))
 				if not self.running:
 					break
 				if not packet:
@@ -65,10 +65,10 @@ class StandardClient(threading.Thread):
 					with self.lock:
 						self.handle_packet()
 				except:
-					print traceback.format_exc()
+					general.log_error(traceback.format_exc())
 			except:
 				self.stop()
-		print "quit", self
+		general.log("quit", self)
 	def send_packet(self, packet):
 		with self.lock:
 			self.socket.sendall(packet)
@@ -93,10 +93,10 @@ class StandardClient(threading.Thread):
 				packet = self.buf[:packet_length]
 				self.buf = self.buf[packet_length:]
 			else:
-				print "packet decode error:", self.buf.encode("hex")
+				general.log_error("packet decode error:", self.buf.encode("hex"))
 				self.stop()
 				return
-			#print general.decode(packet).encode("hex")
+			#general.log(general.decode(packet).encode("hex"))
 			self.handle_data(general.decode(packet))
 	def _stop(self):
 		if not self.running:
@@ -115,12 +115,12 @@ class MapServer(StandardServer):
 		self.client_list.append(MapClient(self, *s))
 class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
-		print "new login client", args
+		general.log("new login client", args)
 		StandardClient.__init__(self, *args)
 		LoginDataHandler.__init__(self)
 class MapClient(StandardClient, MapDataHandler):
 	def __init__(self, *args):
-		print "new map client", args
+		general.log("new map client", args)
 		StandardClient.__init__(self, *args)
 		MapDataHandler.__init__(self)
 
@@ -130,7 +130,7 @@ def load():
 	config = serverconfig.ServerConfig(SERVER_CONFIG)
 	global loginserver
 	loginserver = LoginServer(config.loginserverport)
-	print "Start login server with\t%s:%d"%(BIND_ADDRESS, config.loginserverport)
+	general.log("Start login server with\t%s:%d"%(BIND_ADDRESS, config.loginserverport))
 	global mapserver
 	mapserver = MapServer(config.mapserverport)
-	print "Start map server with\t%s:%d"%(BIND_ADDRESS, config.loginserverport)
+	general.log("Start map server with\t%s:%d"%(BIND_ADDRESS, config.mapserverport))

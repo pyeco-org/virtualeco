@@ -12,18 +12,18 @@ pet_list_lock = threading.RLock()
 def set_pet(pc):
 	with pc.lock:
 		if pc.pet:
-			#print "set_pet failed: pc.pet exist"
+			#general.log("set_pet failed: pc.pet exist")
 			return
 		if not pc.equip.pet:
-			#print "set_pet failed: pc.equip.pet not exist"
+			#general.log("set_pet failed: pc.equip.pet not exist")
 			return False
 		item = pc.item.get(pc.equip.pet)
 		if not item:
-			#print "set_pet failed: item not exist"
+			#general.log("set_pet failed: item not exist")
 			return False
 		pet = general.get_pet(item.petid)
 		if not pet:
-			#print "set_pet failed: pet not exist"
+			#general.log("set_pet failed: pet not exist")
 			return False
 		pet.reset()
 		with pet_list_lock:
@@ -37,13 +37,13 @@ def set_pet(pc):
 			pet.set_coord_from_master()
 			pet.set_dir(pc.dir)
 			pc.user.map_client.send_map("122f", pet) #pet info
-			print "[ pet ] set pet id %s"%(pc.pet.id)
+			general.log("[ pet ] set pet id %s"%(pc.pet.id))
 	return True
 
 def unset_pet(pc, logout):
 	with pc.lock:
 		if not pc.pet:
-			#print "unset_pet failed: pc.pet not exist"
+			#general.log("unset_pet failed: pc.pet not exist")
 			return
 		with pc.user.lock and pc.pet.lock:
 			if logout:
@@ -53,7 +53,7 @@ def unset_pet(pc, logout):
 			with pet_list_lock:
 				pet_list.remove(pc.pet)
 				pet_id_list.remove(pc.pet.id)
-			print "[ pet ] del pet id %s"%(pc.pet.id)
+			general.log("[ pet ] del pet id %s"%(pc.pet.id))
 			pc.pet.reset()
 			pc.pet = None
 	return True

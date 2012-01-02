@@ -10,12 +10,12 @@ def make(data_type, *args):
 	else:
 		data_value = eval("make_%s"%data_type)(*args)
 	if data_value == None:
-		print "packet make error:", data_type, args
+		general.log_error("packet make error:", data_type, args)
 		return ""
 	packet = general.pack_short(len(data_value)+2)
 	packet += data_type.decode("hex")
 	packet += data_value
-	#print "make", packet.encode("hex")
+	#general.log("make", packet.encode("hex"))
 	return general.encode(packet)
 
 def pack_user_data(pack, user, attr):
@@ -68,7 +68,7 @@ def make_0020(user, _type):
 	elif _type == "logoutcancel":
 		return "\xF9"
 	else:
-		print "make_0020: type not exist", _type
+		general.log_error("make_0020: type not exist", _type)
 
 def make_00a1(_type):
 	"""キャラクター作成結果"""
@@ -87,7 +87,7 @@ def make_00a1(_type):
 	elif _type == "other":
 		return "\xff\xff\xff\xff"
 	else:
-		print "make_00a1: type not exist", _type
+		general.log_error("make_00a1: type not exist", _type)
 
 def make_00a6(sucess):
 	"""キャラクター削除結果"""
