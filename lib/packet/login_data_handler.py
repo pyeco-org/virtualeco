@@ -133,7 +133,7 @@ class LoginDataHandler:
 	def do_00a5(self, data_io):
 		#キャラクター削除 #num + delpassword
 		num = general.io_unpack_byte(data_io)
-		delpassword_md5 = general.io_unpack_raw(data_io)
+		delpassword_md5 = general.io_unpack_raw(data_io)[:32]
 		general.log("[login] delete character", "num", num,
 			"delpassword", delpassword_md5)
 		try:
