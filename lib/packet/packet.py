@@ -16,7 +16,7 @@ def make(data_type, *args):
 	packet += data_type.decode("hex")
 	packet += data_value
 	#general.log("make", packet.encode("hex"))
-	return general.encode(packet)
+	return packet
 
 def pack_user_data(pack, user, attr):
 	result = "\x04"

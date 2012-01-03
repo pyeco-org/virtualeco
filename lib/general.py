@@ -8,6 +8,7 @@ import marshal
 import traceback
 import zipfile
 import thread
+import hashlib
 import copy as py_copy
 import ConfigParser
 try: from cStringIO import StringIO
@@ -272,11 +273,60 @@ def io_unpack_short_raw(io):
 	string = io.read(length)
 	return string
 
-def encode(string):
+def int_to_bytes(i, length=0x100):
+	hex_code = hex(i)
+	if hex_code.startswith("0x"):
+		hex_code = hex_code[2:]
+	if hex_code.endswith("L"):
+		hex_code = hex_code[:-1]
+	return "0"*(length-len(hex_code))+hex_code
+def bytes_to_int(bytes):
+	return int(bytes, 16)
+def get_prime():
+	#openssl genrsa -out private.key 2048
+	#openssl rsa -in private.key -out public.key -pubout
+	#openssl rsa -in private.key -text -noout
+	#openssl prime prime
+	#prime from rsa 2048 (prime1)
+	#00:f9:39:fe:e9:20:9a:68:f2:4c:43:49:e1:c2:8e:
+	#e2:31:7a:ec:6f:bd:16:80:f7:1d:14:a0:b3:76:0c:
+	#62:05:bc:52:e6:50:bf:35:15:3c:ad:67:1b:be:1d:
+	#a1:63:3d:63:e3:b2:1f:1d:a0:2a:f4:42:fd:f6:02:
+	#b3:be:ba:09:fc:be:09:13:66:8f:4b:86:1e:14:d7:
+	#a1:91:49:a9:d2:44:07:38:5f:30:b7:84:48:9f:5e:
+	#29:3e:1d:d7:f4:72:56:12:d0:1f:ea:ed:07:2d:68:
+	#79:ce:2b:3f:59:21:9e:df:72:b1:5c:5b:35:63:05:
+	#42:72:03:f1:12:17:5d:bc:fd
+	#int(..., 16)
+	return 175012832246148469004952309893923119007504294868274830650101802243580016468616226644476369579140157420542034349400995694097261371077961674039236035533383172308367706779425637041402045013194820474112524204508905916696893254410707373670063475235242589213472899328698912258375583335003993274863729669402122894589
+def get_private_key():
+	#server private key
+	return int(hashlib.sha1(str(time.time())).hexdigest(), 16)
+def get_public_key(generator, private_key, prime):
+	#server public key
+	return pow(generator, private_key, prime)
+def get_share_key_bytes(client_public_key, server_private_key, prime):
+	#for get_rijndael_key
+	return int_to_bytes(pow(client_public_key, server_private_key, prime))
+def get_rijndael_key(share_key_bytes):
+	rijndael_key_hex = ""
+	for s in share_key_bytes[:32].lower():
+		#if ord(s) > 57: rijndael_key_bytes += chr(ord(s)-48)
+		#else: rijndael_key_bytes += s
+		if s == "a": rijndael_key_hex += "1"
+		elif s == "b": rijndael_key_hex += "2"
+		elif s == "c": rijndael_key_hex += "3"
+		elif s == "d": rijndael_key_hex += "4"
+		elif s == "e": rijndael_key_hex += "5"
+		elif s == "f": rijndael_key_hex += "6"
+		else: rijndael_key_hex += s
+	return rijndael_key_hex.decode("hex")
+
+def encode(string, key):
 	if not string:
 		log_error("encode error: not string", string)
 		return
-	key = "\x00"*16
+	#key = "\x00"*16
 	string_size = len(string)
 	string += "\x00"*(16-len(string)%16)
 	r = rijndael.rijndael(key, block_size=16)
@@ -286,7 +336,7 @@ def encode(string):
 	code_size = len(code)
 	return pack_int(code_size)+pack_int(string_size)+code
 
-def decode(code):
+def decode(code, key):
 	if not code:
 		log_error("decode error: not code", code)
 		return
@@ -296,7 +346,7 @@ def decode(code):
 	if (len(code)-8) % 16:
 		log_error("decode error: (len(code)-8) % 16 != 0", code.encode("hex"))
 		return
-	key = "\x00"*16
+	#key = "\x00"*16
 	r = rijndael.rijndael(key, block_size=16)
 	string = ""
 	for i in xrange(len(code)/16):

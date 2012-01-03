@@ -17,7 +17,7 @@ class LoginDataHandler:
 		self.pc = None
 	
 	def send(self, *args):
-		self.send_packet(packet.make(*args))
+		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
 	
 	def stop(self):
 		if self.user:

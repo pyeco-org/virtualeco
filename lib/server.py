@@ -9,12 +9,25 @@ from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 SERVER_CONFIG = "./server.ini"
-KEY_HEAD = "\x00\x00\x00\x00\x00\x00\x00\x01\x31"
-KEY_PRIME = "\x00\x00\x01\x00"+"\x00"*0x100
-KEY_PUBLIC = "\x00\x00\x01\x00"+"\x00"*0x100
-PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
-PACKET_KEY = "\x00\x00\x00\x01\x30"
 BIND_ADDRESS = "0.0.0.0"
+#get key info (server private key / public key)
+GENERATOR = 2
+PRIME = general.get_prime()
+PRIVATE_KEY = general.get_private_key()
+PUBLIC_KEY = general.get_public_key(GENERATOR, PRIVATE_KEY, PRIME)
+#get bytes
+PRIME_BYTES = general.int_to_bytes(PRIME)
+PUBLIC_KEY_BYTES = general.int_to_bytes(PUBLIC_KEY)
+#general.log("prime:", PRIME_BYTES, "\nlength:", len(PRIME_BYTES))
+#general.log("public key:", PUBLIC_KEY_BYTES, "\nlength:", len(PUBLIC_KEY_BYTES))
+#get key exchange packet
+PACKET_KEY_EXCHANGE = "".join((
+	general.pack_int(0), #head
+	general.pack_int(1)+str(GENERATOR), #generator
+	general.pack_int(0x100)+PRIME_BYTES, #prime
+	general.pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
+	))
+PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
 
 class StandardServer(threading.Thread):
 	def __init__(self, port):
@@ -48,6 +61,7 @@ class StandardClient(threading.Thread):
 		self.running = True
 		self.recv_init = False
 		self.recv_key = False
+		self.rijndael_key = None
 		self.start()
 	def __str__(self):
 		return "%s<%s:%s>"%(repr(self), self.address[0], self.address[1])
@@ -77,15 +91,31 @@ class StandardClient(threading.Thread):
 			if self.buf.startswith(PACKET_INIT):
 				self.recv_init = True
 				self.buf = self.buf[len(PACKET_INIT):]
-				self.send_packet(KEY_HEAD+KEY_PRIME+KEY_PUBLIC)
+				self.send_packet(PACKET_KEY_EXCHANGE)
 			else:
 				self.stop()
 		elif not self.recv_key:
-			if self.buf.startswith(PACKET_KEY):
-				self.recv_key = True
-				self.buf = self.buf[len(PACKET_KEY):]
-			else:
-				self.stop()
+			#get client public key
+			client_public_key_length = general.unpack_int(self.buf[:4])
+			if len(self.buf) < client_public_key_length+4:
+				general.log_error(
+					"[ srv ] error: len(self.buf) < client_public_key_length+4",
+					self.buf.encode("hex"))
+				return
+			client_public_key_bytes = self.buf[4:client_public_key_length+4]
+			client_public_key = general.bytes_to_int(client_public_key_bytes)
+			self.buf = self.buf[client_public_key_length+4:]
+			self.recv_key = True
+			#general.log("[ srv ] client key:", client_public_key_bytes)
+			#general.log("[ srv ] length:", len(client_public_key_bytes))
+			#get share key
+			share_key_bytes = general.get_share_key_bytes(
+				client_public_key, PRIVATE_KEY, PRIME)
+			general.log("[ srv ] share key:", share_key_bytes)
+			#general.log("[ srv ] length:", len(share_key_bytes))
+			#get rijndael key (str)
+			self.rijndael_key = general.get_rijndael_key(share_key_bytes)
+			general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
 		else:
 			#00000010 0000000c 6677bcf44144b39e28281ae8777db574
 			packet_length = general.unpack_int(self.buf[:4])+8
@@ -97,7 +127,7 @@ class StandardClient(threading.Thread):
 				self.stop()
 				return
 			#general.log(general.decode(packet).encode("hex"))
-			self.handle_data(general.decode(packet))
+			self.handle_data(general.decode(packet, self.rijndael_key))
 	def _stop(self):
 		if not self.running:
 			return

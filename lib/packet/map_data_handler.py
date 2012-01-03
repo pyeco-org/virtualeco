@@ -22,10 +22,10 @@ class MapDataHandler:
 		self.pc = None
 	
 	def send(self, *args):
-		self.send_packet(packet.make(*args))
+		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
 	
 	def send_map_without_self(self, *args):
-		packet_data = packet.make(*args)
+		packet_data = general.encode(packet.make(*args), self.rijndael_key)
 		with self.pc.lock:
 			if not self.pc.map_obj:
 				return
@@ -42,7 +42,7 @@ class MapDataHandler:
 		self.send(*args)
 	
 	def send_server(self, *args):
-		packet_data = packet.make(*args)
+		packet_data = general.encode(packet.make(*args), self.rijndael_key)
 		for p in users.get_pc_list():
 			with p.lock and p.user.lock:
 				if not p.online:
