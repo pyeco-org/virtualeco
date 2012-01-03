@@ -13,7 +13,7 @@ try:
 except:
 	pass
 print "-----------------------------------------"
-print " virtualeco	2012-01-03"
+print " virtualeco	2012-01-04"
 print "-----------------------------------------"
 from lib import db
 from lib import server

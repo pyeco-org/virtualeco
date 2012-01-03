@@ -10,17 +10,26 @@ from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 SERVER_CONFIG = "./server.ini"
 BIND_ADDRESS = "0.0.0.0"
-#get key info (server private key / public key)
-GENERATOR = 2
-PRIME = general.get_prime()
-PRIVATE_KEY = general.get_private_key()
-PUBLIC_KEY = general.get_public_key(GENERATOR, PRIVATE_KEY, PRIME)
-#get bytes
-PRIME_BYTES = general.int_to_bytes(PRIME)
-PUBLIC_KEY_BYTES = general.int_to_bytes(PUBLIC_KEY)
-#general.log("prime:", PRIME_BYTES, "\nlength:", len(PRIME_BYTES))
-#general.log("public key:", PUBLIC_KEY_BYTES, "\nlength:", len(PUBLIC_KEY_BYTES))
-#get key exchange packet
+USE_NULL_KEY = False #emergency option
+if USE_NULL_KEY:
+	GENERATOR = 2
+	PRIME = 0
+	PRIVATE_KEY = 0
+	PUBLIC_KEY = 0
+	PRIME_BYTES = "\x00"*0x100
+	PUBLIC_KEY_BYTES = "\x00"*0x100
+else:
+	#get key info (server private key / public key)
+	GENERATOR = 2
+	PRIME = general.get_prime()
+	PRIVATE_KEY = general.get_private_key()
+	PUBLIC_KEY = general.get_public_key(GENERATOR, PRIVATE_KEY, PRIME)
+	#get bytes
+	PRIME_BYTES = general.int_to_bytes(PRIME)
+	PUBLIC_KEY_BYTES = general.int_to_bytes(PUBLIC_KEY)
+	#general.log("prime:", PRIME_BYTES, "\nlength:", len(PRIME_BYTES))
+	#general.log("public key:", PUBLIC_KEY_BYTES, "\nlength:", len(PUBLIC_KEY_BYTES))
+	#get key exchange packet
 PACKET_KEY_EXCHANGE = "".join((
 	general.pack_int(0), #head
 	general.pack_int(1)+str(GENERATOR), #generator
@@ -28,6 +37,7 @@ PACKET_KEY_EXCHANGE = "".join((
 	general.pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
 	))
 PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
+PACKET_NULL_KEY = "\x00\x00\x00\x01\x30"
 
 class StandardServer(threading.Thread):
 	def __init__(self, port):
@@ -69,7 +79,7 @@ class StandardClient(threading.Thread):
 		while self.running:
 			try:
 				packet = self.socket.recv(1024)
-				#general.log(packet.encode("hex"))
+				#general.log("[ srv ] recv", packet.encode("hex"))
 				if not self.running:
 					break
 				if not packet:
@@ -85,6 +95,7 @@ class StandardClient(threading.Thread):
 		general.log("quit", self)
 	def send_packet(self, packet):
 		with self.lock:
+			#general.log("[ srv ] send", packet.encode("hex"))
 			self.socket.sendall(packet)
 	def handle_packet(self):
 		if not self.recv_init:
@@ -95,26 +106,34 @@ class StandardClient(threading.Thread):
 			else:
 				self.stop()
 		elif not self.recv_key:
-			#get client public key
-			client_public_key_length = general.unpack_int(self.buf[:4])
-			if len(self.buf) < client_public_key_length+4:
-				general.log_error(
-					"[ srv ] error: len(self.buf) < client_public_key_length+4",
-					self.buf.encode("hex"))
-				return
-			client_public_key_bytes = self.buf[4:client_public_key_length+4]
-			client_public_key = general.bytes_to_int(client_public_key_bytes)
-			self.buf = self.buf[client_public_key_length+4:]
-			self.recv_key = True
-			#general.log("[ srv ] client key:", client_public_key_bytes)
-			#general.log("[ srv ] length:", len(client_public_key_bytes))
-			#get share key
-			share_key_bytes = general.get_share_key_bytes(
-				client_public_key, PRIVATE_KEY, PRIME)
-			general.log("[ srv ] share key:", share_key_bytes)
-			#general.log("[ srv ] length:", len(share_key_bytes))
-			#get rijndael key (str)
-			self.rijndael_key = general.get_rijndael_key(share_key_bytes)
+			if USE_NULL_KEY:
+				if self.buf.startswith(PACKET_NULL_KEY):
+					self.recv_key = True
+					self.buf = self.buf[len(PACKET_NULL_KEY):]
+					self.rijndael_key = "\x00"*0x10
+				else:
+					self.stop()
+			else:
+				#get client public key
+				client_public_key_length = general.unpack_int(self.buf[:4])
+				if len(self.buf) < client_public_key_length+4:
+					general.log_error(
+						"[ srv ] error: len(self.buf) < client_public_key_length+4",
+						self.buf.encode("hex"))
+					return
+				client_public_key_bytes = self.buf[4:client_public_key_length+4]
+				client_public_key = general.bytes_to_int(client_public_key_bytes)
+				self.buf = self.buf[client_public_key_length+4:]
+				self.recv_key = True
+				#general.log("[ srv ] client key:", client_public_key_bytes)
+				#general.log("[ srv ] length:", len(client_public_key_bytes))
+				#get share key
+				share_key_bytes = general.get_share_key_bytes(
+					client_public_key, PRIVATE_KEY, PRIME)
+				general.log("[ srv ] share key:", share_key_bytes)
+				#general.log("[ srv ] length:", len(share_key_bytes))
+				#get rijndael key (str)
+				self.rijndael_key = general.get_rijndael_key(share_key_bytes)
 			general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
 		else:
 			#00000010 0000000c 6677bcf44144b39e28281ae8777db574
@@ -124,7 +143,7 @@ class StandardClient(threading.Thread):
 				self.buf = self.buf[packet_length:]
 			else:
 				general.log_error("packet decode error:", self.buf.encode("hex"))
-				self.stop()
+				#self.stop()
 				return
 			#general.log(general.decode(packet).encode("hex"))
 			self.handle_data(general.decode(packet, self.rijndael_key))
