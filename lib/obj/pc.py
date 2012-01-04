@@ -384,6 +384,25 @@ class PC:
 		elif self.equip.pet == iid: return True
 		else: return False
 	
+	def get_equip_list(self):
+		with self.lock:
+			item_list = []
+			item_list.append(self.equip.head and self.item.get(self.equip.head))
+			item_list.append(self.equip.face and self.item.get(self.equip.face))
+			item_list.append(
+				self.equip.chestacce and self.item.get(self.equip.chestacce))
+			item_list.append(self.equip.tops and self.item.get(self.equip.tops))
+			item_list.append(
+				self.equip.bottoms and self.item.get(self.equip.bottoms))
+			item_list.append(
+				self.equip.backpack and self.item.get(self.equip.backpack))
+			item_list.append(self.equip.right and self.item.get(self.equip.right))
+			item_list.append(self.equip.left and self.item.get(self.equip.left))
+			item_list.append(self.equip.shoes and self.item.get(self.equip.shoes))
+			item_list.append(self.equip.socks and self.item.get(self.equip.socks))
+			#item_list.append(self.equip.pet and self.item.get(self.equip.pet))
+			return filter(None, item_list)
+	
 	def get_new_iid(self):
 		last_iid = 0
 		with self.lock:
@@ -439,6 +458,123 @@ class PC:
 	def unset_pet(self, logout=False):
 		return pets.unset_pet(self, logout)
 	
+	def update_status(self, status_new=()):
+		def update_base_status(self, status_new):
+			if status_new:
+				STR = status_new[0] + self.stradd
+				DEX = status_new[1] + self.dexadd
+				INT = status_new[2] + self.intadd
+				VIT = status_new[3] + self.vitadd
+				AGI = status_new[4] + self.agiadd
+				MAG = status_new[5] + self.magadd
+			else:
+				STR = self.str + self.stradd
+				DEX = self.dex + self.dexadd
+				INT = self.int + self.intadd
+				VIT = self.vit + self.vitadd
+				AGI = self.agi + self.agiadd
+				MAG = self.mag + self.magadd
+			LV = self.lv_base
+			self.status.minatk1 = int(STR+(STR/9)**2)
+			self.status.minatk2 = self.status.minatk1
+			self.status.minatk3 = self.status.minatk1
+			self.status.maxatk1 = int(((STR+14)/5)**2)
+			self.status.maxatk2 = self.status.maxatk1
+			self.status.maxatk3 = self.status.maxatk1
+			self.status.minmatk = int(MAG+((MAG+9)/8)**2)
+			self.status.maxmatk = int(MAG+((MAG+17)/6)**2)
+			self.status.shit = int(DEX+DEX/10*11+LV+3)
+			self.status.lhit = int(INT+INT/10*11+LV+3)
+			self.status.mhit = self.status.lhit #mag hit
+			self.status.chit = int((DEX+1)/8) #critical hit
+			self.status.leftdef = int(VIT/3+(VIT/9)**2)
+			self.status.leftmdef = int(INT/3+VIT/4)
+			self.status.savoid = int(AGI+((AGI+18)/9)**2+LV/3-1)
+			self.status.lavoid = int(INT*5/3+AGI+LV/3+3)
+			self.status.aspd = int(AGI*3+((AGI+63)/9)**2+129)
+			self.status.cspd = int(DEX*3+((DEX+63)/9)**2+129)
+			self.status.maxhp = int(VIT*3+(VIT/5)**2+LV*2+(LV/5)**2+50)
+			self.status.maxmp = int(MAG*3+LV+(LV/9)**2+30)
+			self.status.maxsp = int(INT+VIT+LV+(LV/9)**2+20)
+			self.status.maxpayl = STR*2.0/3.0+VIT/3.0+400
+			self.status.maxcapa = DEX/5.0+INT/10.0+200
+			self.status.hpheal = int(100+VIT/3)
+			self.status.mpheal = int(100+MAG/3)
+			self.status.spheal = int(100+(INT+VIT)/6)
+		def update_race_status(self):
+			if self.race == 0: #エミル
+				self.status.maxpayl = int(self.status.maxpayl*1.3)
+			elif self.race == 1: #タイタニア
+				self.status.maxpayl = int(self.status.maxpayl*0.9)
+			elif self.race == 2: #ドミニオン
+				self.status.maxpayl = int(self.status.maxpayl*1.1)
+		def update_job_status(self):
+			job = db.job.get(self.job)
+			if not job:
+				general.log_error("[ pc  ] unknow job id:", self.job)
+				return
+			self.status.maxhp = int(self.status.maxhp*job.hp_rate)
+			self.status.maxmp = int(self.status.maxmp*job.mp_rate)
+			self.status.maxsp = int(self.status.maxsp*job.sp_rate)
+			self.status.maxpayl = self.status.maxpayl*job.payl_rate
+			self.status.maxcapa = self.status.maxcapa*job.capa_rate
+		def update_equip_status(self):
+			self.status.rightdef = 0
+			self.status.rightmdef = 0
+			for item in self.get_equip_list(): #filter include False
+				self.status.minatk1 += int(item.atk1)
+				self.status.minatk2 += int(item.atk2)
+				self.status.minatk3 += int(item.atk3)
+				self.status.maxatk1 += int(item.atk1)
+				self.status.maxatk2 += int(item.atk2)
+				self.status.maxatk3 += int(item.atk3)
+				self.status.minmatk += int(item.matk)
+				self.status.maxmatk += int(item.matk)
+				self.status.shit += int(item.s_hit)
+				self.status.lhit += int(item.l_hit)
+				self.status.mhit += int(item.magic_hit)
+				self.status.chit += int(item.critical_hit)
+				self.status.rightdef += int(item.DEF)
+				self.status.rightmdef += int(item.mdef)
+				self.status.savoid += int(item.s_avoid)
+				self.status.lavoid += int(item.l_avoid)
+				#self.status.aspd += int(item.aspd)
+				#self.status.cspd += int(item.cspd)
+				self.status.maxhp += int(item.hp)
+				self.status.maxmp += int(item.mp)
+				self.status.maxsp += int(item.sp)
+				self.status.maxpayl += int(item.payl_add)
+				self.status.maxcapa += int(item.capa_add)
+				self.status.hpheal += int(item.heal_hp)
+				self.status.mpheal += int(item.heal_mp)
+				#self.status.spheal += int(item.heal_sp)
+				self.status.speed += int(item.speed)
+		def update_item_status(self):
+			self.status.capa = 0
+			self.status.payl = 0
+			for item in self.item.itervalues():
+				self.status.capa += item.capa
+				self.status.payl += item.weight
+			self.status.capa /= 10.0
+			self.status.payl /= 10.0
+		def update_skill_status(self):
+			pass
+		def update_variable_status(self):
+			if self.status.hp == None:
+				self.status.hp = self.status.maxhp
+			if self.status.mp == None:
+				self.status.mp = self.status.maxmp
+			if self.status.sp == None:
+				self.status.sp = self.status.maxsp
+		with self.lock:
+			update_base_status(self, status_new)
+			update_race_status(self)
+			update_job_status(self)
+			update_equip_status(self)
+			update_item_status(self)
+			update_skill_status(self)
+			update_variable_status(self)
+	
 	def __init__(self, user, path):
 		self.path = path
 		self.lock = threading.RLock()
@@ -451,6 +587,7 @@ class PC:
 		self.status = PC.Status()
 		self.reset_login()
 		self.load()
+		#self.update_status() #on login
 	
 	class Sort:
 		def __init__(self):
@@ -460,56 +597,57 @@ class PC:
 			pass
 	class Status:
 		def __init__(self):
-			self.maxhp = 100
-			self.maxmp = 40
-			self.maxsp = 50
+			self.maxhp = 0
+			self.maxmp = 0
+			self.maxsp = 0
 			self.maxep = 30
-			self.hp = 100
-			self.mp = 40
-			self.sp = 50
-			self.ep = 30
+			self.hp = None #if None: hp = maxhp
+			self.mp = None #if None: mp = maxmp
+			self.sp = None #if None: sp = maxsp
+			self.ep = 0
 			
-			self.minatk1 = 100
-			self.minatk2 = 100
-			self.minatk3 = 100
-			self.maxatk1 = 100
-			self.maxatk2 = 100
-			self.maxatk3 = 100
-			self.minmatk = 100
-			self.maxmatk = 100
+			self.minatk1 = 0
+			self.minatk2 = 0
+			self.minatk3 = 0
+			self.maxatk1 = 0
+			self.maxatk2 = 0
+			self.maxatk3 = 0
+			self.minmatk = 0
+			self.maxmatk = 0
 			
-			self.leftdef = 50
-			self.rightdef = 30
-			self.leftmdef = 30
-			self.rightmdef = 20
-			self.shit = 7
+			self.leftdef = 0
+			self.rightdef = 0
+			self.leftmdef = 0
+			self.rightmdef = 0
+			self.shit = 0
 			self.lhit = 0
-			self.mhit = 7
+			self.mhit = 0
 			self.chit = 0
 			self.savoid = 0
-			self.lavoid = 12
+			self.lavoid = 0
 			
 			self.hpheal = 0
 			self.mpheal = 0
 			self.spheal = 0
-			self.aspd = 750 #190
-			self.cspd = 187
-			self.speed = 410
-			self.adelay = 2*(1-self.aspd/1000.0) #attack delay
+			self.aspd = 0
+			self.cspd = 0
+			self.speed = 410 #move speed
+			#self.adelay = 2*(1-self.aspd/1000.0) #attack delay
 			
-			self.maxcapa = 1000
+			self.maxcapa = 0
+			self.maxpayl = 0
+			self.capa = 0
+			self.payl = 0
+			
 			self.maxrightcapa = 0
 			self.maxleftcapa = 0
 			self.maxbackcapa = 0
-			self.maxpayl = 1000
 			self.maxrightpayl = 0
 			self.maxleftpayl = 0
 			self.maxbackpayl = 0
-			self.capa = 30
 			self.rightcapa = 0
 			self.leftcapa = 0
 			self.backcapa = 0
-			self.payl = 30
 			self.rightpayl = 0
 			self.leftpayl = 0
 			self.backpayl = 0

@@ -6,8 +6,8 @@ import os
 from lib import general
 from lib.packet import packet
 from lib import users
-WORD_FRONT = "0000"
-WORD_BACK = "0000"
+WORD_FRONT = str(general.randint(0, 9999)).zfill(4)
+WORD_BACK = str(general.randint(0, 9999)).zfill(4)
 DATA_TYPE_NOT_PRINT = (	"000a", #接続確認
 					)
 

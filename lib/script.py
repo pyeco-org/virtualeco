@@ -364,6 +364,7 @@ def _item(pc, item_id, item_count):
 		pc.item[item_iid] = item
 		pc.sort.item.append(item_iid)
 		pc.user.map_client.send("09d4", item, item_iid, 0x02) #アイテム取得 #0x02: body
+	pc.user.map_client.update_item_status()
 
 def printitem(pc):
 	with pc.lock:
@@ -417,6 +418,7 @@ def _takeitem(pc, item_id, item_count):
 			break
 		else:
 			return item_count
+	pc.user.map_client.update_item_status()
 	return True
 
 def dustbox(pc):

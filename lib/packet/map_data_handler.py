@@ -9,8 +9,8 @@ from lib import users
 from lib import script
 from lib import pets
 from lib import db
-WORD_FRONT = "0000"
-WORD_BACK = "0000"
+WORD_FRONT = str(general.randint(0, 9999)).zfill(4)
+WORD_BACK = str(general.randint(0, 9999)).zfill(4)
 DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
 					"0032", #接続確認(マップサーバとのみ) 20秒一回
 					"0fa5", #戦闘状態変更通知
@@ -114,6 +114,19 @@ class MapDataHandler:
 						self.send("122a", (monster.id,)) #モンスターID通知
 						self.send("1220", monster) #モンスター情報
 	
+	def update_equip_status(self):
+		self.pc.update_status()
+		self.send_map("0221", self.pc) #最大HP/MP/SP
+		self.send_map("021c", self.pc) #現在のHP/MP/SP/EP
+		self.send("0217", self.pc) #詳細ステータス
+		#self.send("0230", self.pc) #現在CAPA/PAYL
+		#self.send("0231", self.pc) #最大CAPA/PAYL
+		
+	def update_item_status(self):
+		self.pc.update_status()
+		self.send("0230", self.pc) #現在CAPA/PAYL
+		self.send("0231", self.pc) #最大CAPA/PAYL
+	
 	def send_object_detail(self, i):
 		if i >= pets.PET_ID_START_FROM:
 			pet = pets.get_pet_from_id(i)
@@ -186,6 +199,7 @@ class MapDataHandler:
 			with self.pc.lock:
 				self.pc.online = True
 				general.log("[ map ] set", self.pc)
+		self.pc.update_status()
 		self.pc.set_visible(False)
 		self.pc.set_motion(111, False)
 		self.pc.set_map()
@@ -346,6 +360,7 @@ class MapDataHandler:
 			self.send("09e3", iid, part) #アイテム保管場所変更
 		self.send("09e8", -1, -1, 1, 1) #アイテムを外す
 		self.send("09e9", self.pc) #キャラの見た目を変更
+		self.update_equip_status()
 	
 	def do_09e7(self, data_io):
 		#アイテム装備
@@ -371,6 +386,7 @@ class MapDataHandler:
 			else:
 				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
 				self.send("09e9", self.pc) #キャラの見た目を変更
+		self.update_equip_status()
 	
 	def do_0a16(self, data_io):
 		#トレードキャンセル
@@ -416,6 +432,7 @@ class MapDataHandler:
 			self.pc.trade_list = []
 			self.pc.trade_state = 0
 			self.send("0a1c") #トレード終了通知
+		self.update_item_status()
 	
 	def do_0a1b(self, data_io):
 		#トレードウィンドウに置いたアイテム・金の情報を送信？
@@ -475,6 +492,7 @@ class MapDataHandler:
 				self.send("09d4", item_take, item_iid, 0x02) #アイテム取得 #0x02: body
 			#倉庫から取り出した時の結果 #成功
 			self.send("09fc", 0)
+		self.update_item_status()
 	
 	def do_09fd(self, data_io):
 		#倉庫に預ける
@@ -510,6 +528,7 @@ class MapDataHandler:
 			self.send("09f9", item_store, item_iid, 30) #倉庫インベントリーデータ
 			#倉庫に預けた時の結果 #成功
 			self.send("09fe", 0)
+		self.update_item_status()
 	
 	def do_09c4(self, data_io):
 		#アイテム使用
@@ -579,6 +598,7 @@ class MapDataHandler:
 				continue
 			if script.takegold(self.pc, (int(item.price/10.0) or 1)*item_count):
 				script.item(self.pc, item_id, item_count)
+		self.update_item_status()
 	
 	def do_0616(self, data_io):
 		#ショップで売却
@@ -620,3 +640,18 @@ class MapDataHandler:
 						self.send("09ce", item_iid) #インベントリからアイテム消去
 					else:
 						self.send("09cf", item, item_iid) #アイテム個数変化
+		self.update_item_status()
+	
+	def do_0258(self, data_io):
+		#自キャラステータス試算 補正は含まない 
+		status_num = general.io_unpack_byte(data_io)
+		STR = general.io_unpack_short(data_io)
+		DEX = general.io_unpack_short(data_io)
+		INT = general.io_unpack_short(data_io)
+		VIT = general.io_unpack_short(data_io)
+		AGI = general.io_unpack_short(data_io)
+		MAG = general.io_unpack_short(data_io)
+		with self.pc.lock:
+			self.pc.update_status((STR, DEX, INT, VIT, AGI, MAG))
+			self.send("0259", self.pc) #ステータス試算結果
+			self.pc.update_status()

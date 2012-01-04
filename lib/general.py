@@ -9,6 +9,7 @@ import traceback
 import zipfile
 import thread
 import hashlib
+import random
 import copy as py_copy
 import ConfigParser
 try: from cStringIO import StringIO
@@ -53,12 +54,12 @@ RIGHT_TYPE_LIST = ("CLAW",
 				"ROPE",
 				"BULLET",
 				"ARROW",
+				"STRINGS",
 				)
 LEFT_TYPE_LIST = ("BOW",
 				"SHIELD",
 				"LEFT_HANDBAG",
 				"ACCESORY_FINGER",
-				"STRINGS",
 				)
 BOOTS_TYPE_LIST = ("LONGBOOTS",
 				"BOOTS",
@@ -124,6 +125,8 @@ def copy(obj):
 	return py_copy.copy(obj)
 def get_today():
 	return time.strftime("%Y-%m-%d", time.localtime())
+def randint(*args):
+	return random.randint(*args)
 
 def get_item(item_id):
 	item = db.item.get(item_id)

@@ -11,7 +11,7 @@ class Item:
 		self.name = row[3]
 		self.type = row[4]
 		self.price = row[5]
-		self.weight = row[6]
+		self.weight = row[6] #payl
 		self.capa = row[7]
 		self.stock = row[16]
 		self.durability_max = row[20]
@@ -19,6 +19,8 @@ class Item:
 		self.hp = row[39]
 		self.mp = row[40]
 		self.sp = row[41]
+		self.payl_add = row[42]
+		self.capa_add = row[43]
 		self.speed = row[44]
 		self.str = row[45]
 		self.mag = row[46]

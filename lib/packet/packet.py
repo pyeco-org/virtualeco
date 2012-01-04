@@ -507,29 +507,29 @@ def make_0217(pc):
 def make_0230(pc):
 	"""現在CAPA/PAYL"""
 	result = "\x04"
-	result += general.pack_int(pc.status.capa) #CAPA(x0.1)
-	result += general.pack_int(pc.status.rightcapa) #右手かばんCAPA(x0.1)
-	result += general.pack_int(pc.status.leftcapa) #左手かばんCAPA(x0.1)
-	result += general.pack_int(pc.status.backcapa) #背中CAPA(x0.1)
+	result += general.pack_int(int(pc.status.capa*10)) #CAPA(x0.1)
+	result += general.pack_int(int(pc.status.rightcapa*10)) #右手かばんCAPA(x0.1)
+	result += general.pack_int(int(pc.status.leftcapa*10)) #左手かばんCAPA(x0.1)
+	result += general.pack_int(int(pc.status.backcapa*10)) #背中CAPA(x0.1)
 	result += "\x04"
-	result += general.pack_int(pc.status.payl) #PAYL(x0.1)
-	result += general.pack_int(pc.status.rightpayl) #右手かばんPAYL(x0.1)
-	result += general.pack_int(pc.status.leftpayl) #左手かばんPAYL(x0.1)
-	result += general.pack_int(pc.status.backpayl) #背中PAYL(x0.1)
+	result += general.pack_int(int(pc.status.payl*10)) #PAYL(x0.1)
+	result += general.pack_int(int(pc.status.rightpayl*10)) #右手かばんPAYL(x0.1)
+	result += general.pack_int(int(pc.status.leftpayl*10)) #左手かばんPAYL(x0.1)
+	result += general.pack_int(int(pc.status.backpayl*10)) #背中PAYL(x0.1)
 	return result
 
 def make_0231(pc):
 	"""最大CAPA/PAYL"""
 	result = "\x04"
-	result += general.pack_int(pc.status.maxcapa) #CAPA(x0.1)
-	result += general.pack_int(pc.status.maxrightcapa) #右手かばんCAPA(x0.1)
-	result += general.pack_int(pc.status.maxleftcapa) #左手かばんCAPA(x0.1)
-	result += general.pack_int(pc.status.maxbackcapa) #背中CAPA(x0.1)
+	result += general.pack_int(int(pc.status.maxcapa*10)) #CAPA(x0.1)
+	result += general.pack_int(int(pc.status.maxrightcapa*10)) #右手かばんCAPA(x0.1)
+	result += general.pack_int(int(pc.status.maxleftcapa*10)) #左手かばんCAPA(x0.1)
+	result += general.pack_int(int(pc.status.maxbackcapa*10)) #背中CAPA(x0.1)
 	result += "\x04"
-	result += general.pack_int(pc.status.maxpayl) #PAYL(x0.1)
-	result += general.pack_int(pc.status.maxrightpayl) #右手かばんPAYL(x0.1)
-	result += general.pack_int(pc.status.maxleftpayl) #左手かばんPAYL(x0.1)
-	result += general.pack_int(pc.status.maxbackpayl) #背中PAYL(x0.1)
+	result += general.pack_int(int(pc.status.maxpayl*10)) #PAYL(x0.1)
+	result += general.pack_int(int(pc.status.maxrightpayl*10)) #右手かばんPAYL(x0.1)
+	result += general.pack_int(int(pc.status.maxleftpayl*10)) #左手かばんPAYL(x0.1)
+	result += general.pack_int(int(pc.status.maxbackpayl*10)) #背中PAYL(x0.1)
 	return result
 
 def make_0244(pc):
@@ -708,8 +708,8 @@ def make_0259(pc):
 	result += general.pack_int(pc.status.maxhp) #最大hp
 	result += general.pack_int(pc.status.maxmp) #最大mp
 	result += general.pack_int(pc.status.maxsp) #最大sp
-	result += general.pack_short(pc.status.maxcapa) #最大Capa
-	result += general.pack_short(pc.status.maxpayl) #最大payload
+	result += general.pack_short(int(pc.status.maxcapa)) #最大Capa
+	result += general.pack_short(int(pc.status.maxpayl)) #最大payload
 	return result
 
 def make_120c(pc):

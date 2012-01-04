@@ -6,6 +6,7 @@ import csv
 import traceback
 import __builtin__
 DATA_PATH = {	"item": "./data/item.csv",
+			"job": "./data/job.csv",
 			"map": "./data/map.csv",
 			"monster": "./data/monster.csv",
 			"npc": "./data/npc.csv",
@@ -52,6 +53,8 @@ def load():
 	from lib import obj
 	global item
 	item = load_database("item", data.item.Item, 167)
+	global job
+	job = load_database("job", data.job.Job, 7)
 	global map_obj
 	map_obj = load_database("map", obj.map.Map, 4)
 	global monster
