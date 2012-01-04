@@ -365,6 +365,8 @@ class MapDataHandler:
 				#self.send("0203", pc.item[i], i, 0x02) #インベントリ情報
 			if not set_part:
 				#装備しようとする装備タイプが不明の場合
+				general.log_error(
+					"[ map ] do_09e7: not set_part, iid:", self.pc.item[iid])
 				self.send("09e8", iid, -1, -2, 1) #アイテム装備
 			else:
 				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
@@ -579,7 +581,7 @@ class MapDataHandler:
 				script.item(self.pc, item_id, item_count)
 	
 	def do_0616(self, data_io):
-		"""ショップで売却"""
+		#ショップで売却
 		general.log("[ map ] npcsell")
 		with self.pc.lock:
 			if self.pc.shop_open != 65535:

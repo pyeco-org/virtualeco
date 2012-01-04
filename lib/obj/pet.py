@@ -125,6 +125,7 @@ class Pet:
 	class Item:
 		def __init__(self, i):
 			self.item_id = i
+			self.pict_id = 0
 			self.type = "HELM"
 	class Equip:
 		def __init__(self):

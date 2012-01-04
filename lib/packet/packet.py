@@ -157,63 +157,63 @@ def make_09e9(pc):
 	item_right = pc.item.get(pc.equip.right)
 	item_left = pc.item.get(pc.equip.left)
 	item_shoes = pc.item.get(pc.equip.shoes)
-	item_sock = pc.item.get(pc.equip.socks)
+	item_socks = pc.item.get(pc.equip.socks)
 	item_pet = pc.item.get(pc.equip.pet)
 	#頭
 	result += general.pack_int((item_head and
 			item_head.type == "HELM" and
-			item_head.item_id or 0))
+			(item_head.pict_id or item_head.item_id) or 0))
 	#頭アクセサリ
 	result += general.pack_int((item_head and
 			item_head.type == "ACCESORY_HEAD" and
-			item_head.item_id or 0))
+			(item_head.pict_id or item_head.item_id) or 0))
 	#顔
 	result += general.pack_int((item_face and
 			item_face.type == "FULLFACE" and
-			item_face.item_id or 0))
+			(item_face.pict_id or item_face.item_id) or 0))
 	#顔アクセサリ
 	result += general.pack_int((item_face and
 			item_face.type == "ACCESORY_FACE" and
-			item_face.item_id or 0))
+			(item_face.pict_id or item_face.item_id) or 0))
 	#胸アクセサリ
 	result += general.pack_int((item_chestacce and
 			item_chestacce.type in general.ACCESORY_TYPE_LIST and
-			item_chestacce.item_id or 0))
+			(item_chestacce.pict_id or item_chestacce.item_id) or 0))
 	#上半身+下半身
 	if item_tops and item_tops.type == "ONEPIECE":
-		result += general.pack_int(item_tops.item_id)
+		result += general.pack_int((item_tops.pict_id or item_tops.item_id))
 		result += general.pack_int(0)
 	else:
 		result += general.pack_int((item_tops and
 				item_tops.type in general.UPPER_TYPE_LIST and
-				item_tops.item_id or 0))
+				(item_tops.pict_id or item_tops.item_id) or 0))
 		result += general.pack_int((item_buttoms and
 				item_buttoms.type in general.LOWER_TYPE_LIST and
-				item_buttoms.item_id or 0))
+				(item_buttoms.pict_id or item_buttoms.item_id) or 0))
 	#背中
 	result += general.pack_int((item_backpack and
 			item_backpack.type == "BACKPACK" and
-			item_backpack.item_id or 0))
+			(item_backpack.pict_id or item_backpack.item_id) or 0))
 	#右手装備
 	result += general.pack_int((item_right and
 			item_right.type in general.RIGHT_TYPE_LIST and
-			item_right.item_id or 0))
+			(item_right.pict_id or item_right.item_id) or 0))
 	#左手装備
 	result += general.pack_int((item_left and
 			item_left.type in general.LEFT_TYPE_LIST and
-			item_left.item_id or 0))
+			(item_left.pict_id or item_left.item_id) or 0))
 	#靴
 	result += general.pack_int((item_shoes and
 			item_shoes.type in general.BOOTS_TYPE_LIST and
-			item_shoes.item_id or 0))
+			(item_shoes.pict_id or item_shoes.item_id) or 0))
 	#靴下
-	result += general.pack_int((item_sock and
-			item_sock.type == "SOCKS" and
-			item_sock.item_id or 0))
+	result += general.pack_int((item_socks and
+			item_socks.type == "SOCKS" and
+			(item_socks.pict_id or item_socks.item_id) or 0))
 	#ペット
 	result += general.pack_int((item_pet and
 			item_pet.type in general.PET_TYPE_LIST and
-			item_pet.item_id or 0))
+			(item_pet.pict_id or item_pet.item_id) or 0))
 	result += "\x03"+"\x00\x00\x00" #左手モーションタイプ size=3 (片手, 両手, 攻撃)
 	result += "\x03"+"\x00\x00\x00" #右手モーションタイプ size=3 #chr_act_tbl.csvを参照する
 	result += "\x03"+"\x00\x00\x00" #乗り物モーションタイプ size=3

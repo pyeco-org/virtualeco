@@ -7,7 +7,7 @@ class Item:
 		self.item_id = row[0]
 		self.count = 1
 		self.warehouse = 0
-		self.pictid = row[1]
+		self.pict_id = row[1]
 		self.name = row[3]
 		self.type = row[4]
 		self.price = row[5]

@@ -12,7 +12,7 @@ SERVER_CONFIG = "./server.ini"
 BIND_ADDRESS = "0.0.0.0"
 USE_NULL_KEY = False #emergency option
 if USE_NULL_KEY:
-	GENERATOR = 2
+	GENERATOR = 1
 	PRIME = 0
 	PRIVATE_KEY = 0
 	PUBLIC_KEY = 0
