@@ -4,14 +4,14 @@ import sys
 import os
 import time
 import traceback
-try:
+#try:
 	#equal python -u
-	sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", 0)
-	sys.stderr = os.fdopen(sys.stderr.fileno(), "wb", 0)
-	sys.dont_write_bytecode = True #require python >= 2.6
+	#sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", 0)
+	#sys.stderr = os.fdopen(sys.stderr.fileno(), "wb", 0)
+	#sys.dont_write_bytecode = True #require python >= 2.6
 	#thread.stack_size(256*1024)
-except:
-	pass
+#except:
+#	print traceback.format_exc()
 print "-----------------------------------------"
 print " virtualeco	2012-01-05"
 print "-----------------------------------------"

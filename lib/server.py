@@ -10,6 +10,7 @@ from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 SERVER_CONFIG = "./server.ini"
 BIND_ADDRESS = "0.0.0.0"
+MAX_CONNECTION_FROM_ONE_IP = 3
 USE_NULL_KEY = False #emergency option
 if USE_NULL_KEY:
 	GENERATOR = 1
@@ -51,22 +52,37 @@ class StandardServer(threading.Thread):
 		self.socket.bind((BIND_ADDRESS, port))
 		self.socket.listen(10)
 		self.start()
+	def ip_count_check(self, src):
+		with self.lock:
+			ip = src[0]
+			ip_count = 1
+			for client in self.client_list:
+				if ip == client.src_address[0]:
+					ip_count += 1
+			general.log("[ srv ] src: %s ip_count: %s"%(src, ip_count))
+			if ip_count > MAX_CONNECTION_FROM_ONE_IP:
+				return False
+			else:
+				return True
 	def run(self):
 		while True:
 			try:
-				s = self.socket.accept()
+				s, src = self.socket.accept()
+				if not self.ip_count_check(src):
+					s.close()
+					continue
 				with self.lock:
-					self.handle_client(s)
+					self.handle_client(s, src)
 			except:
 				general.log_error(traceback.format_exc())
 class StandardClient(threading.Thread):
-	def __init__(self, master, socket, address):
+	def __init__(self, master, s, src):
 		threading.Thread.__init__(self)
 		self.setDaemon(True)
 		self.lock = threading.RLock()
 		self.master = master
-		self.address = address
-		self.socket = socket
+		self.socket = s
+		self.src_address = src
 		self.buf = ""
 		self.running = True
 		self.recv_init = False
@@ -74,7 +90,7 @@ class StandardClient(threading.Thread):
 		self.rijndael_key = None
 		self.start()
 	def __str__(self):
-		return "%s<%s:%s>"%(repr(self), self.address[0], self.address[1])
+		return "%s<%s:%s>"%(repr(self), self.src_address[0], self.src_address[1])
 	def run(self):
 		while self.running:
 			try:
@@ -157,11 +173,11 @@ class StandardClient(threading.Thread):
 				self.master.client_list.remove(self)
 
 class LoginServer(StandardServer):
-	def handle_client(self, s):
-		self.client_list.append(LoginClient(self, *s))
+	def handle_client(self, s, src):
+		self.client_list.append(LoginClient(self, s, src))
 class MapServer(StandardServer):
-	def handle_client(self, s):
-		self.client_list.append(MapClient(self, *s))
+	def handle_client(self, s, src):
+		self.client_list.append(MapClient(self, s, src))
 class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
 		general.log("new login client", args)
