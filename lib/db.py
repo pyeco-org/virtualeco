@@ -57,8 +57,8 @@ def load():
 	job = load_database("job", data.job.Job, 7)
 	global map_obj
 	map_obj = load_database("map", obj.map.Map, 4)
-	global monster
-	monster = load_database("monster", data.monster.Monster, 3)
+	global monster_obj
+	monster = load_database("monster", obj.monster.Monster, 3)
 	global npc
 	npc = load_database("npc", data.npc.Npc, 3)
 	global pet_obj

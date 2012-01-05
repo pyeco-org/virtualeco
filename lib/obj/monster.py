@@ -6,8 +6,13 @@ class Monster:
 	def __init__(self, row):
 		self.monster_id = row[0]
 		self.name = row[1]
-		self.sid = 0 # >10000
-		self.charid = 0 # = sid
+	
+	def __str__(self):
+		return "%s<%s, %s>"%(repr(self), self.monster_id,
+			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+	
+	def reset(self):
+		self.id = 0 # >10000
 		self.map = 0
 		self.x = 0
 		self.y = 0
@@ -32,7 +37,3 @@ class Monster:
 		self.moveable_area = 5
 		self.die = 0 #hide after 5 sec
 		self.damagedic = None #if set {} , will bug on copy.copy
-	
-	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.monster_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))

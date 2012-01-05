@@ -22,6 +22,8 @@ STDOUT = sys.stdout
 STDERR = sys.stderr
 STDOUT_LOG = "./log/%s.log"
 STDERR_LOG = "./log/%s_error.log"
+LOG_DIR = "./log"
+
 ACCESORY_TYPE_LIST = ("ACCESORY_NECK",
 				"JOINT_SYMBOL",
 				)
@@ -92,7 +94,7 @@ class Log:
 				self.logfile = open(self.base_path%self.today, "ab")
 			self.logfile.write(time.strftime("[%H:%M:%S]", time.localtime()))
 			self.logfile.write(" ")
-		self.logfile.write(s)
+		self.logfile.write(s.replace("\r\n", "\n").replace("\n", "\r\n"))
 		self.logtime = False
 		if s.endswith("\n"):
 			self.flush()
@@ -113,6 +115,8 @@ class Null:
 	pass
 
 def use_log():
+	if not os.path.exists(LOG_DIR):
+		os.mkdir(LOG_DIR)
 	sys.stdout = Log(STDOUT, STDOUT_LOG)
 	sys.stderr = Log(STDERR, STDERR_LOG)
 

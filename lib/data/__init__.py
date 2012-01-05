@@ -1,6 +1,5 @@
 import item
 import job
-import monster
 import npc
 import shop
 import skill
