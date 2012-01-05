@@ -116,11 +116,18 @@ class MapDataHandler:
 	
 	def update_equip_status(self):
 		self.pc.update_status()
+		self.send("0230", self.pc) #現在CAPA/PAYL
+		self.send("0231", self.pc) #最大CAPA/PAYL
 		self.send_map("0221", self.pc) #最大HP/MP/SP
 		self.send_map("021c", self.pc) #現在のHP/MP/SP/EP
+		self.send("157c", self.pc) #キャラの状態
+		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
 		self.send("0217", self.pc) #詳細ステータス
-		#self.send("0230", self.pc) #現在CAPA/PAYL
-		#self.send("0231", self.pc) #最大CAPA/PAYL
+		self.send("0226", self.pc, 0) #スキル一覧 一次職
+		self.send("0226", self.pc, 1) #スキル一覧 エキスパ
+		self.send("022d", self.pc) #HEARTスキル
+		self.send("0223", self.pc) #属性値
+		self.send("0244", self.pc) #ステータスウィンドウの職業
 		
 	def update_item_status(self):
 		self.pc.update_status()
@@ -210,24 +217,26 @@ class MapDataHandler:
 		self.send("01ff", self.pc) #自分のキャラクター情報
 		self.send("03f2", 0x04) #システムメッセージ #構えが「叩き」に変更されました
 		self.send("09ec", self.pc) #ゴールド入手 
-		self.send("0221", self.pc) #最大HP/MP/SP
-		self.send("021c", self.pc) #現在のHP/MP/SP/EP
-		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
-		self.send("0217", self.pc) #詳細ステータス
+		
 		self.send("0230", self.pc) #現在CAPA/PAYL
 		self.send("0231", self.pc) #最大CAPA/PAYL
-		self.send("0244", self.pc) #ステータスウィンドウの職業 
+		self.send("0221", self.pc) #最大HP/MP/SP
+		self.send("021c", self.pc) #現在のHP/MP/SP/EP
+		self.send("157c", self.pc) #キャラの状態
+		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
+		self.send("0217", self.pc) #詳細ステータス
 		self.send("0226", self.pc, 0) #スキル一覧 一次職
 		self.send("0226", self.pc, 1) #スキル一覧 エキスパ
+		self.send("022d", self.pc) #HEARTスキル
+		self.send("0223", self.pc) #属性値
+		self.send("0244", self.pc) #ステータスウィンドウの職業
+		
 		self.send("022e", self.pc) #リザーブスキル
 		self.send("023a", self.pc) #Lv JobLv ボーナスポイント スキルポイント
 		self.send("0235", self.pc) #EXP/JOBEXP
 		self.send("09e9", self.pc) #キャラの見た目を変更
 		self.send("0fa7", self.pc) #キャラのモード変更
 		self.send("1f72") #もてなしタイニーアイコン
-		self.send("157c", self.pc) #キャラの状態
-		self.send("022d", self.pc) #HEARTスキル
-		self.send("0223", self.pc) #属性値
 		self.send("122a") #モンスターID通知
 		self.send("1bbc") #スタンプ帳詳細
 		self.send("025d") #不明
@@ -242,15 +251,22 @@ class MapDataHandler:
 		self.pc.set_visible(True)
 		self.send("1239", self.pc) #キャラ速度通知・変更
 		self.send("196e", self.pc) #クエスト回数・時間
-		self.send("0259", self.pc) #ステータス試算結果
+		#self.send("0259", self.pc) #ステータス試算結果
 		#self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
-		self.send("157c", self.pc) #キャラの状態
-		self.send("0226", self.pc, 0) #スキル一覧0
-		self.send("0226", self.pc, 1) #スキル一覧1
-		self.send("022e", self.pc) #リザーブスキル
-		self.send("022d", self.pc) #HEARTスキル
-		self.send("09e9", self.pc) #キャラの見た目を変更
+		
+		self.send("0230", self.pc) #現在CAPA/PAYL
+		self.send("0231", self.pc) #最大CAPA/PAYL
+		self.send("0221", self.pc) #最大HP/MP/SP
 		self.send("021c", self.pc) #現在のHP/MP/SP/EP
+		self.send("157c", self.pc) #キャラの状態
+		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
+		self.send("0217", self.pc) #詳細ステータス
+		self.send("0226", self.pc, 0) #スキル一覧 一次職
+		self.send("0226", self.pc, 1) #スキル一覧 エキスパ
+		self.send("022d", self.pc) #HEARTスキル
+		self.send("0223", self.pc) #属性値
+		self.send("0244", self.pc) #ステータスウィンドウの職業
+		
 		self.sync_map()
 		self.pc.unset_pet()
 		self.pc.set_pet()
@@ -643,7 +659,7 @@ class MapDataHandler:
 		self.update_item_status()
 	
 	def do_0258(self, data_io):
-		#自キャラステータス試算 補正は含まない 
+		#自キャラステータス試算 補正は含まない
 		status_num = general.io_unpack_byte(data_io)
 		STR = general.io_unpack_short(data_io)
 		DEX = general.io_unpack_short(data_io)
@@ -651,7 +667,15 @@ class MapDataHandler:
 		VIT = general.io_unpack_short(data_io)
 		AGI = general.io_unpack_short(data_io)
 		MAG = general.io_unpack_short(data_io)
+		nullpc = general.Null()
+		self.send("0209", STR, DEX, INT, VIT, AGI, MAG) #ステータス上昇s0208の結果
 		with self.pc.lock:
-			self.pc.update_status((STR, DEX, INT, VIT, AGI, MAG))
-			self.send("0259", self.pc) #ステータス試算結果
-			self.pc.update_status()
+			STR += self.pc.stradd
+			DEX += self.pc.dexadd
+			INT += self.pc.intadd
+			VIT += self.pc.vitadd
+			AGI += self.pc.agiadd
+			MAG += self.pc.magadd
+			LV = self.pc.lv_base
+			nullpc.status = self.pc.get_status(LV, STR, DEX, INT, VIT, AGI, MAG)
+		self.send("0259", nullpc) #ステータス試算結果

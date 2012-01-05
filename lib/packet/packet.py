@@ -375,7 +375,7 @@ def make_01ff(pc):
 	result += general.pack_int(pc.status.ep)
 	result += general.pack_int(pc.status.maxep)
 	result += general.pack_short(9) #不明
-	result += "\x08" #ステータス数#常に0x08
+	result += "\x08" #ステータス数 #常に0x08
 	result += general.pack_short(pc.str) #str
 	result += general.pack_short(pc.dex) #dex
 	result += general.pack_short(pc.int) #int
@@ -436,37 +436,6 @@ def make_021c(pc):
 	result += general.pack_int(pc.status.mp)
 	result += general.pack_int(pc.status.sp)
 	result += general.pack_int(pc.status.ep)
-	return result
-
-def make_0212(pc):
-	"""ステータス・補正・ボーナスポイント"""
-	result = "\x08" #base
-	result += general.pack_short(pc.str) #str
-	result += general.pack_short(pc.dex) #dex
-	result += general.pack_short(pc.int) #int
-	result += general.pack_short(pc.vit) #vit
-	result += general.pack_short(pc.agi) #agi
-	result += general.pack_short(pc.mag) #mag
-	result += general.pack_short(0) #luk
-	result += general.pack_short(0) #cha
-	result += "\x08" #revise
-	result += general.pack_short(pc.stradd) #str
-	result += general.pack_short(pc.dexadd) #dex
-	result += general.pack_short(pc.intadd) #int
-	result += general.pack_short(pc.vitadd) #vit
-	result += general.pack_short(pc.agiadd) #agi
-	result += general.pack_short(pc.magadd) #mag
-	result += general.pack_short(0) #luk
-	result += general.pack_short(0) #cha
-	result += "\x08" #bounus
-	result += general.pack_short(0) #str
-	result += general.pack_short(0) #dex
-	result += general.pack_short(0) #int
-	result += general.pack_short(0) #vit
-	result += general.pack_short(0) #agi
-	result += general.pack_short(0) #mag
-	result += general.pack_short(0) #luk
-	result += general.pack_short(0) #cha
 	return result
 
 def make_0217(pc):
@@ -1131,4 +1100,50 @@ def make_0615():
 	result += general.pack_int(4000) #不明
 	result += general.pack_int(0) #不明
 	result += general.pack_byte(1)+general.pack_int(0) #不明
+	return result
+
+def make_0209(STR, DEX, INT, VIT, AGI, MAG):
+	"""ステータス上昇s0208の結果"""
+	result = general.pack_byte(0) #unknow
+	result += "\x08" #ステータス数 #常に0x08
+	result += general.pack_short(STR) #str
+	result += general.pack_short(DEX) #dex
+	result += general.pack_short(INT) #int
+	result += general.pack_short(VIT) #vit
+	result += general.pack_short(AGI) #agi
+	result += general.pack_short(MAG) #mag
+	result += general.pack_short(0) #luk
+	result += general.pack_short(0) #cha
+	result += general.pack_short(100) #use bonus point
+	return result
+
+def make_0212(pc, STR=0, DEX=0, INT=0, VIT=0, AGI=0, MAG=0):
+	"""ステータス・補正・ボーナスポイント"""
+	result = "\x08" #base
+	result += general.pack_short(pc.str) #str
+	result += general.pack_short(pc.dex) #dex
+	result += general.pack_short(pc.int) #int
+	result += general.pack_short(pc.vit) #vit
+	result += general.pack_short(pc.agi) #agi
+	result += general.pack_short(pc.mag) #mag
+	result += general.pack_short(0) #luk
+	result += general.pack_short(0) #cha
+	result += "\x08" #revise
+	result += general.pack_short(pc.stradd) #str
+	result += general.pack_short(pc.dexadd) #dex
+	result += general.pack_short(pc.intadd) #int
+	result += general.pack_short(pc.vitadd) #vit
+	result += general.pack_short(pc.agiadd) #agi
+	result += general.pack_short(pc.magadd) #mag
+	result += general.pack_short(0) #luk
+	result += general.pack_short(0) #cha
+	result += "\x08" #bounus
+	result += general.pack_short(STR) #str
+	result += general.pack_short(DEX) #dex
+	result += general.pack_short(INT) #int
+	result += general.pack_short(VIT) #vit
+	result += general.pack_short(AGI) #agi
+	result += general.pack_short(MAG) #mag
+	result += general.pack_short(0) #luk
+	result += general.pack_short(0) #cha
 	return result

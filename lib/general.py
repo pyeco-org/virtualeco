@@ -109,6 +109,9 @@ class Log:
 	def _close(self):
 		self.logfile.close()
 
+class Null:
+	pass
+
 def use_log():
 	sys.stdout = Log(STDOUT, STDOUT_LOG)
 	sys.stderr = Log(STDERR, STDERR_LOG)
@@ -283,6 +286,7 @@ def int_to_bytes(i, length=0x100):
 	if hex_code.endswith("L"):
 		hex_code = hex_code[:-1]
 	return "0"*(length-len(hex_code))+hex_code
+	#return hex_code+"\x00"*(length-len(hex_code))
 def bytes_to_int(bytes):
 	return int(bytes, 16)
 def get_prime():
