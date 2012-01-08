@@ -345,9 +345,9 @@ class MapDataHandler:
 	def do_13ba(self, data_io):
 		#座る/立つの通知
 		if self.pc.motion_id != 135:
-			script.motion(self.pc, 135, False) #座る
+			script.motion(self.pc, 135, True) #座る
 		else:
-			script.motion(self.pc, 111, False) #立つ
+			script.motion(self.pc, 111, True) #立つ
 	
 	def do_03e8(self, data_io):
 		#オープンチャット送信
