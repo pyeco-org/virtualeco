@@ -181,13 +181,13 @@ class MapServer(StandardServer):
 class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
 		general.log("new login client", args)
-		StandardClient.__init__(self, *args)
 		LoginDataHandler.__init__(self)
+		StandardClient.__init__(self, *args)
 class MapClient(StandardClient, MapDataHandler):
 	def __init__(self, *args):
 		general.log("new map client", args)
-		StandardClient.__init__(self, *args)
 		MapDataHandler.__init__(self)
+		StandardClient.__init__(self, *args)
 
 def load():
 	from lib.obj import serverconfig
