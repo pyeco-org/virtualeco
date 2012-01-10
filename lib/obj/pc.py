@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import threading
+import traceback
 from lib import general
 from lib import server
 from lib import db
@@ -552,6 +553,7 @@ class PC:
 				status.mp = status.maxmp
 			if status.sp == None:
 				status.sp = status.maxsp
+			status.delay_attack = 2*(1-status.aspd/1000.0)
 		status = PC.Status()
 		with self.lock:
 			get_base_status(self)
@@ -576,13 +578,25 @@ class PC:
 			del self.status
 			self.status = status
 	
+	def reset_attack(self):
+		if not self.attack:
+			return
+		print "[ pc  ] reset_attack from %s"%traceback.extract_stack()[-2][2]
+		self.attack = False
+		self.attack_target = None
+		self.attack_delay = 0
+	
 	def __init__(self, user, path):
 		self.path = path
 		self.lock = threading.RLock()
 		self.user = user
 		self.online = False
 		self.visible = False
+		self.map_id = 0
 		self.map_obj = None
+		self.attack = False
+		self.attack_target = None
+		self.attack_delay = 0
 		self.sort = PC.Sort()
 		self.equip = PC.Equip()
 		self.status = PC.Status()
@@ -633,7 +647,6 @@ class PC:
 			self.aspd = 0
 			self.cspd = 0
 			self.speed = 410 #move speed
-			#self.adelay = 2*(1-self.aspd/1000.0) #attack delay
 			
 			self.maxcapa = 0
 			self.maxpayl = 0

@@ -428,14 +428,14 @@ def make_0221(pc):
 	result += general.pack_int(pc.status.maxep)
 	return result
 
-def make_021c(pc):
+def make_021c(obj):
 	"""現在のHP/MP/SP/EP"""
-	result = general.pack_int(pc.id)
+	result = general.pack_int(obj.id)
 	result += "\x04"
-	result += general.pack_int(pc.status.hp)
-	result += general.pack_int(pc.status.mp)
-	result += general.pack_int(pc.status.sp)
-	result += general.pack_int(pc.status.ep)
+	result += general.pack_int(obj.status.hp)
+	result += general.pack_int(obj.status.mp)
+	result += general.pack_int(obj.status.sp)
+	result += general.pack_int(obj.status.ep)
 	return result
 
 def make_0217(pc):
@@ -700,10 +700,10 @@ def make_1220(monster):
 	result += general.pack_int(monster.monster_id) #mobid
 	result += general.pack_unsigned_byte(int(monster.x)) #x
 	result += general.pack_unsigned_byte(int(monster.y)) #y
-	result += general.pack_short(monster.speed) #speed
+	result += general.pack_short(monster.status.speed) #speed
 	result += general.pack_byte(monster.dir) #dir
-	result += general.pack_int(monster.hp) #hp
-	result += general.pack_int(monster.maxhp) #maxhp
+	result += general.pack_int(monster.status.hp) #hp
+	result += general.pack_int(monster.status.maxhp) #maxhp
 	return result
 
 def make_00dd(pc):
@@ -1146,18 +1146,6 @@ def make_0212(pc, STR=0, DEX=0, INT=0, VIT=0, AGI=0, MAG=0):
 	result += general.pack_short(MAG) #mag
 	result += general.pack_short(0) #luk
 	result += general.pack_short(0) #cha
-	return result
-
-def make_1220(monster):
-	"""モンスター情報"""
-	result = general.pack_int(monster.id)
-	result += general.pack_int(monster.monster_id)
-	result += general.pack_byte(monster.x)
-	result += general.pack_byte(monster.y)
-	result += general.pack_short(monster.speed)
-	result += general.pack_byte(monster.dir)
-	result += general.pack_int(monster.hp)
-	result += general.pack_int(monster.maxhp)
 	return result
 
 def make_0fa1(src, dst, attack_type=0, damage=1, color_flag=1):

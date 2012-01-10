@@ -8,6 +8,7 @@ from lib.packet import packet
 from lib import users
 from lib import script
 from lib import pets
+from lib import monsters
 from lib import db
 WORD_FRONT = str(general.randint(0, 9999)).zfill(4)
 WORD_BACK = str(general.randint(0, 9999)).zfill(4)
@@ -307,9 +308,12 @@ class MapDataHandler:
 	def do_11f8(self, data_io):
 		#自キャラの移動
 		if self.pc.logout:
+			general.log("[ map ] logout cancel")
 			self.pc.logout = False
 			self.send("0020", self.pc, "logoutcancel")
-			general.log("[ map ] logout cancel")
+		if self.pc.attack:
+			general.log("[ map ] stop attack")
+			self.pc.reset_attack()
 		rawx = general.io_unpack_short(data_io)
 		rawy = general.io_unpack_short(data_io)
 		rawdir = general.io_unpack_short(data_io)
@@ -679,3 +683,22 @@ class MapDataHandler:
 			LV = self.pc.lv_base
 			nullpc.status = self.pc.get_status(LV, STR, DEX, INT, VIT, AGI, MAG)
 		self.send("0259", nullpc) #ステータス試算結果
+	
+	def do_0f9f(self, data_io):
+		#攻撃
+		monster_id = general.io_unpack_int(data_io)
+		monster = monsters.get_monster_from_id(monster_id)
+		if not monster:
+			general.log_error("[ map ] monster id %s not exist"%monster_id)
+			return
+		general.log("[ map ] attack monster id %s"%monster_id)
+		with self.pc.lock:
+			self.pc.attack = True
+			self.pc.attack_monster = monster
+			self.pc.attack_delay = self.pc.status.delay_attack
+		monsters.attack_monster(self.pc, monster)
+	
+	def do_0f96(self, data_io):
+		#攻撃中止？
+		general.log("[ map ] stop attack")
+		self.pc.reset_attack()

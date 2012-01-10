@@ -9,14 +9,15 @@ import traceback
 from lib import db
 from lib import users
 from lib import general
-from lib import monsters
 SCRIPT_DIR = "./script"
 script_list = {}
 script_list_lock = threading.RLock()
 
 def load():
 	global server
+	global monsters
 	from lib import server
+	from lib import monsters
 	with script_list_lock:
 		_load()
 def _load():
@@ -613,4 +614,4 @@ def spawn(pc, monster_id):
 def killall(pc):
 	with pc.lock and pc.map_obj.lock:
 		for monster in pc.map_obj.monster_list:
-			monsters.kill(monster)
+			monsters.delete(monster)

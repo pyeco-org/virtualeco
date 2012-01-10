@@ -5,42 +5,9 @@ import threading
 from lib import db
 
 class Monster:
-	def __init__(self, row):
-		self.monster_id = row[0]
-		self.name = row[1]
-		self.map_id = 0
-		self.map_obj = None
-	
 	def __str__(self):
 		return "%s<%s, %s>"%(repr(self), self.monster_id,
 			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
-	
-	def reset(self):
-		if self.map_obj:
-			with self.map_obj.lock:
-				self.map_obj.monster_list.remove(self)
-				#print "self.map_obj.monster_list", self.map_obj.monster_list
-		self.id = 0 # must large than 10000
-		self.lock = threading.RLock()
-		self.x = 0
-		self.y = 0
-		self.dir = 0
-		self.centerx = 0
-		self.centery = 0
-		self.rawx = 0
-		self.rawy = 0
-		self.rawdir = 0
-		self.speed = 410
-		self.hp = 100
-		self.maxhp = 100
-		self.mp = 1
-		self.maxmp = 1
-		self.sp = 1
-		self.maxsp = 1
-		self.ep = 0
-		self.maxep = 0
-		self.die = 0 #hide after 5 sec
-		self.damage_dic = None #if set {} , will bug with copy.copy
 	
 	def set_map(self, *args):
 		with self.lock:
@@ -92,3 +59,40 @@ class Monster:
 		with self.lock:
 			self.rawdir = rawdir
 			self.dir = int(round(rawdir/45.0, 0))
+	
+	def reset(self):
+		if self.map_obj:
+			with self.map_obj.lock:
+				self.map_obj.monster_list.remove(self)
+				#print "self.map_obj.monster_list", self.map_obj.monster_list
+		self.id = 0 # must large than 10000
+		self.lock = threading.RLock()
+		self.x = 0
+		self.y = 0
+		self.dir = 0
+		self.centerx = 0
+		self.centery = 0
+		self.rawx = 0
+		self.rawy = 0
+		self.rawdir = 0
+		self.status = Monster.Status()
+		self.die = 0 #hide after 5 sec
+		self.damage_dic = None #if set {} , will bug with copy.copy
+	
+	def __init__(self, row):
+		self.monster_id = row[0]
+		self.name = row[1]
+		self.map_id = 0
+		self.map_obj = None
+	
+	class Status:
+		def __init__(self):
+			self.speed = 410
+			self.hp = 100
+			self.maxhp = 100
+			self.mp = 1
+			self.maxmp = 1
+			self.sp = 1
+			self.maxsp = 1
+			self.ep = 0
+			self.maxep = 0
