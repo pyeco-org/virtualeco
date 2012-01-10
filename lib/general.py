@@ -145,6 +145,16 @@ def get_pet(pet_id):
 	if not pet:
 		return
 	return copy(pet)
+def get_monster(monster_id):
+	monster = db.monster_obj.get(monster_id)
+	if not monster:
+		return
+	return copy(monster)
+def get_map(map_id):
+	map_obj = db.map_obj.get(map_id)
+	if not map_obj:
+		return
+	return map_obj #not need copy
 
 def get_config_io(path):
 	with open(path, "rb") as r:

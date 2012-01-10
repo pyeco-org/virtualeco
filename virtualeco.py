@@ -13,7 +13,7 @@ import traceback
 #except:
 #	print traceback.format_exc()
 print "-----------------------------------------"
-print " virtualeco	2012-01-05"
+print " virtualeco	2012-01-10"
 print "-----------------------------------------"
 from lib import db
 from lib import server
@@ -41,6 +41,8 @@ def debugger():
 		except KeyboardInterrupt:
 			break
 		except SystemExit:
+			break
+		except EOFError:
 			break
 		except:
 			general.log_error("[debug]", traceback.format_exc())

@@ -20,7 +20,8 @@ class Pet:
 	
 	def reset(self):
 		if self.map_obj:
-			self.map_obj.pet_list.remove(self)
+			with self.map_obj.lock:
+				self.map_obj.pet_list.remove(self)
 		self.id = 0
 		self.lock = threading.RLock()
 		self.master = None # PC()
@@ -68,8 +69,9 @@ class Pet:
 				self.map_obj.pet_list.remove(self)
 		self.map_obj = map_obj
 		with self.map_obj.lock:
-			if self not in self.map_obj.pc_list:
-				self.map_obj.pet_list.append(self)
+			if self not in self.map_obj.pet_list:
+				with self.map_obj.lock:
+					self.map_obj.pet_list.append(self)
 		return True
 	
 	def set_coord_from_master(self):

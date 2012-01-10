@@ -9,6 +9,7 @@ import traceback
 from lib import db
 from lib import users
 from lib import general
+from lib import monsters
 SCRIPT_DIR = "./script"
 script_list = {}
 script_list_lock = threading.RLock()
@@ -109,6 +110,8 @@ NAME_WITH_TYPE = {
 	"npcmotion_loop": (int, int), #npc_id, motion_id
 	"npcshop": (int,), #shop_id
 	"npcsell": (),
+	"spawn": (int,), #monster_id
+	"killall": (),
 	}
 
 def help(pc):
@@ -150,6 +153,8 @@ def help(pc):
 /npcmotion_loop npc_id motion_id
 /npcshop shop_id
 /npcsell
+/spawn monster_id
+/killall
 """)
 
 def handle_cmd(pc, cmd):
@@ -598,3 +603,14 @@ def npcsell(pc):
 	with pc.lock and pc.user.lock:
 		pc.shop_open = 65535 #sell
 		pc.user.map_client.send_map("0615") #NPCショップウィンドウ（売却）
+
+def spawn(pc, monster_id):
+	with pc.lock:
+		error = monsters.spawn(monster_id, pc.map_id, pc.x, pc.y)
+		if error:
+			msg(pc, error)
+
+def killall(pc):
+	with pc.lock and pc.map_obj.lock:
+		for monster in pc.map_obj.monster_list:
+			monsters.kill(monster)

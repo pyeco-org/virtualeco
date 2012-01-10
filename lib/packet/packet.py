@@ -567,7 +567,7 @@ def make_1f72(show=False):
 	"""もてなしタイニーアイコン""" #before login
 	return general.pack_byte((show and 1 or 0))
 
-def make_157c(pc,
+def make_157c(obj,
 			state01=0, state02=0, state03=0,
 			state04=0, state05=0, state06=0,
 			state07=0, state08=0, state09=0):
@@ -575,7 +575,7 @@ def make_157c(pc,
 	#キャラの自然回復や状態異常等、様々な状態を更新する
 	#状態に応じて画面上にアイコンが出る
 	#毒などの場合エフェクトも出る
-	result = general.pack_int(pc.id)
+	result = general.pack_int(obj.id)
 	result += general.pack_int(state01)
 	result += general.pack_int(state02)
 	result += general.pack_int(state03)
@@ -1147,3 +1147,35 @@ def make_0212(pc, STR=0, DEX=0, INT=0, VIT=0, AGI=0, MAG=0):
 	result += general.pack_short(0) #luk
 	result += general.pack_short(0) #cha
 	return result
+
+def make_1220(monster):
+	"""モンスター情報"""
+	result = general.pack_int(monster.id)
+	result += general.pack_int(monster.monster_id)
+	result += general.pack_byte(monster.x)
+	result += general.pack_byte(monster.y)
+	result += general.pack_short(monster.speed)
+	result += general.pack_byte(monster.dir)
+	result += general.pack_int(monster.hp)
+	result += general.pack_int(monster.maxhp)
+	return result
+
+def make_0fa1(src, dst, attack_type=0, damage=1, color_flag=1):
+	"""攻撃結果"""
+	result = general.pack_int(src.id)
+	result += general.pack_int(dst.id)
+	result += general.pack_byte(attack_type)
+	result += general.pack_int(damage) #hp damage(回復の場合はマイナス
+	result += general.pack_int(0) #mp damage
+	result += general.pack_int(0) #sp damage
+	#アイテム使用やスキル使用結果のHP・MP・SPの色やエフェクト
+	result += general.pack_int(color_flag)
+	#行動できるようになるまでの長さ(＝モーションの長さ) 2000が標準 ASPDにより短くなる 単位 0.1% ?
+	result += general.pack_int(2000)
+	#delayと同値? delayはDC等で短くなってもこの値は元のまま
+	result += general.pack_int(2000)
+	return result
+
+def make_1225(monster):
+	"""モンスター消去"""
+	return general.pack_int(monster.id)

@@ -223,7 +223,8 @@ class PC:
 		self.map_obj = map_obj
 		with self.map_obj.lock:
 			if self not in self.map_obj.pc_list:
-				self.map_obj.pc_list.append(self)
+				with self.map_obj.lock:
+					self.map_obj.pc_list.append(self)
 		return True
 	
 	def set_visible(self, visible):
