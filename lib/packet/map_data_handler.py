@@ -307,10 +307,6 @@ class MapDataHandler:
 	
 	def do_11f8(self, data_io):
 		#自キャラの移動
-		if self.pc.logout:
-			general.log("[ map ] logout cancel")
-			self.pc.logout = False
-			self.send("0020", self.pc, "logoutcancel")
 		if self.pc.attack:
 			general.log("[ map ] stop attack")
 			self.pc.reset_attack()
@@ -332,6 +328,10 @@ class MapDataHandler:
 				return
 			if old_x == new_x and old_y == new_y:
 				return
+			if self.pc.logout:
+				general.log("[ map ] logout cancel")
+				self.pc.logout = False
+				self.send("0020", self.pc, "logoutcancel")
 			with self.pc.pet.lock:
 				#pet_x = self.pc.pet.x+(new_x-old_x)
 				#pet_y = self.pc.pet.y+(new_y-old_y)

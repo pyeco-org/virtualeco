@@ -613,5 +613,5 @@ def spawn(pc, monster_id):
 
 def killall(pc):
 	with pc.lock and pc.map_obj.lock:
-		for monster in pc.map_obj.monster_list:
+		for monster in general.copy(pc.map_obj.monster_list):
 			monsters.delete(monster)
