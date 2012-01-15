@@ -361,15 +361,14 @@ def decode(code, key):
 	if not code:
 		log_error("decode error: not code", code)
 		return
-	#00000010 0000000c 6677bcf44144b39e28281ae8777db574
-	string_size = unpack_int(code[4:8])
-	#code = code[8:]
-	if (len(code)-8) % 16:
-		log_error("decode error: (len(code)-8) % 16 != 0", code.encode("hex"))
+	#0000000c 6677bcf44144b39e28281ae8777db574
+	string_size = unpack_int(code[:4])
+	if (len(code)-4) % 16:
+		log_error("decode error: (len(code)-4) % 16 != 0", code.encode("hex"))
 		return
 	#key = "\x00"*16
 	r = rijndael.rijndael(key, block_size=16)
 	string = ""
 	for i in xrange(len(code)/16):
-		string += r.decrypt(code[i*16+8:i*16+24])
+		string += r.decrypt(code[i*16+4:i*16+20])
 	return string[:string_size]
