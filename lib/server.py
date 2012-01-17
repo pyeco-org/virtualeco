@@ -94,21 +94,34 @@ class StandardClient(threading.Thread):
 	def __str__(self):
 		return "%s<%s:%s>"%(repr(self), self.src_address[0], self.src_address[1])
 	def recv_packet(self, length):
-		data = self.socket.recv(length)
+		try:
+			data = self.socket.recv(length)
+		except:
+			raise EOFError("socket closed")
 		if not self.running:
-			raise IOError("not self.running")
+			raise EOFError("not self.running")
 		if not data:
 			raise EOFError("not data")
 		return data
+	def recv_packet_force(self, length):
+		data = ""
+		while len(data) < length:
+			data += self.recv_packet(length-len(data))
+		return data
 	def recv_key_packet(self):
-		return self.recv_packet(general.unpack_int(self.recv_packet(4)))
+		return self.recv_packet_force(
+			general.unpack_int(self.recv_packet_force(4)))
 	def recv_enc_packet(self):
-		return self.recv_packet(general.unpack_int(self.recv_packet(4))+4)
+		return self.recv_packet_force(
+			general.unpack_int(self.recv_packet_force(4))+4)
 	def run(self):
 		while self.running:
 			try:
 				self.handle_packet()
+			except EOFError:
+				self.stop()
 			except:
+				general.log_error(traceback.format_exc())
 				self.stop()
 		general.log("quit", self)
 	def send_packet(self, packet):
