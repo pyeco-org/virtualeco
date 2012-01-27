@@ -32,7 +32,9 @@ def _load():
 			obj = general.load_dump(path)
 			try:
 				if not obj:
-					obj = compile(open(path, "rb").read(), path, "exec")
+					obj = compile(
+						open(path, "rb").read().replace(
+						"\r\n", "\n")+"\n", path, "exec")
 					general.save_dump(path, obj)
 				namespace = {}
 				exec obj in namespace
