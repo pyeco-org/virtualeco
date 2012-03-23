@@ -30,6 +30,18 @@ def pack_user_short(*args):
 def pack_user_int(*args):
 	return pack_user_data(general.pack_int, *args)
 
+def pack_pict_id(item, item_type):
+	return general.pack_int(item and item.get_pict_id(item_type) or 0)
+
+def pack_item_int_attr(item, item_type, attr):
+	return general.pack_int(item and item.get_int_attr(attr, item_type) or 0)
+def pack_item_short_attr(item, attr, item_type):
+	return general.pack_short(item and item.get_int_attr(attr, item_type) or 0)
+def pack_item_byte_attr(item, attr, item_type):
+	return general.pack_byte(item and item.get_int_attr(attr, item_type) or 0)
+def pack_item_str_attr(item, attr, item_type):
+	return general.pack_str(item and item.get_str_attr(attr, item_type) or 0)
+
 def make_0002(ver):
 	"""認証接続確認(s0001)の応答"""
 	return ver
@@ -159,63 +171,47 @@ def make_09e9(pc):
 	item_shoes = pc.item.get(pc.equip.shoes)
 	item_socks = pc.item.get(pc.equip.socks)
 	item_pet = pc.item.get(pc.equip.pet)
+	#左手モーション 片手
+	l_s_motion = pack_item_byte_attr(item_left, "s_motion", general.LEFT_TYPE_LIST)
+	#左手モーション 両手
+	l_d_motion = pack_item_byte_attr(item_left, "d_motion", general.LEFT_TYPE_LIST)
+	#右手モーション 片手
+	r_s_motion = pack_item_byte_attr(item_right, "s_motion", general.RIGHT_TYPE_LIST)
+	#右手モーション 両手
+	r_d_motion = pack_item_byte_attr(item_right, "d_motion", general.RIGHT_TYPE_LIST)
 	#頭
-	result += general.pack_int((item_head and
-			item_head.type == "HELM" and
-			(item_head.pict_id or item_head.item_id) or 0))
+	result += pack_pict_id(item_head, "HELM")
 	#頭アクセサリ
-	result += general.pack_int((item_head and
-			item_head.type == "ACCESORY_HEAD" and
-			(item_head.pict_id or item_head.item_id) or 0))
+	result += pack_pict_id(item_head, "ACCESORY_HEAD")
 	#顔
-	result += general.pack_int((item_face and
-			item_face.type == "FULLFACE" and
-			(item_face.pict_id or item_face.item_id) or 0))
+	result += pack_pict_id(item_face, "FULLFACE")
 	#顔アクセサリ
-	result += general.pack_int((item_face and
-			item_face.type == "ACCESORY_FACE" and
-			(item_face.pict_id or item_face.item_id) or 0))
+	result += pack_pict_id(item_face, "ACCESORY_FACE")
 	#胸アクセサリ
-	result += general.pack_int((item_chestacce and
-			item_chestacce.type in general.ACCESORY_TYPE_LIST and
-			(item_chestacce.pict_id or item_chestacce.item_id) or 0))
+	result += pack_pict_id(item_chestacce, general.ACCESORY_TYPE_LIST)
 	#上半身+下半身
-	if item_tops and item_tops.type == "ONEPIECE":
-		result += general.pack_int((item_tops.pict_id or item_tops.item_id))
+	if item_tops and item_tops.check_type("ONEPIECE"):
+		result += pack_pict_id(item_tops, None)
 		result += general.pack_int(0)
 	else:
-		result += general.pack_int((item_tops and
-				item_tops.type in general.UPPER_TYPE_LIST and
-				(item_tops.pict_id or item_tops.item_id) or 0))
-		result += general.pack_int((item_buttoms and
-				item_buttoms.type in general.LOWER_TYPE_LIST and
-				(item_buttoms.pict_id or item_buttoms.item_id) or 0))
+		result += pack_pict_id(item_tops, general.UPPER_TYPE_LIST)
+		result += pack_pict_id(item_buttoms, general.LOWER_TYPE_LIST)
 	#背中
-	result += general.pack_int((item_backpack and
-			item_backpack.type == "BACKPACK" and
-			(item_backpack.pict_id or item_backpack.item_id) or 0))
+	result += pack_pict_id(item_backpack, "BACKPACK")
 	#右手装備
-	result += general.pack_int((item_right and
-			item_right.type in general.RIGHT_TYPE_LIST and
-			(item_right.pict_id or item_right.item_id) or 0))
+	result += pack_pict_id(item_right, general.RIGHT_TYPE_LIST)
 	#左手装備
-	result += general.pack_int((item_left and
-			item_left.type in general.LEFT_TYPE_LIST and
-			(item_left.pict_id or item_left.item_id) or 0))
+	result += pack_pict_id(item_left, general.LEFT_TYPE_LIST)
 	#靴
-	result += general.pack_int((item_shoes and
-			item_shoes.type in general.BOOTS_TYPE_LIST and
-			(item_shoes.pict_id or item_shoes.item_id) or 0))
+	result += pack_pict_id(item_shoes, general.BOOTS_TYPE_LIST)
 	#靴下
-	result += general.pack_int((item_socks and
-			item_socks.type == "SOCKS" and
-			(item_socks.pict_id or item_socks.item_id) or 0))
+	result += pack_pict_id(item_socks, "SOCKS")
 	#ペット
-	result += general.pack_int((item_pet and
-			item_pet.type in general.PET_TYPE_LIST and
-			(item_pet.pict_id or item_pet.item_id) or 0))
-	result += "\x03"+"\x00\x00\x00" #左手モーションタイプ size=3 (片手, 両手, 攻撃)
-	result += "\x03"+"\x00\x00\x00" #右手モーションタイプ size=3 #chr_act_tbl.csvを参照する
+	result += pack_pict_id(item_pet, general.PET_TYPE_LIST)
+	#左手モーションタイプ size=3 (片手, 両手, 攻撃)
+	result += "\x03"+l_s_motion+l_d_motion+"\x00"
+	#右手モーションタイプ size=3 #chr_act_tbl.csvを参照する
+	result += "\x03"+r_s_motion+r_d_motion+"\x00"
 	result += "\x03"+"\x00\x00\x00" #乗り物モーションタイプ size=3
 	result += general.pack_int(0) #乗り物アイテムID
 	result += general.pack_byte(0) #乗り物の染色値

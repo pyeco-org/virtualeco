@@ -96,8 +96,10 @@ class StandardClient(threading.Thread):
 	def recv_packet(self, length):
 		try:
 			data = self.socket.recv(length)
-		except:
+		except EOFError:
 			raise EOFError("socket closed")
+		except:
+			raise EOFError(traceback.format_exc())
 		if not self.running:
 			raise EOFError("not self.running")
 		if not data:

@@ -186,20 +186,20 @@ class PC:
 		part = 0x02 #body
 		item = self.item[iid]
 		if iid == self.equip.head:
-			if item.type == "HELM"			: part = 6
-			elif item.type == "ACCESORY_HEAD"	: part = 7
+			if item.check_type("HELM")			: part = 6
+			elif item.check_type("ACCESORY_HEAD")	: part = 7
 		elif iid == self.equip.face:
-			if item.type == "FULLFACE"		: part = 6 #8 before ver315
-			elif item.type == "ACCESORY_FACE"	: part = 8 #9 before ver315
-		elif iid == self.equip.chestacce		: part = 10
-		elif iid == self.equip.tops			: part = 11
-		elif iid == self.equip.bottoms		: part = 12
-		elif iid == self.equip.backpack		: part = 13
-		elif iid == self.equip.right			: part = 14
-		elif iid == self.equip.left			: part = 15
-		elif iid == self.equip.shoes			: part = 16
-		elif iid == self.equip.socks			: part = 17
-		elif iid == self.equip.pet			: part = 18
+			if item.check_type("FULLFACE")		: part = 6 #8 before ver315
+			elif item.check_type("ACCESORY_FACE")	: part = 8 #9 before ver315
+		elif iid == self.equip.chestacce			: part = 10
+		elif iid == self.equip.tops				: part = 11
+		elif iid == self.equip.bottoms			: part = 12
+		elif iid == self.equip.backpack			: part = 13
+		elif iid == self.equip.right				: part = 14
+		elif iid == self.equip.left				: part = 15
+		elif iid == self.equip.shoes				: part = 16
+		elif iid == self.equip.socks				: part = 17
+		elif iid == self.equip.pet				: part = 18
 		return part
 	
 	def set_map(self, *args):
@@ -275,65 +275,65 @@ class PC:
 		set_part = 0
 		item = self.item.get(iid)
 		if not item: return unset_iid_list, set_part
-		if item.type == "HELM": #頭
+		if item.check_type("HELM"): #頭
 			unset_iid_list.append(self.equip.head)
 			self.equip.head = iid
 			set_part = 6
-		elif item.type == "ACCESORY_HEAD": #頭
+		elif item.check_type("ACCESORY_HEAD"): #頭
 			unset_iid_list.append(self.equip.head)
 			self.equip.head = iid
 			set_part = 7
-		elif item.type == "FULLFACE": #顔
+		elif item.check_type("FULLFACE"): #顔
 			unset_iid_list.append(self.equip.face)
 			self.equip.face = iid
 			set_part = 6 #8 before ver315
-		elif item.type == "ACCESORY_FACE": #顔
+		elif item.check_type("ACCESORY_FACE"): #顔
 			unset_iid_list.append(self.equip.face)
 			self.equip.face = iid
 			set_part = 8 #9 before ver315
-		elif item.type in general.ACCESORY_TYPE_LIST: #胸アクセサリ
+		elif item.check_type(general.ACCESORY_TYPE_LIST): #胸アクセサリ
 			unset_iid_list.append(self.equip.chestacce)
 			self.equip.chestacce = iid
 			set_part = 10
-		elif item.type == "ONEPIECE": #...
+		elif item.check_type("ONEPIECE"): #...
 			unset_iid_list.append(self.equip.tops)
 			unset_iid_list.append(self.equip.bottoms)
 			self.equip.tops = iid
 			self.equip.bottoms = 0
 			set_part = 11
-		elif item.type in general.UPPER_TYPE_LIST: #上半身
+		elif item.check_type(general.UPPER_TYPE_LIST): #上半身
 			unset_iid_list.append(self.equip.tops)
 			self.equip.tops = iid
 			set_part = 11
-		elif item.type in general.LOWER_TYPE_LIST: #下半身
+		elif item.check_type(general.LOWER_TYPE_LIST): #下半身
 			item_tops = self.item.get(self.equip.tops)
-			if item_tops and item_tops.type == "ONEPIECE":
+			if item_tops and item_tops.check_type("ONEPIECE"):
 				unset_iid_list.append(self.equip.tops)
 				self.equip.tops = 0
 			unset_iid_list.append(self.equip.bottoms)
 			self.equip.bottoms = iid
 			set_part = 12
-		elif item.type == "BACKPACK": #背中
+		elif item.check_type("BACKPACK"): #背中
 			unset_iid_list.append(self.equip.backpack)
 			self.equip.backpack = iid
 			set_part = 13
-		elif item.type in general.RIGHT_TYPE_LIST: #右手装備
+		elif item.check_type(general.RIGHT_TYPE_LIST): #右手装備
 			unset_iid_list.append(self.equip.right)
 			self.equip.right = iid
 			set_part = 14
-		elif item.type in general.LEFT_TYPE_LIST: #左手装備
+		elif item.check_type(general.LEFT_TYPE_LIST): #左手装備
 			unset_iid_list.append(self.equip.left)
 			self.equip.left = iid
 			set_part = 15
-		elif item.type in general.BOOTS_TYPE_LIST: #靴
+		elif item.check_type(general.BOOTS_TYPE_LIST): #靴
 			unset_iid_list.append(self.equip.shoes)
 			self.equip.shoes = iid
 			set_part = 16
-		elif item.type == "SOCKS": #靴下
+		elif item.check_type("SOCKS"): #靴下
 			unset_iid_list.append(self.equip.socks)
 			self.equip.socks = iid
 			set_part = 17
-		elif item.type in general.PET_TYPE_LIST: #ペット
+		elif item.check_type(general.PET_TYPE_LIST): #ペット
 			unset_iid_list.append(self.equip.pet)
 			self.unset_pet()
 			self.equip.pet = iid

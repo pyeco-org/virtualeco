@@ -129,6 +129,8 @@ class Pet:
 			self.item_id = i
 			self.pict_id = 0
 			self.type = "HELM"
+		def get_pict_id(self, *args):
+			return self.item_id
 	class Equip:
 		def __init__(self):
 			self.head = 1
