@@ -21,7 +21,7 @@ def load():
 	with script_list_lock:
 		_load()
 def _load():
-	general.log_line("Load", SCRIPT_DIR, "...")
+	general.log_line("Load %-20s"%("%s ..."%SCRIPT_DIR))
 	script_list.clear()
 	for root, dirs, files in os.walk(SCRIPT_DIR):
 		for name in files:
@@ -46,7 +46,7 @@ def _load():
 					script_list[script_id] = namespace
 			except:
 				general.log_error("script.load", path, traceback.format_exc())
-	general.log("		%d	script	load."%len(script_list))
+	general.log("	%d	script	load."%len(script_list))
 
 def run_script(pc, event_id):
 	#general.log("run script id", event_id)

@@ -121,8 +121,7 @@ def use_log():
 	sys.stderr = Log(STDERR, STDERR_LOG)
 
 def list_to_str(l):
-	result = "".join(map(lambda item: "%s,"%item, l))
-	return result.endswith(",") and result[:-1] or result
+	return ",".join(map(str, l))
 def str_to_list(string):
 	return list(map(int, filter(None, string.split(","))))
 
@@ -193,7 +192,7 @@ def save_dump(path, obj):
 		dump.write(pack_int(python_ver))
 		if DUMP_WITH_ZLIB:
 			dump.write(marshal.dumps(obj).encode("zlib"))
-		else	:
+		else:
 			dump.write(marshal.dumps(obj))
 
 def save_zip(path_src, path_zip):
@@ -208,13 +207,13 @@ def save_zip(path_src, path_zip):
 	zip_obj.close()
 
 def log(*args):
-	sys.stdout.write("".join(map(lambda s: str(s)+" ", args))[:-1]+"\n")
+	sys.stdout.write(" ".join(map(str, args))+"\n")
 def log_line(*args):
-	sys.stdout.write("".join(map(lambda s: str(s)+" ", args)))
+	sys.stdout.write(" ".join(map(str, args)))
 def log_error(*args):
-	sys.stderr.write("".join(map(lambda s: str(s)+" ", args))[:-1]+"\n")
+	sys.stderr.write(" ".join(map(str, args))+"\n")
 def log_error_line(*args):
-	sys.stderr.write("".join(map(lambda s: str(s)+" ", args)))
+	sys.stderr.write(" ".join(map(str, args)))
 
 def pack_int(i):
 	return struct.pack(">i", i)

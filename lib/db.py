@@ -36,7 +36,7 @@ def get_raw_list(path, len_min):
 
 def load_database(name, obj, len_min):
 	path = DATA_PATH[name]
-	general.log_line("Load %s ..."%path)
+	general.log_line("Load %-20s"%("%s ..."%path))
 	d = {}
 	for i, row in enumerate(get_raw_list(path, len_min)):
 		try:
