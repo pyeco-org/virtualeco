@@ -39,6 +39,8 @@ def pack_item_short_attr(item, attr, item_type):
 	return general.pack_short(item and item.get_int_attr(attr, item_type) or 0)
 def pack_item_byte_attr(item, attr, item_type):
 	return general.pack_byte(item and item.get_int_attr(attr, item_type) or 0)
+def pack_item_unsigned_byte_attr(item, attr, item_type):
+	return general.pack_unsigned_byte(item and item.get_int_attr(attr, item_type) or 0)
 def pack_item_str_attr(item, attr, item_type):
 	return general.pack_str(item and item.get_str_attr(attr, item_type) or 0)
 
@@ -172,13 +174,21 @@ def make_09e9(pc):
 	item_socks = pc.item.get(pc.equip.socks)
 	item_pet = pc.item.get(pc.equip.pet)
 	#左手モーション 片手
-	l_s_motion = pack_item_byte_attr(item_left, "s_motion", general.LEFT_TYPE_LIST)
+	l_s_motion = pack_item_unsigned_byte_attr(
+		item_left, "s_motion", general.LEFT_TYPE_LIST
+	)
 	#左手モーション 両手
-	l_d_motion = pack_item_byte_attr(item_left, "d_motion", general.LEFT_TYPE_LIST)
+	l_d_motion = pack_item_unsigned_byte_attr(
+		item_left, "d_motion", general.LEFT_TYPE_LIST
+	)
 	#右手モーション 片手
-	r_s_motion = pack_item_byte_attr(item_right, "s_motion", general.RIGHT_TYPE_LIST)
+	r_s_motion = pack_item_unsigned_byte_attr(
+		item_right, "s_motion", general.RIGHT_TYPE_LIST
+	)
 	#右手モーション 両手
-	r_d_motion = pack_item_byte_attr(item_right, "d_motion", general.RIGHT_TYPE_LIST)
+	r_d_motion = pack_item_unsigned_byte_attr(
+		item_right, "d_motion", general.RIGHT_TYPE_LIST
+	)
 	#頭
 	result += pack_pict_id(item_head, "HELM")
 	#頭アクセサリ

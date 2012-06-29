@@ -57,6 +57,7 @@ RIGHT_TYPE_LIST = ("CLAW",
 				"BULLET",
 				"ARROW",
 				"STRINGS",
+				"EXSWORD"
 				)
 LEFT_TYPE_LIST = ("BOW",
 				"SHIELD",
