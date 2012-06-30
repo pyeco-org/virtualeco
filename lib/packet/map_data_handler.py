@@ -702,3 +702,7 @@ class MapDataHandler:
 		#攻撃中止？
 		general.log("[ map ] stop attack")
 		self.pc.reset_attack()
+	
+	def do_1d0b(self, data_io):
+		emotion = general.io_unpack_byte(data_io)
+		self.send_map("1d0c", self.pc, emotion) #emotion

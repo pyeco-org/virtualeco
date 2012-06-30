@@ -1173,3 +1173,7 @@ def make_0fa1(src, dst, attack_type=0, damage=1, color_flag=1):
 def make_1225(monster):
 	"""モンスター消去"""
 	return general.pack_int(monster.id)
+
+def make_1d0c(pc, emotion):
+	"""emotion"""
+	return general.pack_int(pc.id)+general.pack_unsigned_byte(emotion)
