@@ -12,6 +12,7 @@ import hashlib
 import random
 import copy as py_copy
 import ConfigParser
+import math
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import db
@@ -207,6 +208,17 @@ def save_zip(path_src, path_zip):
 				os.path.join(root, file_name).replace(path_src, ""))
 	zip_obj.close()
 
+def get_name_map(namespace, head):
+	name_map = {}
+	head_length = len(head)
+	for key, value in namespace.iteritems():
+		if not callable(value):
+			continue
+		if not key.startswith(head):
+			continue
+		name_map[key[head_length:]] = value
+	return name_map
+
 def log(*args):
 	sys.stdout.write(" ".join(map(str, args))+"\n")
 def log_line(*args):
@@ -372,3 +384,30 @@ def decode(code, key):
 	for i in xrange(len(code)/16):
 		string += r.decrypt(code[i*16+4:i*16+20])
 	return string[:string_size]
+
+def sin(angle): return math.sin(math.radians(angle))
+def cos(angle): return math.cos(math.radians(angle))
+def tan(angle): return math.tan(math.radians(angle))
+def asin(ratio): return math.degrees(math.asin(ratio))
+def acos(ratio): return math.degrees(math.acos(ratio))
+def atan(ratio): return math.degrees(math.atan(ratio))
+def get_angle_from_coord(pcx, pcy, x, y):
+	disx = float(pcx-x)
+	disy = float(pcy-y)
+	if disx == 0:
+		if disy == 0: return None
+		elif disy > 0: return 180
+		elif disy < 0: return 0
+	elif disy == 0:
+		if disx > 0: return 90
+		elif disx < 0: return 270
+	else:
+		angle = abs(atan(disy/disx))
+		if disx < 0 and disy > 0: # |/
+			return 270-angle
+		elif disx < 0 and disy < 0: # |\
+			return 270+angle
+		elif disx > 0 and disy > 0: # \|
+			return 90+angle
+		elif disx > 0 and disy < 0: # /|
+			return 90-angle

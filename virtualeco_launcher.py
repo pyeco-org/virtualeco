@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#pyinstaller.py --onefile --noupx --console virtualeco_launcher.py
 import sys
 import os
 import time
@@ -14,6 +15,8 @@ import random
 import copy
 import threading
 import socket
+import math
+import contextlib
 import SocketServer
 import BaseHTTPServer
 import SimpleHTTPServer
@@ -27,7 +30,3 @@ if __name__ == "__main__":
 	os.chdir(basedir)
 	sys.path.append(basedir)
 	exec open("virtualeco.py", "rb").read().replace("\r\n", "\n")+"\n"
-
-#build with pyinstaller
-#Makespec.py -FX virtualeco_launcher.py
-#Build.py ./virtualeco_launcher/virtualeco_launcher.spec

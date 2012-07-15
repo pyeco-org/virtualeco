@@ -3,6 +3,8 @@
 import traceback
 import hashlib
 import os
+import random
+import contextlib
 from lib import general
 from lib.packet import packet
 from lib import users
@@ -30,12 +32,12 @@ class MapDataHandler:
 			if not self.pc.map_obj:
 				return
 			with self.pc.map_obj.lock:
-				for pc in self.pc.map_obj.pc_list:
-					if not pc.online:
+				for p in self.pc.map_obj.pc_list:
+					if not p.online:
 						continue
-					if self.pc == pc:
+					if self.pc == p:
 						continue
-					pc.user.map_client.send(*args)
+					p.user.map_client.send(*args)
 	
 	def send_map(self, *args):
 		self.send_map_without_self(*args)
@@ -46,7 +48,7 @@ class MapDataHandler:
 			with p.lock and p.user.lock:
 				if not p.online:
 					continue
-				pc.user.map_client.send(*args)
+				p.user.map_client.send(*args)
 	
 	def stop(self):
 		if self.user:
@@ -66,14 +68,13 @@ class MapDataHandler:
 			if data_type not in DATA_TYPE_NOT_PRINT:
 				general.log("[ map ]",
 					data[:2].encode("hex"), data[2:].encode("hex"))
-			try:
-				handler = getattr(self, "do_%s"%data_type)
-			except AttributeError:
+			handler = self.name_map.get(data_type)
+			if not handler:
 				general.log_error("[ map ] unknow packet type",
 					data[:2].encode("hex"), data[2:].encode("hex"))
 				return
 			try:
-				handler(data_io)
+				handler(self, data_io)
 			except:
 				general.log_error("[ map ] handle_data error:", data.encode("hex"))
 				general.log_error(traceback.format_exc())
@@ -145,16 +146,16 @@ class MapDataHandler:
 			self.send("020e", pet) #キャラ情報
 			#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス
 		else:
-			pc = users.get_pc_from_id(i)
-			if not pc:
+			p = users.get_pc_from_id(i)
+			if not p:
 				return
-			with pc.lock:
-				if not pc.online:
+			with p.lock:
+				if not p.online:
 					return
-				if not pc.visible:
+				if not p.visible:
 					return
-				self.send("020e", pc) #キャラ情報
-				self.send("041b", pc) #kanban
+				self.send("020e", p) #キャラ情報
+				self.send("041b", p) #kanban
 	
 	def do_000a(self, data_io):
 		#接続・接続確認
@@ -559,11 +560,11 @@ class MapDataHandler:
 			if not item:
 				return
 			event_id = item.eventid
-		pc = users.get_pc_from_id(target_id)
-		with pc.lock:
-			if not pc.online:
+		p = users.get_pc_from_id(target_id)
+		with p.lock:
+			if not p.online:
 				return
-			script.run(pc, event_id)
+			script.run(p, event_id)
 	
 	def do_0605(self, data_io):
 		#NPCメッセージ(選択肢)の返信
@@ -704,5 +705,27 @@ class MapDataHandler:
 		self.pc.reset_attack()
 	
 	def do_1d0b(self, data_io):
+		#emotion request
 		emotion = general.io_unpack_byte(data_io)
 		self.send_map("1d0c", self.pc, emotion) #emotion
+	
+	def do_1d4c(self, data_io):
+		#greeting
+		target_id = general.io_unpack_int(data_io)
+		p = users.get_pc_from_id(target_id)
+		with self.pc.lock and p.lock:
+			rawdir = general.get_angle_from_coord(self.pc.x, self.pc.y, p.x, p.y)
+			p_rawdir = general.get_angle_from_coord(p.x, p.y, self.pc.x, self.pc.y)
+			if rawdir == None or p_rawdir == None:
+				self.pc.set_raw_dir(0.0)
+				p.set_raw_dir(180.0)
+			else:
+				self.pc.set_raw_dir(rawdir)
+				p.set_raw_dir(p_rawdir)
+		self.send_map("11f9", self.pc, 0x01) #キャラ移動アナウンス 向き変更のみ
+		self.send_map("11f9", p, 0x01) #キャラ移動アナウンス 向き変更のみ
+		motion = random.choice((113, 163, 164))
+		script.motion(self.pc, motion, False)
+		script.motion(p, motion, False)
+
+MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

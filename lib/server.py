@@ -132,7 +132,7 @@ class StandardClient(threading.Thread):
 			self.socket.sendall(packet)
 	def handle_packet(self):
 		if not self.recv_init:
-			packet = self.recv_packet(PACKET_INIT_LENGTH)
+			packet = self.recv_packet_force(PACKET_INIT_LENGTH)
 			if packet != PACKET_INIT:
 				raise ValueError("packet != PACKET_INIT")
 			self.recv_init = True

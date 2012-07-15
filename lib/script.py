@@ -39,7 +39,7 @@ def _load():
 				namespace = {}
 				exec obj in namespace
 				script_id = namespace["ID"]
-				if hasattr(script_id,"__iter__"):
+				if hasattr(script_id, "__iter__"):
 					for i in script_id:
 						script_list[i] = namespace
 				else:
@@ -115,6 +115,7 @@ NAME_WITH_TYPE = {
 	"npcsell": (),
 	"spawn": (int,), #monster_id
 	"killall": (),
+	"emotion": (int,),
 	}
 
 def help(pc):
@@ -158,6 +159,7 @@ def help(pc):
 /npcsell
 /spawn monster_id
 /killall
+/emotion emotion_id
 """)
 
 def handle_cmd(pc, cmd):
@@ -182,7 +184,7 @@ def handle_cmd(pc, cmd):
 				args[i] = types[i](arg)
 		except IndexError:
 			pass
-		eval(name)(pc, *args)
+		name_map.get(name)(pc, *args)
 	except:
 		exc_info = traceback.format_exc()
 		msg(pc, filter(None, exc_info.split("\n"))[-1])
@@ -617,3 +619,11 @@ def killall(pc):
 	with pc.lock and pc.map_obj.lock:
 		while pc.map_obj.monster_list:
 			monsters.delete(pc.map_obj.monster_list.pop())
+
+def emotion(pc, emotion_id):
+	if emotion_id > 255 or emotion_id < 0:
+		raise ValueError("emotion_id > 255 or < 0 [%d]"%emotion_id)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send_map("1d0c", pc, emotion_id) #emotion
+
+name_map = general.get_name_map(globals(), "")

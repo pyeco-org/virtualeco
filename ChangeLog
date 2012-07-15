@@ -1,0 +1,121 @@
+2012-07-15
+	add whisper support
+	add greeting support
+	use general.get_name_map instead of eval
+	fix MapDataHandler.send_server error
+	add script.emotion and command /emotion emotion_id
+
+2012-06-30
+	add emotion support (/*happy, /*anger3, /*tears, /*fun)
+
+2012-06-29
+	db update to 341, fix motion type error(char->uchar), add type EXSWORD
+
+2012-06-05
+	update db to v338
+
+2012-03-23
+	update to 332, add weapon motion support
+
+2012-01-27
+	add virtualeco_launcher.exe, fix script don't work on linux
+
+2012-01-26
+	upgrade database
+
+2012-01-17
+	improve packet recv stability
+
+2012-01-16
+	improve packet recv performance
+
+2012-01-10
+	add test, fix bug with close connection
+
+2012-01-10
+	fix bug with script.killall, logout cancel
+
+2012-01-10
+	attack_monster
+
+2012-01-10
+	monster spawn / kill
+
+2012-01-09
+	fix bug with sit
+
+2012-01-05
+	move monster.py to obj,
+	convert all file with windows format (\r\n),
+	log with windows format
+
+2012-01-05
+	rm dump, add server option MAX_CONNECTION_FROM_ONE_IP
+
+2012-01-05
+	nothing
+
+2012-01-05
+	pc.status ...
+
+2012-01-04
+	reference item pict id
+
+2012-01-04
+	fix bug with send packet
+
+2012-01-04
+	improve packet encrypt/decrypt
+
+2012-01-03
+	fix bug with delete character
+
+2012-01-03
+	script.wait, playbgm, playse, playjin, effect, setgold,
+	takegold, gold, npcmotion, npcmotion_loop, npcshop, npcsell
+	improve log system
+	add new option: BACKUP_USER_DATA_EVERY_DAY (default value: False)
+
+2012-01-02
+	general.log, logerr
+
+2012-01-02
+	pet.set_coord_from_master
+	pc.x pc.y pet.x pet.y now be float
+	fix bug (set_raw_dir)
+	move pet.py to obj/
+
+2012-01-02
+	pet, script.select, item event, kanban, fix bug (warehouse id, warp with hide pc, command with gmlevel)
+
+2012-01-01
+	warehouse
+
+2012-01-01
+	script.item, printitem, countitem, takeitem, npctrade, user, update,
+	hair, haircolor, face, wig, ex, wing, wingcolor, motion, motion_loop,
+	/dustbox
+
+2012-01-01
+	web server (reg user, del user, modify password)
+
+2011-12-31
+	script.handle_cmd, reloadscript, say, msg, servermsg, where, warp, warpraw
+
+2011-12-31
+	set_equip, unset_equip
+
+2011-12-31
+	lib.script, lib.script.say
+
+2011-12-31
+	logout, motion, move, multi-player support
+
+2011-12-30
+	until map loading
+
+2011-12-29
+	multi-character support (make / delete)
+
+2011-12-28
+	until login

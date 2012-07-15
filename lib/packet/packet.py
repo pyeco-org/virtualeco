@@ -6,9 +6,9 @@ from lib import db
 def make(data_type, *args):
 	if args and hasattr(args[0], "lock"):
 		with args[0].lock:
-			data_value = eval("make_%s"%data_type)(*args)
+			data_value = name_map[data_type](*args)
 	else:
-		data_value = eval("make_%s"%data_type)(*args)
+		data_value = name_map[data_type](*args)
 	if data_value == None:
 		general.log_error("packet make error:", data_type, args)
 		return ""
@@ -1177,3 +1177,13 @@ def make_1225(monster):
 def make_1d0c(pc, emotion):
 	"""emotion"""
 	return general.pack_int(pc.id)+general.pack_unsigned_byte(emotion)
+
+def make_00ca(name, result):
+	"""whisper failed"""
+	return general.pack_int(result)+general.pack_str(name)
+
+def make_00ce(pc, message):
+	"""whisper message"""
+	return general.pack_str(pc.name)+general.pack_str(message)
+
+name_map = general.get_name_map(globals(), "make_")

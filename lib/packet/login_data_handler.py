@@ -37,14 +37,13 @@ class LoginDataHandler:
 			if data_type not in DATA_TYPE_NOT_PRINT:
 				general.log("[login]",
 					data[:2].encode("hex"), data[2:].encode("hex"))
-			try:
-				handler = getattr(self, "do_%s"%data_type)
-			except AttributeError:
+			handler = self.name_map.get(data_type)
+			if not handler:
 				general.log_error("[login] unknow packet type",
 					data[:2].encode("hex"), data[2:].encode("hex"))
 				return
 			try:
-				handler(data_io)
+				handler(self, data_io)
 			except:
 				general.log_error("[login] handle_data error:", data.encode("hex"))
 				general.log_error(traceback.format_exc())
@@ -167,3 +166,16 @@ class LoginDataHandler:
 		general.log("[login]", "request friend list")
 		if self.pc:
 			self.send("00dd", self.pc) #フレンドリスト(自キャラ)
+	
+	def do_00c9(self, data_io):
+		#whisper send
+		name = general.io_unpack_str(data_io)
+		message = general.io_unpack_str(data_io)
+		p = users.get_pc_from_name(name)
+		if p and p.online:
+			#whisper message
+			p.user.login_client.send("00ce", self.pc, message)
+		else:
+			self.send("00ca", name, -1) #whisper failed
+
+LoginDataHandler.name_map = general.get_name_map(LoginDataHandler.__dict__, "do_")
