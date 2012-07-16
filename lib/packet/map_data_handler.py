@@ -704,10 +704,15 @@ class MapDataHandler:
 		general.log("[ map ] stop attack")
 		self.pc.reset_attack()
 	
-	def do_1d0b(self, data_io):
+	def do_1216(self, data_io):
 		#emotion request
-		emotion = general.io_unpack_byte(data_io)
-		self.send_map("1d0c", self.pc, emotion) #emotion
+		emotion_id = general.io_unpack_int(data_io)
+		self.send_map("1217", self.pc, emotion_id) #emotion
+	
+	def do_1d0b(self, data_io):
+		#emotion_ex request
+		emotion_ex_id = general.io_unpack_byte(data_io)
+		self.send_map("1d0c", self.pc, emotion_ex_id) #emotion_ex
 	
 	def do_1d4c(self, data_io):
 		#greeting

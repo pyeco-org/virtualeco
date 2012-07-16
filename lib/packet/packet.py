@@ -260,7 +260,7 @@ def make_0203(item, iid, part):
 	result = general.pack_byte(0) #unknown #常に0
 	result += "\xd6" #データサイズ
 	result += general.pack_int(iid) #インベントリID
-	result += general.pack_int(item.item_id) #アイテムID
+	result += general.pack_unsigned_int(item.item_id) #アイテムID
 	result += general.pack_int(0) #見た目,フィギュア,スケッチ情報
 	result += general.pack_byte(part) #アイテムの場所
 	result += general.pack_int(0x01) #鑑定済み:0x01 カードロック？:0x20
@@ -279,8 +279,8 @@ def make_0203(item, iid, part):
 	result += general.pack_int(0) #カードID9
 	result += general.pack_int(0) #カードID10
 	result += general.pack_byte(0) #染色
-	result += general.pack_short(item.count) #個数
-	result += general.pack_int(item.price) #ゴーレム販売価格
+	result += general.pack_unsigned_short(item.count) #個数
+	result += general.pack_unsigned_int(item.price) #ゴーレム販売価格
 	result += general.pack_short(0) #ゴーレム販売個数
 	result += general.pack_short(0) #憑依重量
 	result += general.pack_short(0) #最大重量
@@ -338,9 +338,9 @@ def make_0203(item, iid, part):
 	result += general.pack_short(0) #ペットステ（攻撃速度
 	result += general.pack_short(0) #ペットステ（詠唱速度
 	result += general.pack_short(0) #ペットステ？（スタミナ回復力？
-	result += general.pack_int(item.price) #ゴーレム露店の買取価格
+	result += general.pack_unsigned_int(item.price) #ゴーレム露店の買取価格
 	result += general.pack_short(0) #ゴーレム露店の買取個数
-	result += general.pack_int(item.price) #商人露店の販売価格
+	result += general.pack_unsigned_int(item.price) #商人露店の販売価格
 	result += general.pack_short(0) #商人露店の販売個数
 	result += general.pack_int(0) #何かの価格？ 商人露店の買取価格の予約？
 	result += general.pack_short(0) #何かの個数？
@@ -731,7 +731,7 @@ def make_121c(pc, npc_id=None, npc_motion_id=None, npc_motion_loop=None):
 	"""モーション通知"""
 	result = general.pack_int((
 		npc_id == None and pc.id or npc_id)) #サーバキャラID
-	result += general.pack_short((
+	result += general.pack_unsigned_short((
 		npc_motion_id == None and pc.motion_id or npc_motion_id)) #モーションID
 	result += general.pack_byte((
 		npc_motion_loop == None and pc.motion_loop or
@@ -785,7 +785,7 @@ def make_020e(pc):
 	result += general.pack_str("") #露店看板
 	result += general.pack_byte(0) #プレイヤー露店かどうか
 	result += general.pack_int(1000) #chara size (1000が標準
-	result += general.pack_short(pc.motion_id) #モーション#ただし座り(135)や移動や
+	result += general.pack_unsigned_short(pc.motion_id) #モーション#ただし座り(135)や移動や
 										#武器・騎乗ペットによるモーションの場合0
 	result += general.pack_int(0) #不明
 	result += general.pack_int(2) #2 r0fa7参照
@@ -849,7 +849,7 @@ def make_03f7(message, npc_name, npc_motion_id, npc_id, npc_visible=True):
 	result += general.pack_byte(0) #unknow
 	result += general.pack_byte((npc_visible and 1 or 0)) #npc visible
 	result += general.pack_str(message)
-	result += general.pack_short(npc_motion_id)
+	result += general.pack_unsigned_short(npc_motion_id)
 	result += general.pack_str(npc_name)
 	return result
 
@@ -890,7 +890,7 @@ def make_09d4(item, iid, part):
 def make_09cf(item, iid):
 	"""アイテム個数変化"""
 	result = general.pack_int(iid) #インベントリID
-	result += general.pack_short(item.count) #変化後の個数
+	result += general.pack_unsigned_short(item.count) #変化後の個数
 	return result
 
 def make_09ce(iid):
@@ -1077,7 +1077,7 @@ def make_05fa(sound_id, loop=0, volume=100, balance=50):
 def make_060e(pc, effect_id, id=None, x=None, y=None, dir=None):
 	"""エフェクト受信"""
 	result = general.pack_int((id == None and pc.id or id))
-	result += general.pack_int(effect_id) #エフェクトID(EFFECT.dat&attr.dat
+	result += general.pack_unsigned_int(effect_id) #エフェクトID(EFFECT.dat&attr.dat
 	#自キャラに掛かった場合 x, yは255
 	result += general.pack_unsigned_byte(int(x == None and 255 or x))
 	result += general.pack_unsigned_byte(int(y == None and 255 or y))
@@ -1094,7 +1094,7 @@ def make_0613(pc, item_id_list, magnification=100):
 	result = general.pack_int(magnification) #アイテムの販売価格の倍率(単位%)(100で標準)
 	result += general.pack_byte(len(item_id_list)) #個数
 	for item_id in item_id_list:
-		result += general.pack_int(item_id) #アイテムID（13個以上はエラー
+		result += general.pack_unsigned_int(item_id) #アイテムID（13個以上はエラー
 	result += general.pack_int(pc.gold) #所持金
 	result += general.pack_int(0) #銀行に預けてる金
 	result += general.pack_byte(0) #0普通の店1CPの店2ecoin
@@ -1174,9 +1174,13 @@ def make_1225(monster):
 	"""モンスター消去"""
 	return general.pack_int(monster.id)
 
-def make_1d0c(pc, emotion):
+def make_1217(pc, emotion_id):
 	"""emotion"""
-	return general.pack_int(pc.id)+general.pack_unsigned_byte(emotion)
+	return general.pack_int(pc.id)+general.pack_unsigned_int(emotion_id)
+
+def make_1d0c(pc, emotion_ex_id):
+	"""emotion_ex"""
+	return general.pack_int(pc.id)+general.pack_unsigned_byte(emotion_ex_id)
 
 def make_00ca(name, result):
 	"""whisper failed"""

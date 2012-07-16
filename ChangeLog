@@ -1,3 +1,10 @@
+2012-07-16
+	add normal emotion support
+	move old script.emotion to script.emotion_ex
+	move old command /emotion to /emotion_ex
+	add script.emotion and command /emotion emotion_id
+	set some signed value to unsigned
+
 2012-07-15
 	add whisper support
 	add greeting support

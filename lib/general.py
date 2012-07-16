@@ -25,6 +25,12 @@ STDOUT_LOG = "./log/%s.log"
 STDERR_LOG = "./log/%s_error.log"
 LOG_DIR = "./log"
 
+RANGE_INT = (-2147483648, 2147483647)
+RANGE_UNSIGNED_INT = (0, 4294967295)
+RANGE_SHORT = (-32768, 32767)
+RANGE_UNSIGNED_SHORT = (0, 65535)
+RANGE_BYTE = (-128, 127)
+RANGE_UNSIGNED_BYTE = (0, 255)
 ACCESORY_TYPE_LIST = ("ACCESORY_NECK",
 				"JOINT_SYMBOL",
 				)
@@ -411,3 +417,13 @@ def get_angle_from_coord(pcx, pcy, x, y):
 			return 90+angle
 		elif disx > 0 and disy < 0: # /|
 			return 90-angle
+
+def assert_value_range(name, value, value_range):
+	if value < value_range[0]:
+		raise ValueError(
+			"%s < %s [%s]"%tuple(map(str, (name, value_range[0], value)))
+		)
+	elif value > value_range[1]:
+		raise ValueError(
+			"%s > %s [%s]"%tuple(map(str, (name, value_range[1], value)))
+		)

@@ -6,5 +6,6 @@ ID = 18000007
 SCRIPT_PATH = "./script/say.py"
 
 def main(pc):
-	script.wait(pc, 3000)
+	script.wait(pc, 1000)
+	pc.dic["test"] = 123
 	script.say(pc, SCRIPT_PATH)

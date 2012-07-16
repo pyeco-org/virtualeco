@@ -116,6 +116,7 @@ NAME_WITH_TYPE = {
 	"spawn": (int,), #monster_id
 	"killall": (),
 	"emotion": (int,),
+	"emotion_ex": (int,),
 	}
 
 def help(pc):
@@ -160,6 +161,7 @@ def help(pc):
 /spawn monster_id
 /killall
 /emotion emotion_id
+/emotion_ex emotion_ex_id
 """)
 
 def handle_cmd(pc, cmd):
@@ -243,8 +245,8 @@ def where(pc):
 
 def warp(pc, map_id, x=None, y=None):
 	if x != None and y != None:
-		if x > 255 or x < 0: raise ValueError("x > 255 or < 0 [%d]"%x)
-		if y > 255 or y < 0: raise ValueError("y > 255 or < 0 [%d]"%y)
+		general.assert_value_range("x", x, general.RANGE_UNSIGNED_BYTE)
+		general.assert_value_range("y", y, general.RANGE_UNSIGNED_BYTE)
 	with pc.lock and pc.user.lock:
 		if map_id != pc.map_obj.map_id:
 			if not pc.set_map(map_id):
@@ -263,10 +265,8 @@ def warp(pc, map_id, x=None, y=None):
 			pc.set_pet()
 
 def warpraw(pc, rawx, rawy):
-	if rawx > 32767 or rawx < -32768:
-		raise ValueError("rawx > 32767 or < -32768 [%d]"%rawx)
-	if rawy > 32767 or rawy < -32768:
-		raise ValueError("rawy > 32767 or < -32768 [%d]"%rawy)
+	general.assert_value_range("rawx", rawx, general.RANGE_SHORT)
+	general.assert_value_range("rawy", rawy, general.RANGE_SHORT)
 	with pc.lock and pc.user.lock:
 		pc.set_raw_coord(rawx, rawy)
 		pc.unset_pet()
@@ -278,57 +278,49 @@ def update(pc):
 		pc.user.map_client.send_map("020e", pc) #キャラ情報
 
 def hair(pc, hair_id):
-	if hair_id > 32767 or hair_id < -32768:
-		raise ValueError("hair_id > 32767 or < -32768 [%d]"%hair_id)
+	general.assert_value_range("hair_id", hair_id, general.RANGE_SHORT)
 	with pc.lock:
 		pc.hair = hair_id
 	update(pc)
 
 def haircolor(pc, haircolor_id):
-	if haircolor_id > 127 or haircolor_id < -128:
-		raise ValueError("haircolor_id > 127 or < -128 [%d]"%haircolor_id)
+	general.assert_value_range("haircolor_id", haircolor_id, general.RANGE_BYTE)
 	with pc.lock:
 		pc.haircolor = haircolor_id
 	update(pc)
 
 def face(pc, face_id):
-	if face_id > 32767 or face_id < -32768:
-		raise ValueError("face_id > 32767 or < -32768 [%d]"%face_id)
+	general.assert_value_range("face_id", face_id, general.RANGE_SHORT)
 	with pc.lock:
 		pc.face = face_id
 	update(pc)
 
 def wig(pc, wig_id):
-	if wig_id > 32767 or wig_id < -32768:
-		raise ValueError("wig_id > 32767 or < -32768 [%d]"%wig_id)
+	general.assert_value_range("wig_id", wig_id, general.RANGE_SHORT)
 	with pc.lock:
 		pc.wig = wig_id
 	update(pc)
 
 def ex(pc, ex_id):
-	if ex_id > 127 or ex_id < -128:
-		raise ValueError("ex_id > 127 or < -128 [%d]"%ex_id)
+	general.assert_value_range("ex_id", ex_id, general.RANGE_BYTE)
 	with pc.lock:
 		pc.ex = ex_id
 	update(pc)
 
 def wing(pc, wing_id):
-	if wing_id > 127 or wing_id < -128:
-		raise ValueError("wing_id > 127 or < -128 [%d]"%wing_id)
+	general.assert_value_range("wing_id", wing_id, general.RANGE_BYTE)
 	with pc.lock:
 		pc.ex = wing_id
 	update(pc)
 
 def wingcolor(pc, wingcolor_id):
-	if wingcolor_id > 127 or wingcolor_id < -128:
-		raise ValueError("wingcolor_id > 127 or < -128 [%d]"%wingcolor_id)
+	general.assert_value_range("wingcolor_id", wingcolor_id, general.RANGE_BYTE)
 	with pc.lock:
 		pc.wingcolor = wingcolor_id
 	update(pc)
 
 def motion(pc, motion_id, motion_loop=False):
-	if motion_id > 32767 or motion_id < -32768:
-		raise ValueError("motion_id > 32767 or < -32768 [%d]"%motion_id)
+	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	pc.set_motion(motion_id, motion_loop)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send_map("121c", pc) #モーション通知
@@ -340,10 +332,8 @@ def item(pc, item_id, item_count=1):
 	with pc.lock and pc.user.lock:
 		return _item(pc, item_id, item_count)
 def _item(pc, item_id, item_count):
-	if item_count > 32767 or item_count < -32768:
-		raise ValueError("item_count > 32767 or < -32768 [%d]"%item_count)
-	if isinstance(item_id, long):
-		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
+	general.assert_value_range("item_count", item_count, general.RANGE_UNSIGNED_SHORT)
+	general.assert_value_range("item_id", item_id, general.RANGE_UNSIGNED_INT)
 	while item_count:
 		item = general.get_item(item_id)
 		item_stock_exist = False
@@ -384,8 +374,7 @@ def printitem(pc):
 				item.name, iid, item.item_id, item.count))
 
 def countitem(pc, item_id): #not for command
-	if isinstance(item_id, long):
-		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
+	general.assert_value_range("item_id", item_id, general.RANGE_UNSIGNED_INT)
 	item_count = 0
 	with pc.lock and pc.user.lock:
 		for iid, item in pc.item.iteritems():
@@ -400,10 +389,8 @@ def takeitem(pc, item_id, item_count=1):
 	with pc.lock and pc.user.lock:
 		return _takeitem(pc, item_id, item_count)
 def _takeitem(pc, item_id, item_count):
-	if item_count > 32767 or item_count < -32768:
-		raise ValueError("item_count > 32767 or < -32768 [%d]"%item_count)
-	if isinstance(item_id, long):
-		raise ValueError("isinstance(item_id, long) [%d]"%item_id)
+	general.assert_value_range("item_count", item_count, general.RANGE_UNSIGNED_SHORT)
+	general.assert_value_range("item_id", item_id, general.RANGE_UNSIGNED_INT)
 	if countitem(pc, item_id) < item_count:
 		return False
 	while item_count:
@@ -462,8 +449,7 @@ def npctrade(pc): #not for command
 	return pc.trade_return_list
 
 def warehouse(pc, warehouse_id):
-	if warehouse_id > 127 or warehouse_id < -128:
-		raise ValueError("warehouse_id > 127 or < -128 [%d]"%warehouse_id)
+	general.assert_value_range("warehouse_id", warehouse_id, general.RANGE_BYTE)
 	num_max = 300
 	num_here = 0
 	num_all = 0
@@ -487,8 +473,7 @@ def warehouse(pc, warehouse_id):
 
 def select(pc, option_list, title=""): #not for command
 	option_list = filter(None, option_list)
-	if len(option_list) > 65:
-		raise ValueError("len(option_list) > 65")
+	general.assert_value_range("len(option_list)", len(option_list), (0, 65))
 	with pc.lock and pc.user.lock:
 		pc.select_result = None
 		#NPCのメッセージのうち、選択肢から選ぶもの
@@ -502,68 +487,52 @@ def select(pc, option_list, title=""): #not for command
 		time.sleep(0.1)
 
 def wait(pc, time_ms): #not for command
-	if isinstance(time_ms, long):
-		raise ValueError("isinstance(time_ms, long) [%d]"%time_ms)
+	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send("05eb", time_ms) #イベント関連のウェイト
 	time.sleep(time_ms/1000.0)
 
 def playbgm(pc, sound_id, loop=1, volume=100):
-	if isinstance(sound_id, long):
-		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
-	if volume > 100 or volume < 0:
-		raise ValueError("volume > 100 or < 0 [%d]"%volume)
+	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
+	general.assert_value_range("volume", volume, (0, 100))
 	with pc.lock and pc.user.lock:
 		#音楽を再生する
 		pc.user.map_client.send("05f0", sound_id, (loop and 1 or 0), volume)
 
 def playse(pc, sound_id, loop=0, volume=100, balance=50):
-	if isinstance(sound_id, long):
-		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
-	if volume > 100 or volume < 0:
-		raise ValueError("volume > 100 or < 0 [%d]"%volume)
-	if balance > 100 or balance < 0:
-		raise ValueError("balance > 100 or < 0 [%d]"%balance)
+	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
+	general.assert_value_range("volume", volume, (0, 100))
+	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#効果音を再生する
 		pc.user.map_client.send("05f5", sound_id, (loop and 1 or 0), volume, balance)
 
 def playjin(pc, sound_id, loop=0, volume=100, balance=50):
-	if isinstance(sound_id, long):
-		raise ValueError("isinstance(sound_id, long) [%d]"%sound_id)
-	if volume > 100 or volume < 0:
-		raise ValueError("volume > 100 or < 0 [%d]"%volume)
-	if balance > 100 or balance < 0:
-		raise ValueError("balance > 100 or < 0 [%d]"%balance)
+	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
+	general.assert_value_range("volume", volume, (0, 100))
+	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#ジングルを再生する
 		pc.user.map_client.send("05fa", sound_id, (loop and 1 or 0), volume, balance)
 
 def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
-	if isinstance(effect_id, long):
-		raise ValueError("isinstance(effect_id, long) [%d]"%effect_id)
-	if id != None and isinstance(id, long):
-		raise ValueError("isinstance(id, long) [%d]"%id)
-	if x != None and (x > 255 or x < 0):
-		raise ValueError("x > 255 or < 0 [%d]"%x)
-	if y != None and (y > 255 or y < 0):
-		raise ValueError("y > 255 or < 0 [%d]"%y)
-	if dir != None and (dir > 127 or dir < -128):
-		raise ValueError("dir > 127 or < -128 [%d]"%dir)
+	general.assert_value_range("effect_id", effect_id, general.RANGE_UNSIGNED_INT)
+	general.assert_value_range("id", id, general.RANGE_INT)
+	general.assert_value_range("x", x, general.RANGE_UNSIGNED_BYTE)
+	general.assert_value_range("y", y, general.RANGE_UNSIGNED_BYTE)
+	general.assert_value_range("dir", dir, general.RANGE_BYTE)
 	with pc.lock and pc.user.lock:
 		#エフェクト受信
 		pc.user.map_client.send_map("060e", pc, effect_id, id, x, y, dir)
 
 def speed(pc, speed):
-	if speed > 32767 or speed < -32768:
-		raise ValueError("speed > 32767 or < -32768 [%d]"%speed)
+	general.assert_value_range("speed", speed, general.RANGE_SHORT)
 	with pc.lock and pc.user.lock:
 		pc.status.speed = speed
 		pc.user.map_client.send_map("1239", pc) #キャラ速度通知・変更
 
 def setgold(pc, gold):
-	if isinstance(gold, long):
-		raise ValueError("isinstance(gold, long) [%d]"%gold)
+	general.assert_value_range("gold", gold, general.RANGE_INT)
 	with pc.lock and pc.user.lock:
 		if gold < 0 or gold > 100000000:
 			msg(pc, "setgold error: gold < 0 or gold > 100000000 [%s]"%gold)
@@ -584,10 +553,8 @@ def gold(pc, gold_give):
 		return setgold(pc, pc.gold+gold_give)
 
 def npcmotion(pc, npc_id, motion_id, motion_loop=False):
-	if isinstance(npc_id, long):
-		raise ValueError("isinstance(npc_id, long) [%d]"%npc_id)
-	if motion_id > 32767 or motion_id < -32768:
-		raise ValueError("motion_id > 32767 or < -32768 [%d]"%motion_id)
+	general.assert_value_range("npc_id", npc_id, general.RANGE_INT)
+	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
 		#モーション通知
 		pc.user.map_client.send_map("121c", pc, npc_id, motion_id, motion_loop) 
@@ -612,8 +579,7 @@ def npcsell(pc):
 def spawn(pc, monster_id):
 	with pc.lock:
 		error = monsters.spawn(monster_id, pc.map_id, pc.x, pc.y)
-		if error:
-			msg(pc, error)
+		if error: msg(pc, error)
 
 def killall(pc):
 	with pc.lock and pc.map_obj.lock:
@@ -621,9 +587,15 @@ def killall(pc):
 			monsters.delete(pc.map_obj.monster_list.pop())
 
 def emotion(pc, emotion_id):
-	if emotion_id > 255 or emotion_id < 0:
-		raise ValueError("emotion_id > 255 or < 0 [%d]"%emotion_id)
+	general.assert_value_range("emotion_id", emotion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("1d0c", pc, emotion_id) #emotion
+		pc.user.map_client.send_map("1217", pc, emotion_id) #emotion
+
+def emotion_ex(pc, emotion_ex_id):
+	general.assert_value_range(
+		"emotion_ex_id", emotion_ex_id, general.RANGE_UNSIGNED_BYTE
+	)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send_map("1d0c", pc, emotion_ex_id) #emotion_ex
 
 name_map = general.get_name_map(globals(), "")
