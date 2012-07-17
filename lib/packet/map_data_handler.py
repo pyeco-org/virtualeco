@@ -218,7 +218,7 @@ class MapDataHandler:
 		self.send_item_list() #インベントリ情報
 		self.send("01ff", self.pc) #自分のキャラクター情報
 		self.send("03f2", 0x04) #システムメッセージ #構えが「叩き」に変更されました
-		self.send("09ec", self.pc) #ゴールド入手 
+		self.send("09ec", self.pc) #ゴールド入手
 		
 		self.send("0230", self.pc) #現在CAPA/PAYL
 		self.send("0231", self.pc) #最大CAPA/PAYL
@@ -243,6 +243,9 @@ class MapDataHandler:
 		self.send("1bbc") #スタンプ帳詳細
 		self.send("025d") #不明
 		self.send("0695") #不明
+		for i in xrange(14):
+			self.send("1ce9", i) #useable motion_ex_id
+		self.send("1d06", 0b1111) #emotion_ex enumerate
 		self.send("0236", self.pc) #wrp ranking関係
 		self.send("1b67", self.pc) #MAPログイン時に基本情報を全て受信した後に受信される
 		general.log("[ map ] send pc info success")

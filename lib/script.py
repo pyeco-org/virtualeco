@@ -20,6 +20,7 @@ def load():
 	from lib import monsters
 	with script_list_lock:
 		_load()
+
 def _load():
 	general.log_line("Load %-20s"%("%s ..."%SCRIPT_DIR))
 	script_list.clear()
@@ -117,6 +118,10 @@ NAME_WITH_TYPE = {
 	"killall": (),
 	"emotion": (int,),
 	"emotion_ex": (int,),
+	"shownpc": (int,),
+	"hidenpc": (int,),
+	"blackout": (int,),
+	"whiteout": (int,),
 	}
 
 def help(pc):
@@ -162,6 +167,10 @@ def help(pc):
 /killall
 /emotion emotion_id
 /emotion_ex emotion_ex_id
+/shownpc npc_id
+/hidenpc npc_id
+#blackout time_ms
+#whiteout time_ms
 """)
 
 def handle_cmd(pc, cmd):
@@ -215,6 +224,7 @@ def user(pc):
 def say(pc, message, npc_name=None, npc_motion_id=131, npc_id=None):
 	if npc_id == None:
 		npc_id = pc.event_id
+	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
 	if npc_name == None:
 		npc = db.npc.get(pc.event_id)
 		if npc: npc_name = npc.name
@@ -553,7 +563,7 @@ def gold(pc, gold_give):
 		return setgold(pc, pc.gold+gold_give)
 
 def npcmotion(pc, npc_id, motion_id, motion_loop=False):
-	general.assert_value_range("npc_id", npc_id, general.RANGE_INT)
+	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
 	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
 		#モーション通知
@@ -597,5 +607,29 @@ def emotion_ex(pc, emotion_ex_id):
 	)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send_map("1d0c", pc, emotion_ex_id) #emotion_ex
+
+def shownpc(pc, npc_id):
+	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("05e2", npc_id) #show npc
+
+def hidenpc(pc, npc_id):
+	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("05e3", npc_id) #hide npc
+
+def blackout(pc, time_ms):
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("0609", 1, 0) #blackout on
+	wait(pc, time_ms)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("0609", 0, 0) #blackout off
+
+def whiteout(pc, time_ms):
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("0609", 1, 1) #whiteout on
+	wait(pc, time_ms)
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send("0609", 0, 1) #whiteout off
 
 name_map = general.get_name_map(globals(), "")

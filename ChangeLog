@@ -1,3 +1,10 @@
+2012-07-17
+	add script.shownpc and command /shownpc npc_id
+	add script.hidenpc and command /hidenpc npc_id
+	add script.blackout and command /blackout time_ms
+	add script.whiteout and command /whiteout time_ms
+	make all motion_ex and emotion_ex useable without command
+
 2012-07-16
 	add normal emotion support
 	move old script.emotion to script.emotion_ex

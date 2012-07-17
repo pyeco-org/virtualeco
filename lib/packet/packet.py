@@ -517,7 +517,7 @@ def make_0226(pc, job):
 	"""スキル一覧"""
 	result = ""
 	if job == 0:
-		skill_list_length = general.pack_byte(len(pc.skill_list))
+		skill_list_length = general.pack_unsigned_byte(len(pc.skill_list))
 		result += skill_list_length #スキルID
 		for skill_id in pc.skill_list:
 			result += general.pack_short(skill_id)
@@ -531,7 +531,7 @@ def make_0226(pc, job):
 		for skill_id in pc.skill_list:
 			result += general.pack_short(1)
 	else:
-		skill_list_length = general.pack_byte(0)
+		skill_list_length = general.pack_unsigned_byte(0)
 		result += skill_list_length #スキルID
 		result += skill_list_length #習得Lv
 		result += skill_list_length #不明
@@ -729,7 +729,7 @@ def make_0fa6(pc):
 
 def make_121c(pc, npc_id=None, npc_motion_id=None, npc_motion_loop=None):
 	"""モーション通知"""
-	result = general.pack_int((
+	result = general.pack_unsigned_int((
 		npc_id == None and pc.id or npc_id)) #サーバキャラID
 	result += general.pack_unsigned_short((
 		npc_motion_id == None and pc.motion_id or npc_motion_id)) #モーションID
@@ -845,7 +845,7 @@ def make_03f9():
 
 def make_03f7(message, npc_name, npc_motion_id, npc_id, npc_visible=True):
 	"""NPCメッセージ"""
-	result = general.pack_int(npc_id)
+	result = general.pack_unsigned_int(npc_id)
 	result += general.pack_byte(0) #unknow
 	result += general.pack_byte((npc_visible and 1 or 0)) #npc visible
 	result += general.pack_str(message)
@@ -1046,7 +1046,7 @@ def make_041b(pc):
 
 def make_05eb(time_ms):
 	"""イベント関連のウェイト"""
-	return general.pack_int(time_ms) #ミリセカンド
+	return general.pack_unsigned_int(time_ms) #ミリセカンド
 
 def make_05f0(sound_id, loop=1, volume=100):
 	"""音楽を再生する"""
@@ -1189,5 +1189,29 @@ def make_00ca(name, result):
 def make_00ce(pc, message):
 	"""whisper message"""
 	return general.pack_str(pc.name)+general.pack_str(message)
+
+def make_05e2(npc_id):
+	"""show npc"""
+	return general.pack_unsigned_int(npc_id)
+
+def make_05e3(npc_id):
+	"""hide npc"""
+	return general.pack_unsigned_int(npc_id)
+
+def make_0609(switch, type):
+	"""blackout, whiteout"""
+	result = general.pack_unsigned_byte(switch) #0: off, 1: on
+	result += general.pack_unsigned_byte(type) #0: blackout, 1: whiteout
+	return result
+
+def make_1ce9(motion_ex_id):
+	"""useable motion_ex_id"""
+	return general.pack_unsigned_short(motion_ex_id)
+
+def make_1d06(emotion_ex_enum):
+	"""emotion_ex enumerate"""
+	# example: 00, 03
+	# enum |= 0b0001; enum |= 0b1000
+	return general.pack_unsigned_int(emotion_ex_enum)
 
 name_map = general.get_name_map(globals(), "make_")
