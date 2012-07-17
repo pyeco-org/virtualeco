@@ -4,8 +4,12 @@
 	add general.secure_remove replace os.remove
 	add general.secure_rmdir replace os.rmdir
 	add general.secure_mkdir replace os.mkdir
-	disable os.link
-	disable os.symlink
+	disable os.link, os.symlink
+	add general.secure_rename replace os.rename
+	add general.secure_chdir
+	add general.secure_chmod replace os.chmod
+	add general.secure_chown replace os.chown
+	disable os.chdir, os.chroot, os.mkfifo
 
 2012-07-17
 	make password hash extend word random each login

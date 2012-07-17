@@ -83,6 +83,8 @@ PET_TYPE_LIST = ("BACK_DEMON",
 				"PET_NEKOMATA",
 				)
 
+# make server more safe from remote attack by special user input
+# don't work if code or script writeable
 def log_io(msg):
 	STDERR.write(msg)
 def within_base(path, base):
@@ -126,12 +128,28 @@ def secure_mkdir(path, mode=0777, base=DEFAULT_BASE):
 	if not within_base(path, base):
 		raise IOError("cannot create dir [%s] (%s) outside of [%s]"%(path, mode, base))
 	return __mkdir(path)
+def secure_rename(old, new, src_base=DEFAULT_BASE, dst_base=DEFAULT_BASE):
+	old = str(old)
+	new = str(new)
+	src_base = str(src_base)
+	dst_base = str(dst_base)
+	#log_io("secure_rename from [%s] within [%s]\n"%(old, src_base))
+	#log_io("secure_rename to [%s] within [%s]\n"%(new, dst_base))
+	if not within_base(old, src_base):
+		raise IOError("cannot rename from [%s] outside of [%s]"%(old, src_base))
+	if not within_base(new, src_base):
+		raise IOError("cannot rename to [%s] outside of [%s]"%(new, dst_base))
+	return __rename(old, new)
+def secure_chdir():
+	return __chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 import __builtin__
 __open = __builtin__.open
 __listdir = os.listdir
 __remove = os.remove
 __rmdir = os.rmdir
 __mkdir = os.mkdir
+__rename = os.rename
+__chdir = os.chdir
 __builtin__.open = secure_open
 __builtin__.file = secure_open
 os.listdir = secure_listdir
@@ -139,9 +157,37 @@ os.remove = secure_remove
 os.unlink = secure_remove
 os.rmdir = secure_rmdir
 os.mkdir = secure_mkdir
+os.rename = secure_rename
 def __raise(e): raise e
 os.link = lambda *args: __raise(IOError("cannot create hard link everywhere"))
 os.symlink = lambda *args: __raise(IOError("cannot create symbolic link everywhere"))
+os.chdir = lambda *args: __raise(IOError("cannot chdir everywhere"))
+if os.name == "posix":
+	def secure_chmod(path, mode, base=DEFAULT_BASE):
+		path = str(path)
+		mode = int(mode)
+		#log_io("secure_chmod [%s] (%s) within [%s]\n"%(path, mode, base))
+		if not within_base(path, base):
+			raise IOError(
+				"cannot chmod [%s] (%s) outside of [%s]"%(path, mode, base)
+			)
+		return __chmod(path, mode)
+	def secure_chown(path, uid, gid, base=DEFAULT_BASE):
+		path = str(path)
+		uid = int(uid)
+		gid = int(gid)
+		#log_io("secure_chown [%s] (%s, %s) within [%s]\n"%(path, uid, gid, base))
+		if not within_base(path, mode, base):
+			raise IOError(
+				"cannot chown [%s] (%s, %s) outside of [%s]"%(path, uid, gid, base)
+			)
+		return __chown(path, uid, gid)
+	__chmod = os.chmod
+	__chown = os.chown
+	os.chmod = secure_chmod
+	os.chown = secure_chown
+	os.chroot = lambda *args: __raise(IOError("cannot chroot everywhere"))
+	os.mkfifo = lambda *args: __raise(IOError("cannot mkfifo everywhere"))
 
 class Log:
 	def __init__(self, handle, base_path):
