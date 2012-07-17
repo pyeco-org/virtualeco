@@ -1,4 +1,8 @@
 2012-07-17
+	make password hash extend word random each login
+	add script.reloadsinglescript and command /reloadsinglescript path
+
+2012-07-17
 	add script.shownpc and command /shownpc npc_id
 	add script.hidenpc and command /hidenpc npc_id
 	add script.blackout and command /blackout time_ms

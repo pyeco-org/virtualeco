@@ -12,8 +12,6 @@ from lib import script
 from lib import pets
 from lib import monsters
 from lib import db
-WORD_FRONT = str(general.randint(0, 9999)).zfill(4)
-WORD_BACK = str(general.randint(0, 9999)).zfill(4)
 DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
 					"0032", #接続確認(マップサーバとのみ) 20秒一回
 					"0fa5", #戦闘状態変更通知
@@ -23,6 +21,12 @@ class MapDataHandler:
 	def __init__(self):
 		self.user = None
 		self.pc = None
+		self.word_front = general.pack_unsigned_int(
+			general.randint(0, general.RANGE_INT[1])
+		)
+		self.word_back = general.pack_unsigned_int(
+			general.randint(0, general.RANGE_INT[1])
+		)
 	
 	def send(self, *args):
 		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
@@ -162,7 +166,10 @@ class MapDataHandler:
 		data = data_io.read()
 		general.log("[ map ] eco version", general.unpack_int(data[:4]))
 		self.send("000b", data)
-		self.send("000f", WORD_FRONT+WORD_BACK)
+		self.send("000f", self.word_front+self.word_back)
+		general.log("[ map ] send word",
+			self.word_front.encode("hex"), self.word_back.encode("hex"),
+		)
 	
 	def do_0032(self, data_io):
 		#接続確認(マップサーバとのみ) 20秒一回
@@ -170,18 +177,17 @@ class MapDataHandler:
 	
 	def do_0010(self, data_io):
 		#マップサーバーに認証情報の送信
-		general.log_line("[ map ]", "login")
 		username = general.io_unpack_str(data_io)
 		password_sha1 = general.io_unpack_raw(data_io)[:40]
-		general.log(username, password_sha1)
+		general.log("[ map ]", "login", username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
 				if user.name != username:
 					continue
 				user_password_sha1 = hashlib.sha1(
-					"".join((str(general.unpack_int(WORD_FRONT)),
+					"".join((str(general.unpack_unsigned_int(self.word_front)),
 							user.password,
-							str(general.unpack_int(WORD_BACK)),
+							str(general.unpack_unsigned_int(self.word_back)),
 							))).hexdigest()
 				if user_password_sha1 != password_sha1:
 					self.stop()

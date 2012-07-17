@@ -6,8 +6,6 @@ import os
 from lib import general
 from lib.packet import packet
 from lib import users
-WORD_FRONT = str(general.randint(0, 9999)).zfill(4)
-WORD_BACK = str(general.randint(0, 9999)).zfill(4)
 DATA_TYPE_NOT_PRINT = (	"000a", #接続確認
 					)
 
@@ -15,6 +13,12 @@ class LoginDataHandler:
 	def __init__(self):
 		self.user = None
 		self.pc = None
+		self.word_front = general.pack_unsigned_int(
+			general.randint(0, general.RANGE_INT[1])
+		)
+		self.word_back = general.pack_unsigned_int(
+			general.randint(0, general.RANGE_INT[1])
+		)
 	
 	def send(self, *args):
 		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
@@ -53,22 +57,24 @@ class LoginDataHandler:
 		data = data_io.read()
 		general.log("[login] eco version", general.unpack_int(data[:4]))
 		self.send("0002", data) #認証接続確認(s0001)の応答
-		self.send("001e", WORD_FRONT+WORD_BACK) #PASS鍵
+		self.send("001e", self.word_front+self.word_back) #PASS鍵
+		general.log("[login] send word",
+			self.word_front.encode("hex"), self.word_back.encode("hex"),
+		)
 	
 	def do_001f(self, data_io):
 		#認証情報
-		general.log_line("[login]", "login")
 		username = general.io_unpack_str(data_io)
 		password_sha1 = general.io_unpack_raw(data_io)[:40]
-		general.log(username, password_sha1)
+		general.log("[login]", "login", username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
 				if user.name != username:
 					continue
 				user_password_sha1 = hashlib.sha1(
-					"".join((str(general.unpack_int(WORD_FRONT)),
+					"".join((str(general.unpack_unsigned_int(self.word_front)),
 							user.password,
-							str(general.unpack_int(WORD_BACK)),
+							str(general.unpack_unsigned_int(self.word_back)),
 							))).hexdigest()
 				if user_password_sha1 != password_sha1:
 					self.send("0020", user, "loginfaild") #アカウント認証結果

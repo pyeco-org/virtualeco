@@ -9,45 +9,50 @@ import traceback
 from lib import db
 from lib import users
 from lib import general
+server = None
+monsters = None
 SCRIPT_DIR = "./script"
 script_list = {}
 script_list_lock = threading.RLock()
 
 def load():
-	global server
-	global monsters
-	from lib import server
-	from lib import monsters
+	global server, monsters
+	if not server or not monsters: #skip search sys.modules
+		from lib import server
+		from lib import monsters
 	with script_list_lock:
-		_load()
+		general.log_line("Load %-20s"%("%s ..."%SCRIPT_DIR))
+		script_list.clear()
+		for root, dirs, files in os.walk(SCRIPT_DIR):
+			for name in files:
+				path = os.path.join(root, name)
+				if not path.endswith(".py"):
+					continue
+				#general.log("load script", path
+				try:
+					load_single(path)
+				except:
+					general.log_error("script.load", path, traceback.format_exc())
+		general.log("	%d	script	load."%len(script_list))
 
-def _load():
-	general.log_line("Load %-20s"%("%s ..."%SCRIPT_DIR))
-	script_list.clear()
-	for root, dirs, files in os.walk(SCRIPT_DIR):
-		for name in files:
-			path = os.path.join(root, name)
-			if not path.endswith(".py"):
-				continue
-			#general.log("load script", path)
-			obj = general.load_dump(path)
-			try:
-				if not obj:
-					obj = compile(
-						open(path, "rb").read().replace(
-						"\r\n", "\n")+"\n", path, "exec")
-					general.save_dump(path, obj)
-				namespace = {}
-				exec obj in namespace
-				script_id = namespace["ID"]
-				if hasattr(script_id, "__iter__"):
-					for i in script_id:
-						script_list[i] = namespace
-				else:
-					script_list[script_id] = namespace
-			except:
-				general.log_error("script.load", path, traceback.format_exc())
-	general.log("	%d	script	load."%len(script_list))
+def load_single(path):
+	with script_list_lock:
+		obj = general.load_dump(path)
+		if not obj:
+			obj = compile(
+				open(path, "rb").read().replace("\r\n", "\n")+"\n",
+				path,
+				"exec",
+			)
+			general.save_dump(path, obj)
+		namespace = {}
+		exec obj in namespace
+		script_id = namespace["ID"]
+		if hasattr(script_id, "__iter__"):
+			for i in script_id:
+				script_list[i] = namespace
+		else:
+			script_list[script_id] = namespace
 
 def run_script(pc, event_id):
 	#general.log("run script id", event_id)
@@ -80,6 +85,7 @@ NAME_WITH_TYPE = {
 	"run": (int,), #event_id
 	"help": (),
 	"reloadscript": (),
+	"reloadsinglescript": (str,),
 	"user": (),
 	"say": (str, str, int, int), #message, npc_name, npc_motion_id, npc_id
 	"msg": (str,), #message
@@ -129,6 +135,7 @@ def help(pc):
 /run event_id
 /help
 /reloadscript
+/reloadsinglescript path
 /user
 /say message npc_name npc_motion_id npc_id
 /msg message
@@ -203,9 +210,25 @@ def handle_cmd(pc, cmd):
 	return True
 
 def reloadscript(pc):
-	servermsg(pc, "reloadscript...")
+	servermsg(pc, "reloadscript ...")
 	load()
 	servermsg(pc, "reloadscript success")
+
+def reloadsinglescript(pc, path):
+	if path.find("..") != -1:
+		raise ValueError("path include ..")
+	if path.startswith("/") or path.startswith("."):
+		raise ValueError("path startswith / or .")
+	if not path.endswith(".py"):
+		raise ValueError("path not endswith .py")
+	servermsg(pc, "reloadsinglescript %s ..."%path)
+	try:
+		load_single("./script/"+path)
+	except:
+		servermsg(pc, "reloadsinglescript failed")
+		raise
+	else:
+		servermsg(pc, "reloadsinglescript success")
 
 def user(pc):
 	message = ""
@@ -619,6 +642,7 @@ def hidenpc(pc, npc_id):
 		pc.user.map_client.send("05e3", npc_id) #hide npc
 
 def blackout(pc, time_ms):
+	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send("0609", 1, 0) #blackout on
 	wait(pc, time_ms)
@@ -626,6 +650,7 @@ def blackout(pc, time_ms):
 		pc.user.map_client.send("0609", 0, 0) #blackout off
 
 def whiteout(pc, time_ms):
+	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send("0609", 1, 1) #whiteout on
 	wait(pc, time_ms)
