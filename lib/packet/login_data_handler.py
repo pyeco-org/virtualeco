@@ -145,7 +145,7 @@ class LoginDataHandler:
 			if self.user.delpassword != delpassword_md5:
 				raise (Exception, "delpassword error")
 			with self.user.lock:
-				os.remove(self.user.pc_list[num].path)
+				os.remove(self.user.pc_list[num].path, base=users.USER_DIR)
 				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
 		except:

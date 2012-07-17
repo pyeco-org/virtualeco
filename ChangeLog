@@ -1,6 +1,11 @@
 2012-07-17
 	add general.secure_open replace __builtin__.open
 	add general.secure_listdir replace os.listdir
+	add general.secure_remove replace os.remove
+	add general.secure_rmdir replace os.rmdir
+	add general.secure_mkdir replace os.mkdir
+	disable os.link
+	disable os.symlink
 
 2012-07-17
 	make password hash extend word random each login

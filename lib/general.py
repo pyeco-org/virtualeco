@@ -83,34 +83,72 @@ PET_TYPE_LIST = ("BACK_DEMON",
 				"PET_NEKOMATA",
 				)
 
+def log_io(msg):
+	STDERR.write(msg)
+def within_base(path, base):
+	return os.path.abspath(path).startswith(os.path.abspath(base))
 def secure_open(name, mode="r", buffering=True, base=DEFAULT_BASE):
-	#don't check symbolic links this moment
+	#don't check symbolic links at this moment
 	name = str(name)
 	mode = str(mode)
 	buffering = bool(buffering)
 	base = str(base)
-	#sys.stderr.write("secure_open [%s] (%s) within [%s]\n"%(name, mode, base))
-	if not os.path.abspath(name).startswith(os.path.abspath(base)):
+	#log_io("secure_open [%s] (%s) within [%s]\n"%(name, mode, base))
+	if not within_base(name, base):
 		raise IOError("cannot open [%s] (%s) outside of [%s]"%(name, mode, base))
 	return __open(name, mode, buffering)
 def secure_listdir(path, base=DEFAULT_BASE):
-	#sys.stderr.write("secure_listdir [%s] within [%s]\n"%(path, base))
-	if not os.path.abspath(path).startswith(os.path.abspath(base)):
+	path = str(path)
+	base = str(base)
+	#log_io("secure_listdir [%s] within [%s]\n"%(path, base))
+	if not within_base(path, base):
 		raise IOError("cannot list [%s] outside of [%s]"%(path, base))
 	return __listdir(path)
+def secure_remove(path, base=DEFAULT_BASE):
+	path = str(path)
+	base = str(base)
+	#log_io("secure_remove [%s] within [%s]\n"%(path, base))
+	if not within_base(path, base):
+		raise IOError("cannot remove [%s] outside of [%s]"%(path, base))
+	return __remove(path)
+def secure_rmdir(path, base=DEFAULT_BASE):
+	path = str(path)
+	base = str(base)
+	#log_io("secure_rmdir [%s] within [%s]\n"%(path, base))
+	if not within_base(path, base):
+		raise IOError("cannot remove dir [%s] outside of [%s]"%(path, base))
+	return __rmdir(path)
+def secure_mkdir(path, mode=0777, base=DEFAULT_BASE):
+	path = str(path)
+	mode = int(mode)
+	base = str(base)
+	#log_io("secure_mkdir [%s] (%s) within [%s]\n"%(path, mode, base))
+	if not within_base(path, base):
+		raise IOError("cannot create dir [%s] (%s) outside of [%s]"%(path, mode, base))
+	return __mkdir(path)
 import __builtin__
 __open = __builtin__.open
 __listdir = os.listdir
+__remove = os.remove
+__rmdir = os.rmdir
+__mkdir = os.mkdir
 __builtin__.open = secure_open
 __builtin__.file = secure_open
 os.listdir = secure_listdir
+os.remove = secure_remove
+os.unlink = secure_remove
+os.rmdir = secure_rmdir
+os.mkdir = secure_mkdir
+def __raise(e): raise e
+os.link = lambda *args: __raise(IOError("cannot create hard link everywhere"))
+os.symlink = lambda *args: __raise(IOError("cannot create symbolic link everywhere"))
 
 class Log:
 	def __init__(self, handle, base_path):
 		self.handle = handle
 		self.today = get_today()
 		self.base_path = base_path
-		self.logfile = open(base_path%self.today, "ab")
+		self.logfile = open(base_path%self.today, "ab", base=LOG_DIR)
 		self.logtime = True
 	def write(self, s):
 		try: self._write(s)
@@ -122,7 +160,7 @@ class Log:
 			if self.today != get_today():
 				self.today = get_today()
 				self.logfile.close()
-				self.logfile = open(self.base_path%self.today, "ab")
+				self.logfile = open(self.base_path%self.today, "ab", base=LOG_DIR)
 			self.logfile.write(time.strftime("[%H:%M:%S]", time.localtime()))
 			self.logfile.write(" ")
 		self.logfile.write(s.replace("\r\n", "\n").replace("\n", "\r\n"))
@@ -226,7 +264,17 @@ def save_dump(path, obj, base=DEFAULT_BASE):
 		else:
 			dump.write(marshal.dumps(obj))
 
-def save_zip(path_src, path_zip):
+def secure_save_zip(path_src, path_zip, src_base=DEFAULT_BASE, zip_base=DEFAULT_BASE):
+	path_src = str(path_src)
+	path_zip = str(path_zip)
+	src_base = str(src_base)
+	zip_base = str(zip_base)
+	#log_io("secure_save_zip from [%s] within [%s]\n"%(path_src, src_base))
+	#log_io("secure_save_zip to [%s] within [%s]\n"%(path_zip, zip_base))
+	if not within_base(path_src, src_base):
+		raise IOError("cannot save zip from [%s] outside of [%s]"%(path_src, src_base))
+	if not within_base(path_zip, zip_base):
+		raise IOError("cannot save zip to [%s] outside of [%s]"%(path_src, zip_base))
 	zip_obj = zipfile.ZipFile(path_zip, "w", getattr(zipfile, ZIP_MODE))
 	for root, dirs, files in os.walk(path_src):
 		for dir_name in dirs:
@@ -236,6 +284,7 @@ def save_zip(path_src, path_zip):
 			zip_obj.write(os.path.join(root, file_name),
 				os.path.join(root, file_name).replace(path_src, ""))
 	zip_obj.close()
+save_zip = secure_save_zip
 
 def get_name_map(namespace, head):
 	name_map = {}

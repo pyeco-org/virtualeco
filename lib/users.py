@@ -101,7 +101,7 @@ def make_new_user(user_name, password, delpassword):
 	cfg.set("main", "password", hashlib.md5(password).hexdigest())
 	cfg.set("main", "delpassword", hashlib.md5(delpassword).hexdigest())
 	if not os.path.exists(os.path.join(USER_DIR, user_name)):
-		os.mkdir(os.path.join(USER_DIR, user_name))
+		os.mkdir(os.path.join(USER_DIR, user_name), base=USER_DIR)
 	cfg.write(
 		open(os.path.join(USER_DIR, user_name, USER_CONFIG_NAME), "wb", base=USER_DIR)
 	)
@@ -120,9 +120,9 @@ def delete_user(user_name, password, delete_password):
 		with user_list_lock:
 			user_list.remove(user)
 		user.reset_login() #close connection
-		for name in os.listdir(user.path):
-			os.remove(os.path.join(user.path, name))
-		os.rmdir(user.path)
+		for name in os.listdir(user.path, base=USER_DIR):
+			os.remove(os.path.join(user.path, name), base=USER_DIR)
+		os.rmdir(user.path, base=USER_DIR)
 		del user
 	return 0x00 #success
 
@@ -273,7 +273,7 @@ def backup_user_data():
 			return
 		if not os.path.exists(USER_BAK_DIR):
 			os.mkdir(USER_BAK_DIR)
-		general.save_zip(USER_DIR, zip_path)
+		general.save_zip(USER_DIR, zip_path, USER_DIR, USER_BAK_DIR)
 	except:
 		general.log_error("backup_user_data", traceback.format_exc())
 def backup_user_data_every_day_thread():
