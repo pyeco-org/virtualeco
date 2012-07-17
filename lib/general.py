@@ -19,6 +19,7 @@ from lib import db
 from lib.site_packages import rijndael
 DUMP_WITH_ZLIB = False
 ZIP_MODE = "ZIP_STORED" #ZIP_DEFLATED, ZIP_STORED
+DEFAULT_BASE = "."
 STDOUT = sys.stdout
 STDERR = sys.stderr
 STDOUT_LOG = "./log/%s.log"
@@ -81,6 +82,28 @@ PET_TYPE_LIST = ("BACK_DEMON",
 				"RIDE_PET",
 				"PET_NEKOMATA",
 				)
+
+def secure_open(name, mode="r", buffering=True, base=DEFAULT_BASE):
+	#don't check symbolic links this moment
+	name = str(name)
+	mode = str(mode)
+	buffering = bool(buffering)
+	base = str(base)
+	#sys.stderr.write("secure_open [%s] (%s) within [%s]\n"%(name, mode, base))
+	if not os.path.abspath(name).startswith(os.path.abspath(base)):
+		raise IOError("cannot open [%s] (%s) outside of [%s]"%(name, mode, base))
+	return __open(name, mode, buffering)
+def secure_listdir(path, base=DEFAULT_BASE):
+	#sys.stderr.write("secure_listdir [%s] within [%s]\n"%(path, base))
+	if not os.path.abspath(path).startswith(os.path.abspath(base)):
+		raise IOError("cannot list [%s] outside of [%s]"%(path, base))
+	return __listdir(path)
+import __builtin__
+__open = __builtin__.open
+__listdir = os.listdir
+__builtin__.open = secure_open
+__builtin__.file = secure_open
+os.listdir = secure_listdir
 
 class Log:
 	def __init__(self, handle, base_path):
@@ -163,25 +186,25 @@ def get_map(map_id):
 		return
 	return map_obj #not need copy
 
-def get_config_io(path):
-	with open(path, "rb") as r:
+def get_config_io(path, base=DEFAULT_BASE):
+	with open(path, "rb", base=base) as r:
 		config = r.read()
 	if config.startswith("\xef\xbb\xbf"):
 		config = config[3:]
 	return StringIO(config.replace("\r\n", "\n"))
-def get_config(path=None):
+def get_config(path=None, base=DEFAULT_BASE):
 	cfg = ConfigParser.SafeConfigParser()
 	if path:
-		cfg.readfp(get_config_io(path))
+		cfg.readfp(get_config_io(path, base))
 	return cfg
 
-def load_dump(path):
-	dump_path = "%s.dump"%path
+def load_dump(path, base=DEFAULT_BASE):
+	dump_path = str(path)+".dump"
 	if not os.path.exists(dump_path):
 		return
 	modify_time = int(os.stat(path).st_mtime)
 	python_ver = int("".join(map(str, sys.version_info[:3])))
-	with open(dump_path, "rb") as dump:
+	with open(dump_path, "rb", base=base) as dump:
 		try:
 			if (unpack_int(dump.read(4)) == modify_time and
 				unpack_int(dump.read(4)) == python_ver):
@@ -191,11 +214,11 @@ def load_dump(path):
 					return marshal.loads(dump.read())
 		except:
 			log_error("dump file %s broken."%dump_path, traceback.format_exc())
-def save_dump(path, obj):
-	dump_path = "%s.dump"%path
+def save_dump(path, obj, base=DEFAULT_BASE):
+	dump_path = str(path)+".dump"
 	modify_time = int(os.stat(path).st_mtime)
 	python_ver = int("".join(map(str, sys.version_info[:3])))
-	with open(dump_path, "wb") as dump:
+	with open(dump_path, "wb", base=base) as dump:
 		dump.write(pack_int(modify_time))
 		dump.write(pack_int(python_ver))
 		if DUMP_WITH_ZLIB:

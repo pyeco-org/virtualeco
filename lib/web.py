@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
+import os
 import threading
 import time
 import SocketServer
@@ -10,9 +11,16 @@ from lib import general
 from lib import server
 from lib import users
 BIND_ADDRESS = "0.0.0.0"
+WEB_DIR = "./web"
 REG_USER_PAGE_PATH = "/index.html"
 DEL_USER_PAGE_PATH = "/delete.html"
 MODIFY_PASSWORD_PAGE_PATH = "/modify_password.html"
+
+def web_open(name, mode="r", buffering=True, base=WEB_DIR):
+	return general.secure_open(name, mode, buffering, base)
+SocketServer.open = web_open
+BaseHTTPServer.open = web_open
+SimpleHTTPServer.open = web_open
 
 def parse_post(string):
 	post_dict = {}
@@ -43,7 +51,10 @@ class WebHandle(SimpleHTTPServer.SimpleHTTPRequestHandler):
 	def translate_path(self, path):
 		if path.find("..") != -1:
 			return ""
-		return "web"+path
+		path = WEB_DIR+"/"+path
+		if not os.path.abspath(path).startswith(os.path.abspath(WEB_DIR)):
+			return ""
+		return path
 	
 	def log_message(self, *args):
 		pass

@@ -7,6 +7,7 @@ from lib import general
 from lib import server
 from lib import db
 from lib import pets
+from lib import users
 
 class PC:
 	def __str__(self):
@@ -17,7 +18,7 @@ class PC:
 		with self.lock:
 			self._load()
 	def _load(self):
-		cfg = general.get_config(self.path)
+		cfg = general.get_config(self.path, base=users.USER_DIR)
 		self.id = cfg.getint("main","id")
 		self.name = cfg.get("main","name")
 		self.gmlevel = cfg.getint("main","gmlevel")
@@ -175,7 +176,7 @@ class PC:
 		cfg.add_section("skill")
 		cfg.set("skill", "list", general.list_to_str(self.skill_list))
 		#
-		cfg.write(open(self.path, "wb"))
+		cfg.write(open(self.path, "wb", base=users.USER_DIR))
 	
 	def get_item_part(self, *args):
 		with self.lock:

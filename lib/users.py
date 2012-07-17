@@ -34,7 +34,9 @@ class User:
 			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
 	
 	def load(self):
-		cfg = general.get_config(os.path.join(self.path, USER_CONFIG_NAME))
+		cfg = general.get_config(
+			os.path.join(self.path, USER_CONFIG_NAME), base=USER_DIR
+		)
 		self.password = cfg.get("main","password")
 		self.delpassword = cfg.get("main","delpassword")
 		self.user_id = cfg.getint("main","user_id")
@@ -60,7 +62,9 @@ class User:
 		cfg.set("main", "password", self.password)
 		cfg.set("main", "delpassword", self.delpassword)
 		cfg.set("main", "user_id", str(self.user_id))
-		cfg.write(open(os.path.join(self.path, USER_CONFIG_NAME), "wb"))
+		cfg.write(
+			open(os.path.join(self.path, USER_CONFIG_NAME), "wb", base=USER_DIR)
+		)
 	
 	def reset_login(self):
 		with self.lock:
@@ -98,7 +102,9 @@ def make_new_user(user_name, password, delpassword):
 	cfg.set("main", "delpassword", hashlib.md5(delpassword).hexdigest())
 	if not os.path.exists(os.path.join(USER_DIR, user_name)):
 		os.mkdir(os.path.join(USER_DIR, user_name))
-	cfg.write(open(os.path.join(USER_DIR, user_name, USER_CONFIG_NAME), "wb"))
+	cfg.write(
+		open(os.path.join(USER_DIR, user_name, USER_CONFIG_NAME), "wb", base=USER_DIR)
+	)
 	with user_list_lock:
 		user_list.append(User(user_name, os.path.join(USER_DIR, user_name)))
 	return True
@@ -219,7 +225,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	cfg.add_section("dic")
 	cfg.add_section("skill")
 	cfg.set("skill", "list", "")
-	cfg.write(open(path, "wb"))
+	cfg.write(open(path, "wb", base=USER_DIR))
 	with user.lock:
 		user.pc_list[num] = PC(user, path)
 	return True

@@ -1,4 +1,8 @@
 2012-07-17
+	add general.secure_open replace __builtin__.open
+	add general.secure_listdir replace os.listdir
+
+2012-07-17
 	make password hash extend word random each login
 	add script.reloadsinglescript and command /reloadsinglescript path
 

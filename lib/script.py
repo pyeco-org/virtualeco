@@ -37,14 +37,16 @@ def load():
 
 def load_single(path):
 	with script_list_lock:
-		obj = general.load_dump(path)
+		obj = general.load_dump(path, SCRIPT_DIR)
 		if not obj:
 			obj = compile(
-				open(path, "rb").read().replace("\r\n", "\n")+"\n",
+				open(
+					path, "rb", base=SCRIPT_DIR
+				).read().replace("\r\n", "\n")+"\n",
 				path,
 				"exec",
 			)
-			general.save_dump(path, obj)
+			general.save_dump(path, obj, SCRIPT_DIR)
 		namespace = {}
 		exec obj in namespace
 		script_id = namespace["ID"]
@@ -217,13 +219,11 @@ def reloadscript(pc):
 def reloadsinglescript(pc, path):
 	if path.find("..") != -1:
 		raise ValueError("path include ..")
-	if path.startswith("/") or path.startswith("."):
-		raise ValueError("path startswith / or .")
 	if not path.endswith(".py"):
-		raise ValueError("path not endswith .py")
+		path += ".py"
 	servermsg(pc, "reloadsinglescript %s ..."%path)
 	try:
-		load_single("./script/"+path)
+		load_single(SCRIPT_DIR+"/"+path)
 	except:
 		servermsg(pc, "reloadsinglescript failed")
 		raise

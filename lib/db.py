@@ -5,6 +5,7 @@ import os
 import csv
 import traceback
 import __builtin__
+DATA_DIR = "./data"
 DATA_PATH = {	"item": "./data/item.csv",
 			"job": "./data/job.csv",
 			"map": "./data/map.csv",
@@ -23,7 +24,7 @@ def _detect_type(s):
 		except: return s
 
 def get_raw_list(path, len_min):
-	raw_list = general.load_dump(path)
+	raw_list = general.load_dump(path, DATA_DIR)
 	if not raw_list:
 		raw_list = []
 		for row in csv.reader(open(path, "rb")):
@@ -31,7 +32,7 @@ def get_raw_list(path, len_min):
 			if row[0].startswith("\xef\xbb\xbf"): row[0] = row[0][3:]
 			if row[0].startswith("#"): continue
 			raw_list.append(__builtin__.map(_detect_type, row))
-		general.save_dump(path, raw_list)
+		general.save_dump(path, raw_list, DATA_DIR)
 	return raw_list
 
 def load_database(name, obj, len_min):
