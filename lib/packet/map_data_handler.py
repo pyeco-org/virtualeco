@@ -12,10 +12,19 @@ from lib import script
 from lib import pets
 from lib import monsters
 from lib import db
-DATA_TYPE_NOT_PRINT = (	"11f8", #自キャラの移動
-					"0032", #接続確認(マップサーバとのみ) 20秒一回
-					"0fa5", #戦闘状態変更通知
-					)
+DATA_TYPE_NOT_PRINT = (
+	"11f8", #自キャラの移動
+	"0032", #接続確認(マップサーバとのみ) 20秒一回
+	"0fa5", #戦闘状態変更通知
+)
+DATA_TYPE_CANCEL_TRADE_WHEN_EXCEPT = (
+	"0a16", #トレードキャンセル
+	"0a14", #トレードのOK状態
+	"0a15", #トレードのTradeを押した際に送信
+	"0a1b", #トレードウィンドウに置いたアイテム・金の情報を送信？
+	"0a0a", #send trade ask
+	"0a0d", #trade ask answer
+)
 
 class MapDataHandler:
 	def __init__(self):
@@ -82,6 +91,12 @@ class MapDataHandler:
 			except:
 				general.log_error("[ map ] handle_data error:", data.encode("hex"))
 				general.log_error(traceback.format_exc())
+				if data_type in DATA_TYPE_CANCEL_TRADE_WHEN_EXCEPT:
+					try:
+						self.pc.cancel_trade()
+					except:
+						general.log_error("[ map ] cancel trade when except error:")
+						general.log_error(traceback.format_exc())
 	
 	def send_item_list(self):
 		with self.pc.lock:
@@ -421,48 +436,26 @@ class MapDataHandler:
 	def do_0a16(self, data_io):
 		#トレードキャンセル
 		general.log("[ map ] trade: send cancel")
-		self.send("0a19", self.pc) #自分・相手がOKやキャンセルを押した際に双方に送信される
-		self.pc.reset_trade()
-		self.send("0a1c") #トレード終了通知
+		self.pc.cancel_trade()
 	
 	def do_0a14(self, data_io):
 		#トレードのOK状態
 		general.log("[ map ] trade: send ok")
 		with self.pc.lock:
-			self.pc.trade_state = -1
+			self.pc.trade_state = -1 #OK押した状態
+			p = self.pc.get_trade_target()
+			if not p:
+				return
+			with p and p.user.lock:
+				#自分・相手がOKやキャンセルを押した際に双方に送信される
+				self.send("0a19", self.pc, p)
+				#自分・相手がOKやキャンセルを押した際に双方に送信される
+				p.user.map_client.send("0a19", p, self.pc)
 	
 	def do_0a15(self, data_io):
 		#トレードのTradeを押した際に送信
 		general.log("[ map ]","trade: send trade")
-		with self.pc.lock:
-			self.pc.trade_state = 1
-			self.pc.trade_return_list = []
-			if self.pc.trade:
-				for iid, count in self.pc.trade_list:
-					item = self.pc.item.get(iid)
-					if not item:
-						continue
-					if item.count < count:
-						continue
-					if self.pc.in_equip(iid):
-						continue
-					item.count -= count
-					if item.count > 0:
-						item_return = general.copy(item)
-						item_return.count = count
-						self.pc.trade_return_list.append(item_return)
-						#self.send("09cf", item, iid) #アイテム個数変化
-					else:
-						self.pc.sort.item.remove(iid)
-						item_return = self.pc.item.pop(iid)
-						item_return.count = count
-						self.pc.trade_return_list.append(item_return)
-						self.send("09ce", iid) #インベントリからアイテム消去
-			self.pc.trade = False
-			self.pc.trade_list = []
-			self.pc.trade_state = 0
-			self.send("0a1c") #トレード終了通知
-		self.update_item_status()
+		self.pc.set_trade_finish()
 	
 	def do_0a1b(self, data_io):
 		#トレードウィンドウに置いたアイテム・金の情報を送信？
@@ -477,10 +470,10 @@ class MapDataHandler:
 		#general.log("count_count", count_count)
 		for i in xrange(iid_count):
 			count_list.append(general.io_unpack_short(data_io))
-		self.pc.trade_gold = general.io_unpack_int(data_io)
-		self.pc.trade_list = zip(iid_list, count_list)
-		general.log("[ map ] self.pc.trade_list", self.pc.trade_list)
-		general.log("[ map ] self.pc.trade_gold", self.pc.trade_gold)
+		self.pc.set_trade_list(
+			general.io_unpack_int(data_io),
+			zip(iid_list, count_list),
+		)
 	
 	def do_09f7(self, data_io):
 		#倉庫を閉じる
@@ -741,5 +734,80 @@ class MapDataHandler:
 		motion = random.choice((113, 163, 164))
 		script.motion(self.pc, motion, False)
 		script.motion(p, motion, False)
+	
+	def do_0a0a(self, data_io):
+		#send trade ask
+		target_id = general.io_unpack_int(data_io)
+		p = users.get_pc_from_id(target_id)
+		if not p:
+			general.log("[ map ] trade ask: target not exist", target_id)
+			self.send("0a0b", -5) #trade ask result, 相手が見つかりません
+			return
+		with self.pc.lock and p.lock and p.user.lock:
+			if not p.online:
+				general.log("[ map ] trade ask: target not online", target_id)
+				self.send("0a0b", -5) #trade ask result, 相手が見つかりません
+				return
+			if self.pc.map_id != p.map_id:
+				general.log(
+					"[ map ] trade ask: target not on the same map", target_id
+				)
+				self.send("0a0b", -5) #trade ask result, 相手が見つかりません
+				return
+			if self.pc.trade:
+				self.send("0a0b", -1) #trade ask result, トレード中です
+				return
+			if self.pc.event_id:
+				self.send("0a0b", -2) #trade ask result, イベント中です
+				return
+			if p.trade:
+				self.send("0a0b", -3) #trade ask result, 相手がトレード中です
+				return
+			if p.event_id:
+				self.send("0a0b", -4) #trade ask result, 相手がイベント中です
+				return
+			p.user.map_client.send("0a0c", self.pc) #receive trade ask
+			self.pc.trade_target_id = p.id
+			p.trade_target_id = self.pc.id
+	
+	def do_0a0d(self, data_io):
+		#trade ask answer
+		answer = general.io_unpack_byte(data_io)
+		if not self.pc.trade_target_id:
+			general.log("[ map ] trade answer: not self.pc.trade_target_id")
+			return
+		p = users.get_pc_from_id(self.pc.trade_target_id)
+		if not p:
+			general.log(
+				"[ map ] trade answer: target not exist", self.pc.trade_target_id
+			)
+			self.pc.trade_target_id = 0
+			return
+		with self.pc.lock and p.lock and p.user.lock:
+			if not p.online:
+				general.log(
+					"[ map ] trade answer: target not online",
+					self.pc.trade_target_id,
+				)
+				self.pc.trade_target_id = 0
+				return
+			if self.pc.map_id != p.map_id:
+				general.log(
+					"[ map ] trade answer: target not on the same map",
+					self.pc.trade_target_id,
+				)
+				self.pc.trade_target_id = 0
+				p.trade_target_id = 0
+				return
+			if answer == 0:
+				#trade ask result, トレードを断られました
+				self.pc.trade_target_id = 0
+				p.trade_target_id = 0
+				p.user.map_client.send("0a0b", -6)
+			else:
+				self.pc.trade = True
+				p.trade = True
+				p.user.map_client.send("0a0f", self.pc.name) #トレードウィンドウ表示
+				self.send("0a0f", p.name) #トレードウィンドウ表示
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

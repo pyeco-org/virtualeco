@@ -255,7 +255,7 @@ def make_1a5f():
 	"""右クリ設定"""
 	return general.pack_int(0)
 
-def make_0203(item, iid, part):
+def make_0203(item, iid, part, count=None):
 	"""インベントリ情報"""
 	result = general.pack_byte(0) #unknown #常に0
 	result += "\xd6" #データサイズ
@@ -279,7 +279,7 @@ def make_0203(item, iid, part):
 	result += general.pack_int(0) #カードID9
 	result += general.pack_int(0) #カードID10
 	result += general.pack_byte(0) #染色
-	result += general.pack_unsigned_short(item.count) #個数
+	result += general.pack_unsigned_short(count != None and count or item.count) #個数
 	result += general.pack_unsigned_int(item.price) #ゴーレム販売価格
 	result += general.pack_short(0) #ゴーレム販売個数
 	result += general.pack_short(0) #憑依重量
@@ -903,10 +903,10 @@ def make_0a0f(name, npc=False):
 	result += general.pack_int(npc and 1 or 0) #00だと人間? 01だとNPC?
 	return result
 
-def make_0a19(pc):
+def make_0a19(pc, p=None):
 	"""自分・相手がOKやキャンセルを押した際に双方に送信される"""
 	result = general.pack_byte(pc.trade_state) #state1 #自分と相手分?
-	result += general.pack_byte(0) #state2 #自分と相手分?
+	result += general.pack_byte(p and p.trade_state or 0) #state2 #自分と相手分?
 	#state1
 	#00:OK押してない状態?
 	#FF:OK押した状態?
@@ -1213,5 +1213,46 @@ def make_1d06(emotion_ex_enum):
 	# example: 00, 03
 	# enum |= 0b0001; enum |= 0b1000
 	return general.pack_unsigned_int(emotion_ex_enum)
+
+def make_0a0b(result):
+	"""trade ask result"""
+	#0 Success
+	#-1～-13
+	#GAME_SMSG_TRADE_REQERR1,";トレード中です";
+	#GAME_SMSG_TRADE_REQERR2,";イベント中です";
+	#GAME_SMSG_TRADE_REQERR3,";相手がトレード中です";
+	#GAME_SMSG_TRADE_REQERR4,";相手がイベント中です";
+	#GAME_SMSG_TRADE_REQERR5,";相手が見つかりません";
+	#GAME_SMSG_TRADE_REQERR6,";トレードを断られました";
+	#GAME_SMSG_TRADE_REQERR7,";ゴーレムショップ起動中です";
+	#GAME_SMSG_TRADE_REQERR8,";相手がゴーレムショップ起動中です";
+	#GAME_SMSG_TRADE_REQERR9,";憑依中です";
+	#GAME_SMSG_TRADE_REQERR10,";相手が憑依中です";
+	#GAME_SMSG_TRADE_REQERR11,";相手のトレード設定が不許可になっています";
+	#GAME_SMSG_TRADE_REQERR12,";トレードを行える状態ではありません";
+	#GAME_SMSG_TRADE_REQERR13,";トレード相手との距離が離れすぎています";
+	return general.pack_byte(result)
+
+def make_0a0c(pc):
+	"""receive trade ask"""
+	return general.pack_str(pc.name)
+
+def make_0a1f(gold):
+	"""trade gold"""
+	return general.pack_int(gold)
+
+def make_0a20():
+	"""trade item header"""
+	return ""
+
+def make_0a21():
+	"""trade item footer"""
+	return ""
+
+def make_0a1e(item, count):
+	"""trade item data"""
+	result = make_0203(item, 0, 0x02, count)[1:]
+	result += general.pack_byte(0) #unknow
+	return result
 
 name_map = general.get_name_map(globals(), "make_")

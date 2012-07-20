@@ -1,3 +1,7 @@
+2012-07-20
+	support pc to pc trade (unstable)
+	fix script.setgold, npcmotion, npcshop, npcsell affect other pc on the same map
+
 2012-07-17
 	add general.secure_open replace __builtin__.open
 	add general.secure_listdir replace os.listdir

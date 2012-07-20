@@ -8,6 +8,7 @@ from lib import server
 from lib import db
 from lib import pets
 from lib import users
+from lib import script
 
 class PC:
 	def __str__(self):
@@ -416,13 +417,160 @@ class PC:
 					last_iid = iid
 		return last_iid+1
 	
-	def reset_trade(self):
+	def get_trade_target(self):
+		if not self.trade_target_id:
+			return None
+		if not self.online:
+			general.log("[ pc  ] get_trade_target: not self.online")
+			return False
+		p = users.get_pc_from_id(self.trade_target_id)
+		if not p:
+			general.log("[ pc  ] get_trade_target: not p")
+			return False
+		if not p.online:
+			general.log("[ pc  ] get_trade_target: not p.online")
+			return False
+		if self.map_id != p.map_id:
+			general.log("[ pc  ] get_trade_target: self.map_id != p.map_id")
+			return False
+		return p
+	
+	def cancel_trade(self):
+		with self.lock and self.user.lock:
+			if not self.online:
+				self.reset_trade()
+				return
+			general.log("[ pc  ] cancel_trade")
+			p = self.get_trade_target()
+			#自分・相手がOKやキャンセルを押した際に双方に送信される
+			self.user.map_client.send("0a19", self)
+			self.reset_trade()
+			self.user.map_client.send("0a1c") #トレード終了通知
+			if not p:
+				return
+			with p.lock and p.user.lock:
+				#自分・相手がOKやキャンセルを押した際に双方に送信される
+				p.user.map_client.send("0a19", p)
+				p.reset_trade()
+				p.user.map_client.send("0a1c") #トレード終了通知
+	
+	def set_trade_list(self, trade_gold, trade_list):
+		with self.lock and self.user.lock:
+			if not self.online:
+				return
+			self.trade_gold = trade_gold
+			self.trade_list = trade_list
+			general.log("[ pc  ] self.trade_gold", self.trade_gold)
+			general.log("[ pc  ] self.trade_list", self.trade_list)
+			if not self.check_trade_list:
+				self.cancel_trade()
+			p = self.get_trade_target()
+			if p == False:
+				self.cancel_trade()
+			elif p == None:
+				return
+			with p.lock and p.user.lock:
+				p.user.map_client.send("0a1f", self.trade_gold) #trade gold
+				p.user.map_client.send("0a20") #trade item header
+				for iid, count in self.trade_list:
+					item = self.item.get(iid)
+					p.user.map_client.send("0a1e", item, count)
+				p.user.map_client.send("0a21") #trade item footer
+	
+	def check_trade_list(self):
+		with self.lock:
+			if not self.online:
+				return
+			if self.trade_gold > self.gold:
+				return False
+			for iid, count in self.trade_list:
+				item = self.item.get(iid)
+				if not item:
+					return False
+				if item.count < count:
+					return False
+				if self.in_equip(iid):
+					return False
+		return True
+	
+	def set_trade_return(self):
+		#move item and gold to trade_return_list and trade_return_gold
+		with self.lock and self.user.lock:
+			if not self.online:
+				return
+			general.log("[ pc  ] set_trade_return")
+			script.takegold(self, self.trade_gold)
+			self.trade_return_gold = self.trade_gold
+			for iid, count in self.trade_list:
+				item = self.item.get(iid)
+				item.count -= count
+				if item.count > 0:
+					item_return = general.copy(item)
+					item_return.count = count
+					self.trade_return_list.append(item_return)
+					#self.user.map_client.send("09cf", item, iid) #アイテム個数変化
+				else:
+					self.sort.item.remove(iid)
+					item_return = self.item.pop(iid)
+					item_return.count = count
+					self.trade_return_list.append(item_return)
+					self.user.map_client.send("09ce", iid) #インベントリからアイテム消去
+	
+	def set_trade_finish(self):
+		with self.lock and self.user.lock:
+			if not self.online:
+				return
+			general.log("[ pc  ] set_trade_finish")
+			return self._set_trade_finish()
+	def _set_trade_finish(self):
+		if not self.check_trade_list():
+			self.cancel_trade()
+			return
+		self.trade_state = 1 #トレード完了してる状態
+		p = self.get_trade_target()
+		if p:
+			with p.lock and p.user.lock:
+				if p.trade_state == 1: #exchange item and gold
+					if not p.check_trade_list():
+						self.cancel_trade()
+						return
+					self.set_trade_return()
+					p.set_trade_return()
+					if self.trade_return_gold:
+						script.gold(p, self.trade_return_gold)
+					for item in self.trade_return_list:
+						script.item_object_add(p, item)
+					if p.trade_return_gold:
+						script.gold(self, p.trade_return_gold)
+					for item in p.trade_return_list:
+						script.item_object_add(self, item)
+					self.reset_trade()
+					p.reset_trade()
+					self.user.map_client.send("0a1c") #トレード終了通知
+					p.user.map_client.send("0a1c") #トレード終了通知
+					self.user.map_client.update_item_status()
+					p.user.map_client.update_item_status()
+				else: #send trade status
+					self.user.map_client.send("0a19", self, p)
+					p.user.map_client.send("0a19", p, self)
+		elif p == False:
+			#target offline or map changed
+			self.cancel_trade()
+		else: #p == None: npctrade
+			self.set_trade_return()
+			self.reset_trade(False) #don't clear return list
+			self.user.map_client.send("0a1c") #トレード終了通知
+	
+	def reset_trade(self, reset_return=True):
 		with self.lock:
 			self.trade = False
-			self.trade_state = 0
+			self.trade_state = 0 #OK押してない状態
 			self.trade_gold = 0
 			self.trade_list = []
-			self.trade_return_list = []
+			if reset_return:
+				self.trade_return_gold = 0
+				self.trade_return_list = []
+			self.trade_target_id = 0 #target id, = 0 if npc
 	
 	def reset_login(self):
 		self.reset_map()

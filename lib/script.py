@@ -399,6 +399,14 @@ def _item(pc, item_id, item_count):
 		pc.user.map_client.send("09d4", item, item_iid, 0x02) #アイテム取得 #0x02: body
 	pc.user.map_client.update_item_status()
 
+def item_object_add(pc, item):
+	with pc.lock and pc.user.lock:
+		item_iid = pc.get_new_iid()
+		pc.item[item_iid] = item
+		pc.sort.item.append(item_iid)
+		pc.user.map_client.send("09d4", item, item_iid, 0x02) #アイテム取得 #0x02: body
+		pc.user.map_client.update_item_status()
+
 def printitem(pc):
 	with pc.lock:
 		for iid in pc.sort.item:
@@ -572,7 +580,7 @@ def setgold(pc, gold):
 			return False
 		else:
 			pc.gold = gold
-			pc.user.map_client.send_map("09ec", pc) #ゴールドを更新する、値は更新後の値
+			pc.user.map_client.send("09ec", pc) #ゴールドを更新する、値は更新後の値
 			return True
 
 def takegold(pc, gold_take):
@@ -590,7 +598,7 @@ def npcmotion(pc, npc_id, motion_id, motion_loop=False):
 	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
 		#モーション通知
-		pc.user.map_client.send_map("121c", pc, npc_id, motion_id, motion_loop) 
+		pc.user.map_client.send("121c", pc, npc_id, motion_id, motion_loop) 
 
 def npcmotion_loop(pc, npc_id, motion_id):
 	npcmotion(pc, npc_id, motion_id, True)
@@ -602,12 +610,12 @@ def npcshop(pc, shop_id):
 		return
 	with pc.lock and pc.user.lock:
 		pc.shop_open = shop_id
-		pc.user.map_client.send_map("0613", pc, shop.item) #NPCのショップウィンドウ
+		pc.user.map_client.send("0613", pc, shop.item) #NPCのショップウィンドウ
 
 def npcsell(pc):
 	with pc.lock and pc.user.lock:
 		pc.shop_open = 65535 #sell
-		pc.user.map_client.send_map("0615") #NPCショップウィンドウ（売却）
+		pc.user.map_client.send("0615") #NPCショップウィンドウ（売却）
 
 def spawn(pc, monster_id):
 	with pc.lock:
