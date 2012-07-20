@@ -776,29 +776,10 @@ class MapDataHandler:
 		if not self.pc.trade_target_id:
 			general.log("[ map ] trade answer: not self.pc.trade_target_id")
 			return
-		p = users.get_pc_from_id(self.pc.trade_target_id)
+		p = self.pc.get_trade_target()
 		if not p:
-			general.log(
-				"[ map ] trade answer: target not exist", self.pc.trade_target_id
-			)
-			self.pc.trade_target_id = 0
 			return
 		with self.pc.lock and p.lock and p.user.lock:
-			if not p.online:
-				general.log(
-					"[ map ] trade answer: target not online",
-					self.pc.trade_target_id,
-				)
-				self.pc.trade_target_id = 0
-				return
-			if self.pc.map_id != p.map_id:
-				general.log(
-					"[ map ] trade answer: target not on the same map",
-					self.pc.trade_target_id,
-				)
-				self.pc.trade_target_id = 0
-				p.trade_target_id = 0
-				return
 			if answer == 0:
 				#trade ask result, トレードを断られました
 				self.pc.trade_target_id = 0
