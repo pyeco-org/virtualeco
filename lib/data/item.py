@@ -90,7 +90,7 @@ class Item:
 			return 0
 	
 	def get_attr(self, attr, item_type, default_value):
-		return self.check_type(item_type) and getattr(self, attr) or default_value
+		return getattr(self, attr) if self.check_type(item_type) else default_value
 	
 	def get_int_attr(self, attr, item_type):
 		return self.get_attr(attr, item_type, 0)

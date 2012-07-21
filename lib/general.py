@@ -13,6 +13,7 @@ import random
 import copy as py_copy
 import ConfigParser
 import math
+import threading
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import db
@@ -481,7 +482,7 @@ def get_rijndael_key(share_key_bytes):
 
 def encode(string, key):
 	if not string:
-		log_error("encode error: not string", string)
+		log_error("[error] encode error: not string", string)
 		return
 	#key = "\x00"*16
 	string_size = len(string)
@@ -495,12 +496,12 @@ def encode(string, key):
 
 def decode(code, key):
 	if not code:
-		log_error("decode error: not code", code)
+		log_error("[error] decode error: not code", code)
 		return
 	#0000000c 6677bcf44144b39e28281ae8777db574
 	string_size = unpack_int(code[:4])
 	if (len(code)-4) % 16:
-		log_error("decode error: (len(code)-4) % 16 != 0", code.encode("hex"))
+		log_error("[error] decode error: (len(code)-4) % 16 != 0", code.encode("hex"))
 		return
 	#key = "\x00"*16
 	r = rijndael.rijndael(key, block_size=16)
@@ -545,3 +546,16 @@ def assert_value_range(name, value, value_range):
 		raise ValueError(
 			"%s > %s [%s]"%tuple(map(str, (name, value_range[1], value)))
 		)
+
+def make_id(id_list_exist, min_id=0):
+	#not thread safe
+	i = min_id
+	sorted_list = sorted(id_list_exist)
+	for j in sorted_list:
+		if j > i+1:
+			break
+		else:
+			i = j
+	i += 1
+	log("[gener] make_id", sorted_list, i)
+	return i

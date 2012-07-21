@@ -189,5 +189,6 @@ def load():
 	webserver = ThreadingWebServer(
 		(BIND_ADDRESS, server.config.webserverport), WebHandle)
 	webserver.start()
-	general.log("Start web server with\t%s:%d"%(
-		BIND_ADDRESS, server.config.webserverport))
+	general.log("[ web ] Start web server with\t%s:%d"%(
+		BIND_ADDRESS, server.config.webserverport
+	))

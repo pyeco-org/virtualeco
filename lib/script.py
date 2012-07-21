@@ -28,7 +28,7 @@ def load():
 				path = os.path.join(root, name)
 				if not path.endswith(".py"):
 					continue
-				#general.log("load script", path
+				#general.log("load script", path)
 				try:
 					load_single(path)
 				except:
@@ -82,6 +82,37 @@ def run(pc, event_id):
 	#	general.log_error("script.run error: event duplicate", pc, pc.event_id)
 	#	return
 	thread.start_new_thread(run_script, (pc, event_id))
+
+def send_map(map_id, *args):
+	map_obj = general.get_map(map_id)
+	if not map_obj:
+		error = "send_map: map_id %s not exist."%map_id
+		general.log_error(error)
+		return error
+	send_map_obj(map_id, *args)
+
+def send_map_obj(map_obj, without_list, *args):
+	#don't lock pc and pc.user, easy to cause deadlock
+	with map_obj.lock:
+		for p in map_obj.pc_list:
+			try:
+				if not p.online:
+					continue
+				if p in without_list:
+					continue
+				p.user.map_client.send(*args)
+			except:
+				general.log_error("send_map error: %s"%traceback.format_exc())
+
+def send_server(*args):
+	with users.user_list_lock:
+		for p in users.get_pc_list():
+			try:
+				if not p.online:
+					continue
+				p.user.map_client.send(*args)
+			except:
+				general.log_error("send_server error: %s"%traceback.format_exc())
 
 NAME_WITH_TYPE = {
 	"run": (int,), #event_id
@@ -190,11 +221,11 @@ def handle_cmd(pc, cmd):
 		return
 	name, args = l[0], l[1:]
 	types = NAME_WITH_TYPE.get(name)
-	if types == None:
+	if types is None:
 		return
 	try:
 		request_gmlevel = server.config.gmlevel.get(name)
-		if request_gmlevel == None:
+		if request_gmlevel is None:
 			raise Exception("server.config.gmlevel[%s] not exist"%name)
 		if pc.gmlevel < request_gmlevel:
 			raise Exception("pc.gmlevel < request_gmlevel")
@@ -245,10 +276,10 @@ def user(pc):
 	msg(pc, message)
 
 def say(pc, message, npc_name=None, npc_motion_id=131, npc_id=None):
-	if npc_id == None:
+	if npc_id is None:
 		npc_id = pc.event_id
 	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
-	if npc_name == None:
+	if npc_name is None:
 		npc = db.npc.get(pc.event_id)
 		if npc: npc_name = npc.name
 		else: npc_name = ""
@@ -287,7 +318,6 @@ def warp(pc, map_id, x=None, y=None):
 			if x != None and y != None: pc.set_coord(x, y)
 			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
 			pc.set_dir(0)
-			pc.user.map_client.send_map_without_self("1211", pc) #PC消去
 			pc.user.map_client.send("11fd", pc) #マップ変更通知
 			pc.user.map_client.send("122a") #モンスターID通知
 		else:
@@ -377,12 +407,18 @@ def _item(pc, item_id, item_count):
 					continue
 				if item_exist.item_id != item_id:
 					continue
-				item_exist.count += item_count
-				item_count = 0
-				if item_exist.count > 999:
-					item_count = item_exist.count-999
-					item_exist.count = 999
+				if item_exist.count+item_count > 999:
+					item_count_add = 999-item_exist.count
+					item_count -= item_count_add
+					item_exist.count += item_count_add
+				else:
+					item_count_add = item_count
+					item_count = 0
+					item_exist.count += item_count_add
 				pc.user.map_client.send("09cf", item_exist, iid) #アイテム個数変化
+				msg(pc, "%sを%s個入手しました"%(
+					item_exist.name, item_count_add
+				))
 				item_stock_exist = True
 				break
 		if item_stock_exist:
@@ -393,19 +429,8 @@ def _item(pc, item_id, item_count):
 		else:
 			item.count = item_count
 			item_count = 0
-		item_iid = pc.get_new_iid()
-		pc.item[item_iid] = item
-		pc.sort.item.append(item_iid)
-		pc.user.map_client.send("09d4", item, item_iid, 0x02) #アイテム取得 #0x02: body
+		pc.item_append(item)
 	pc.user.map_client.update_item_status()
-
-def item_object_add(pc, item):
-	with pc.lock and pc.user.lock:
-		item_iid = pc.get_new_iid()
-		pc.item[item_iid] = item
-		pc.sort.item.append(item_iid)
-		pc.user.map_client.send("09d4", item, item_iid, 0x02) #アイテム取得 #0x02: body
-		pc.user.map_client.update_item_status()
 
 def printitem(pc):
 	with pc.lock:
@@ -441,23 +466,44 @@ def _takeitem(pc, item_id, item_count):
 			item_exist = pc.item[iid]
 			if item_exist.item_id != item_id:
 				continue
-			item_exist.count -= item_count
 			#general.log(item_count, item_exist.count)
-			item_count = 0
-			if item_exist.count < 0:
-				item_count = 0-item_exist.count
-				item_exist.count = 0
-			if item_exist.count > 0:
+			if item_exist.count > item_count:
+				item_exist.count -= item_count
 				pc.user.map_client.send("09cf", item_exist, iid) #アイテム個数変化
+				msg(pc, "%sを%s個失いました"%(item.name, item_count))
 			else:
-				pc.sort.item.remove(iid)
-				pc.item.pop(iid)
-				pc.user.map_client.send("09ce", iid) #インベントリからアイテム消去
+				pc.item_pop(iid)
 			break
 		else:
 			return item_count
 	pc.user.map_client.update_item_status()
 	return True
+
+def takeitem_byiid(pc, item_iid, item_count):
+	general.assert_value_range("item_iid", item_iid, general.RANGE_UNSIGNED_INT)
+	general.assert_value_range("item_count", item_count, general.RANGE_UNSIGNED_SHORT)
+	with pc.lock and pc.user.lock:
+		item_exist = pc.item.get(item_iid)
+		item_return = None
+		error = 0
+		if not item_exist:
+			error = -2 #存在しないアイテムです
+			general.log_error("takeitem byiid: iid not exist", item_iid)
+		elif pc.in_equip(item_iid):
+			error = -11 #装備中のアイテムは捨てることが出来ません
+			general.log_error("takeitem byiid: iid not exist", item_iid)
+		elif item_exist.count < item_count:
+			error = -22 #ロックアイテムは捨てることが出来ません
+			general.log_error("takeitem byiid: item.count < item_count", item_count)
+		elif item_exist.count > item_count:
+			item_exist.count -= item_count
+			item_return = general.copy(item_exist)
+			item_return.count = item_count
+			pc.user.map_client.send("09cf", item_exist, item_iid) #アイテム個数変化
+			msg(pc, "%sを%s個失いました"%(item_exist.name, item_count))
+		elif item_exist.count == item_count:
+			item_return = pc.item_pop(item_iid)
+	return item_return, error
 
 def dustbox(pc):
 	run(pc, 12000170) #携帯ゴミ箱
@@ -486,7 +532,7 @@ def npctrade(pc): #not for command
 			if not pc.trade:
 				break
 		time.sleep(0.1)
-	update_item(pc)
+	#update_item(pc)
 	return pc.trade_return_list
 
 def warehouse(pc, warehouse_id):
@@ -538,7 +584,7 @@ def playbgm(pc, sound_id, loop=1, volume=100):
 	general.assert_value_range("volume", volume, (0, 100))
 	with pc.lock and pc.user.lock:
 		#音楽を再生する
-		pc.user.map_client.send("05f0", sound_id, (loop and 1 or 0), volume)
+		pc.user.map_client.send("05f0", sound_id, (1 if loop else 0), volume)
 
 def playse(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
@@ -546,7 +592,7 @@ def playse(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#効果音を再生する
-		pc.user.map_client.send("05f5", sound_id, (loop and 1 or 0), volume, balance)
+		pc.user.map_client.send("05f5", sound_id, (1 if loop else 0), volume, balance)
 
 def playjin(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
@@ -554,7 +600,7 @@ def playjin(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#ジングルを再生する
-		pc.user.map_client.send("05fa", sound_id, (loop and 1 or 0), volume, balance)
+		pc.user.map_client.send("05fa", sound_id, (1 if loop else 0), volume, balance)
 
 def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
 	general.assert_value_range("effect_id", effect_id, general.RANGE_UNSIGNED_INT)

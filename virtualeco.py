@@ -13,7 +13,7 @@ import traceback
 #except:
 #	print traceback.format_exc()
 print "-----------------------------------------"
-print " virtualeco	2012-07-17"
+print " virtualeco	2012-07-21"
 print "-----------------------------------------"
 from lib import db
 from lib import server

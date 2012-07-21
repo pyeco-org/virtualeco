@@ -15,7 +15,6 @@ PC_CONIG_NAME = "%d.ini"
 PC_CONFIG_MAX = 4
 user_list = []
 user_list_lock = threading.RLock()
-next_id_lock = threading.RLock()
 next_user_id = 1
 next_pc_id = 1
 
@@ -46,7 +45,7 @@ class User:
 				self.pc_list.append(None)
 				continue
 			self.pc_list.append(PC(self, path))
-		with next_id_lock:
+		with user_list_lock:
 			global next_user_id
 			global next_pc_id
 			if next_user_id <= self.user_id:
@@ -90,7 +89,7 @@ class User:
 def make_new_user(user_name, password, delpassword):
 	if get_user_from_name(user_name):
 		return False
-	with next_id_lock:
+	with user_list_lock:
 		global next_user_id
 		user_id = next_user_id
 		next_user_id += 1
@@ -148,7 +147,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	path = os.path.join(user.path, PC_CONIG_NAME%num)
 	if os.path.exists(path):
 		return False
-	with next_id_lock:
+	with user_list_lock:
 		global next_pc_id
 		pc_id = next_pc_id
 		next_pc_id += 1

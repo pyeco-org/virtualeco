@@ -232,12 +232,12 @@ class PC:
 	
 	def set_visible(self, visible):
 		with self.lock:
-			self.visible = visible and True or False
+			self.visible = True if visible else False
 	
 	def set_motion(self, motion_id, motion_loop):
 		with self.lock:
 			self.motion_id = motion_id
-			self.motion_loop = motion_loop and True or False
+			self.motion_loop = True if motion_loop else False
 	
 	def set_coord(self, x, y):
 		with self.lock:
@@ -407,15 +407,52 @@ class PC:
 			#item_list.append(self.equip.pet and self.item.get(self.equip.pet))
 			return filter(None, item_list)
 	
-	def get_new_iid(self):
-		last_iid = 0
+	def item_append(self, item, place=0x02):
+		#0x02: body
 		with self.lock:
-			for iid in sorted(self.sort.item+self.sort.warehouse):
-				if iid > last_iid+1:
-					return last_iid+1
-				else:
-					last_iid = iid
-		return last_iid+1
+			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
+			self.item[item_iid] = item
+			self.sort.item.append(item_iid)
+			if self.online:
+				#アイテム取得
+				self.user.map_client.send("09d4", item, item_iid, place)
+				script.msg(self, "%sを%s個入手しました"%(item.name, item.count))
+	
+	def item_pop(self, iid):
+		with self.lock:
+			try:
+				item = self.item.pop(iid)
+				self.sort.item.remove(iid)
+			except KeyError:
+				general.log_error(traceback.format_exc())
+				return None
+			if self.online:
+				#インベントリからアイテム消去
+				self.user.map_client.send("09ce", iid)
+				script.msg(self, "%sを%s個失いました"%(item.name, item.count))
+		return item
+	
+	def warehouse_append(self, item):
+		with self.lock:
+			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
+			self.warehouse[item_iid] = item
+			self.sort.warehouse.append(item_iid)
+			if self.online:
+				#倉庫インベントリーデータ
+				self.user.map_client.send("09f9", item, item_iid, 30)
+				script.msg(self, "%sを%s個預りました"%(item.name, item.count))
+	
+	def warehouse_pop(self, iid):
+		with self.lock:
+			try:
+				item = self.warehouse.pop(iid)
+				self.sort.warehouse.remove(iid)
+			except KeyError:
+				general.log_error(traceback.format_exc())
+				return None
+			if self.online:
+				script.msg(self, "%sを%s個取り出しました"%(item.name, item.count))
+		return item
 	
 	def get_trade_target(self):
 		if not self.trade_target_id:
@@ -454,6 +491,19 @@ class PC:
 				p.reset_trade()
 				p.user.map_client.send("0a1c") #トレード終了通知
 	
+	def set_trade_ok(self):
+		#won't send item list, item list will send when call set_trade_list
+		with self.lock:
+			self.trade_state = -1 #OK押した状態
+			p = self.get_trade_target()
+			if not p:
+				return
+			with p and p.user.lock:
+				#自分・相手がOKやキャンセルを押した際に双方に送信される
+				self.user.map_client.send("0a19", self, p)
+				#自分・相手がOKやキャンセルを押した際に双方に送信される
+				p.user.map_client.send("0a19", p, self)
+	
 	def set_trade_list(self, trade_gold, trade_list):
 		with self.lock and self.user.lock:
 			if not self.online:
@@ -465,9 +515,9 @@ class PC:
 			if not self.check_trade_list:
 				self.cancel_trade()
 			p = self.get_trade_target()
-			if p == False:
+			if p is False:
 				self.cancel_trade()
-			elif p == None:
+			elif p is None:
 				return
 			with p.lock and p.user.lock:
 				p.user.map_client.send("0a1f", self.trade_gold) #trade gold
@@ -495,6 +545,7 @@ class PC:
 	
 	def set_trade_return(self):
 		#move item and gold to trade_return_list and trade_return_gold
+		#must check_trade_list before
 		with self.lock and self.user.lock:
 			if not self.online:
 				return
@@ -503,18 +554,17 @@ class PC:
 			self.trade_return_gold = self.trade_gold
 			for iid, count in self.trade_list:
 				item = self.item.get(iid)
-				item.count -= count
-				if item.count > 0:
+				if item.count > count:
+					item.count -= count
 					item_return = general.copy(item)
 					item_return.count = count
 					self.trade_return_list.append(item_return)
 					#self.user.map_client.send("09cf", item, iid) #アイテム個数変化
+					script.msg(self, "%sを%s個失いました"%(item.name, count))
 				else:
-					self.sort.item.remove(iid)
-					item_return = self.item.pop(iid)
+					item_return = self.item_pop(iid)
 					item_return.count = count
 					self.trade_return_list.append(item_return)
-					self.user.map_client.send("09ce", iid) #インベントリからアイテム消去
 	
 	def set_trade_finish(self):
 		with self.lock and self.user.lock:
@@ -539,27 +589,38 @@ class PC:
 					if self.trade_return_gold:
 						script.gold(p, self.trade_return_gold)
 					for item in self.trade_return_list:
-						script.item_object_add(p, item)
+						if item.stock:
+							script.item(p, item.item_id, item.count)
+						else:
+							p.item_append(item)
 					if p.trade_return_gold:
 						script.gold(self, p.trade_return_gold)
 					for item in p.trade_return_list:
-						script.item_object_add(self, item)
+						if item.stock:
+							script.item(self, item.item_id, item.count)
+						else:
+							self.item_append(item)
 					self.reset_trade()
 					p.reset_trade()
 					self.user.map_client.send("0a1c") #トレード終了通知
 					p.user.map_client.send("0a1c") #トレード終了通知
 					self.user.map_client.update_item_status()
 					p.user.map_client.update_item_status()
+					script.update_item(self)
+					script.update_item(p)
 				else: #send trade status
+					#自分・相手がOKやキャンセルを押した際に双方に送信される
 					self.user.map_client.send("0a19", self, p)
+					#自分・相手がOKやキャンセルを押した際に双方に送信される
 					p.user.map_client.send("0a19", p, self)
-		elif p == False:
+		elif p is False:
 			#target offline or map changed
 			self.cancel_trade()
-		else: #p == None: npctrade
+		else: #p is None: npctrade
 			self.set_trade_return()
 			self.reset_trade(False) #don't clear return list
 			self.user.map_client.send("0a1c") #トレード終了通知
+			script.update_item(self)
 	
 	def reset_trade(self, reset_return=True):
 		with self.lock:
@@ -577,10 +638,11 @@ class PC:
 	
 	def reset_map(self):
 		with self.lock:
-			if self.user.map_client:
-				self.unset_pet(True)
-				self.user.map_client.send_map_without_self("1211", self) #PC消去
 			if self.map_obj:
+				if self.online:
+					self.unset_pet(True)
+					#PC消去
+					script.send_map_obj(self.map_obj, (self,), "1211", self)
 				with self.map_obj.lock:
 					self.map_obj.pc_list.remove(self)
 			self.online = False
@@ -696,11 +758,11 @@ class PC:
 		def get_skill_status(self):
 			pass
 		def get_variable_status(self):
-			if status.hp == None:
+			if status.hp is None:
 				status.hp = status.maxhp
-			if status.mp == None:
+			if status.mp is None:
 				status.mp = status.maxmp
-			if status.sp == None:
+			if status.sp is None:
 				status.sp = status.maxsp
 			status.delay_attack = 2*(1-status.aspd/1000.0)
 		status = PC.Status()

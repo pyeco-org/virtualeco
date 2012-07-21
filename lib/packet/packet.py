@@ -9,7 +9,7 @@ def make(data_type, *args):
 			data_value = name_map[data_type](*args)
 	else:
 		data_value = name_map[data_type](*args)
-	if data_value == None:
+	if data_value is None:
 		general.log_error("packet make error:", data_type, args)
 		return ""
 	packet = general.pack_short(len(data_value)+2)
@@ -21,7 +21,7 @@ def make(data_type, *args):
 def pack_user_data(pack, user, attr):
 	result = "\x04"
 	for pc in user.pc_list:
-		result += pack((pc and getattr(pc, attr) or 0))
+		result += pack(getattr(pc, attr) if pc else 0)
 	return result
 def pack_user_byte(*args):
 	return pack_user_data(general.pack_byte, *args)
@@ -31,18 +31,18 @@ def pack_user_int(*args):
 	return pack_user_data(general.pack_int, *args)
 
 def pack_pict_id(item, item_type):
-	return general.pack_int(item and item.get_pict_id(item_type) or 0)
+	return general.pack_int(item.get_pict_id(item_type) if item else 0)
 
 def pack_item_int_attr(item, item_type, attr):
-	return general.pack_int(item and item.get_int_attr(attr, item_type) or 0)
+	return general.pack_int(item.get_int_attr(attr, item_type) if item else 0)
 def pack_item_short_attr(item, attr, item_type):
-	return general.pack_short(item and item.get_int_attr(attr, item_type) or 0)
+	return general.pack_short(item.get_int_attr(attr, item_type) if item else 0)
 def pack_item_byte_attr(item, attr, item_type):
-	return general.pack_byte(item and item.get_int_attr(attr, item_type) or 0)
+	return general.pack_byte(item.get_int_attr(attr, item_type) if item else 0)
 def pack_item_unsigned_byte_attr(item, attr, item_type):
-	return general.pack_unsigned_byte(item and item.get_int_attr(attr, item_type) or 0)
+	return general.pack_unsigned_byte(item.get_int_attr(attr, item_type) if item else 0)
 def pack_item_str_attr(item, attr, item_type):
-	return general.pack_str(item and item.get_str_attr(attr, item_type) or 0)
+	return general.pack_str(item.get_str_attr(attr, item_type) if item else 0)
 
 def make_0002(ver):
 	"""認証接続確認(s0001)の応答"""
@@ -105,7 +105,7 @@ def make_00a1(_type):
 
 def make_00a6(sucess):
 	"""キャラクター削除結果"""
-	return sucess and "\x00" or "\x9c"
+	return ("\x00" if sucess else "\x9c")
 
 def make_00a8(pc):
 	"""キャラクターマップ通知"""
@@ -115,7 +115,7 @@ def make_0028(user):
 	"""4キャラクターの基本属性"""
 	result = general.pack_byte(len(user.pc_list)) #キャラ数
 	for pc in user.pc_list:
-		result += pc and general.pack_str(pc.name) or "\x00" #名前
+		result += general.pack_str(pc.name) if pc else "\x00" #名前
 	result += pack_user_byte(user, "race") #種族
 	result += pack_user_byte(user, "form") #フォーム（DEMの）
 	result += pack_user_byte(user, "gender") #性別
@@ -125,12 +125,12 @@ def make_0028(user):
 	result += pack_user_short(user, "wig")
 	result += general.pack_byte(len(user.pc_list)) #不明
 	for pc in user.pc_list:
-		result += general.pack_byte((pc and -1 or 0))
+		result += general.pack_byte(-1 if pc else 0)
 	result += pack_user_short(user, "face") #顔
 	#転生前のレベル #付ければ上位種族になる
 	result += pack_user_byte(user, "base_lv")
 	result += pack_user_byte(user, "ex") #転生特典？
-	#if pc.race = 1 than pc.ex = 32 or 111+
+	#if pc.race = 1 than pc.ex = 32 || 111+
 	result += pack_user_byte(user, "wing") #転生翼？
 	#if pc.race = 1 than pc.wing = 35 ~ 39
 	result += pack_user_byte(user, "wingcolor") #転生翼色？
@@ -141,7 +141,7 @@ def make_0028(user):
 	result += pack_user_byte(user, "lv_job1") #1次職レベル
 	result += general.pack_byte(len(user.pc_list)) #残りクエスト数
 	for pc in user.pc_list:
-		result += general.pack_short((pc and 3 or 0))
+		result += general.pack_short(3 if pc else 0)
 	result += pack_user_byte(user, "lv_job2x") #2次職レベル
 	result += pack_user_byte(user, "lv_job2t") #2.5次職レベル
 	result += pack_user_byte(user, "lv_job3") #3次職レベル
@@ -241,7 +241,7 @@ def make_0029(user):
 def make_1239(pc, speed=None):
 	"""キャラ速度通知・変更"""
 	result = general.pack_int(pc.id)
-	result += general.pack_short((speed == None and pc.status.speed or speed))
+	result += general.pack_short(pc.status.speed if speed is None else speed)
 	return result
 
 def make_0fa7(pc, mode=0x02):
@@ -279,7 +279,7 @@ def make_0203(item, iid, part, count=None):
 	result += general.pack_int(0) #カードID9
 	result += general.pack_int(0) #カードID10
 	result += general.pack_byte(0) #染色
-	result += general.pack_unsigned_short(count != None and count or item.count) #個数
+	result += general.pack_unsigned_short(count if count != None else item.count) #個数
 	result += general.pack_unsigned_int(item.price) #ゴーレム販売価格
 	result += general.pack_short(0) #ゴーレム販売個数
 	result += general.pack_short(0) #憑依重量
@@ -571,7 +571,7 @@ def make_0235(pc):
 
 def make_1f72(show=False):
 	"""もてなしタイニーアイコン""" #before login
-	return general.pack_byte((show and 1 or 0))
+	return general.pack_byte(1 if show else 0)
 
 def make_157c(obj,
 			state01=0, state02=0, state03=0,
@@ -729,13 +729,13 @@ def make_0fa6(pc):
 
 def make_121c(pc, npc_id=None, npc_motion_id=None, npc_motion_loop=None):
 	"""モーション通知"""
-	result = general.pack_unsigned_int((
-		npc_id == None and pc.id or npc_id)) #サーバキャラID
-	result += general.pack_unsigned_short((
-		npc_motion_id == None and pc.motion_id or npc_motion_id)) #モーションID
-	result += general.pack_byte((
-		npc_motion_loop == None and pc.motion_loop or
-		(npc_motion_loop and 1 or 0))) #ループさせるかどうか #and 1 or 0
+	result = general.pack_unsigned_int(
+		pc.id if npc_id is None else npc_id) #サーバキャラID
+	result += general.pack_unsigned_short(
+		pc.motion_id if npc_motion_id is None else npc_motion_id) #モーションID
+	result += general.pack_byte(
+		pc.motion_loop if npc_motion_loop is None else
+		(1 if npc_motion_loop else 0)) #ループさせるかどうか
 	result += general.pack_byte(0) #不明
 	return result
 
@@ -847,7 +847,7 @@ def make_03f7(message, npc_name, npc_motion_id, npc_id, npc_visible=True):
 	"""NPCメッセージ"""
 	result = general.pack_unsigned_int(npc_id)
 	result += general.pack_byte(0) #unknow
-	result += general.pack_byte((npc_visible and 1 or 0)) #npc visible
+	result += general.pack_byte(1 if npc_visible else 0) #npc visible
 	result += general.pack_str(message)
 	result += general.pack_unsigned_short(npc_motion_id)
 	result += general.pack_str(npc_name)
@@ -900,13 +900,13 @@ def make_09ce(iid):
 def make_0a0f(name, npc=False):
 	"""トレードウィンドウ表示"""
 	result = general.pack_str(name) #相手の名前
-	result += general.pack_int(npc and 1 or 0) #00だと人間? 01だとNPC?
+	result += general.pack_int(1 if npc else 0) #00だと人間? 01だとNPC?
 	return result
 
 def make_0a19(pc, p=None):
 	"""自分・相手がOKやキャンセルを押した際に双方に送信される"""
 	result = general.pack_byte(pc.trade_state) #state1 #自分と相手分?
-	result += general.pack_byte(p and p.trade_state or 0) #state2 #自分と相手分?
+	result += general.pack_byte(p.trade_state if p else 0) #state2 #自分と相手分?
 	#state1
 	#00:OK押してない状態?
 	#FF:OK押した状態?
@@ -1051,7 +1051,7 @@ def make_05eb(time_ms):
 def make_05f0(sound_id, loop=1, volume=100):
 	"""音楽を再生する"""
 	result = general.pack_int(sound_id) #MusicID #play(";data/sound/bgm_%d.wma";)
-	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(1 if loop else 0) #ループさせるかどうか
 	result += general.pack_byte(0) #00固定
 	result += general.pack_int(volume) #音量 (100がMax)
 	return result
@@ -1059,7 +1059,7 @@ def make_05f0(sound_id, loop=1, volume=100):
 def make_05f5(sound_id, loop=0, volume=100, balance=50):
 	"""効果音を再生する"""
 	result = general.pack_int(sound_id) #SoundID #play(";data/sound/se_%d.wav";)
-	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(1 if loop else 0) #ループさせるかどうか
 	result += general.pack_byte(0) #00固定
 	result += general.pack_int(volume) #音量 (100がMax)
 	result += general.pack_byte(balance) #バランス(0で左から50で中央100で右から)
@@ -1068,7 +1068,7 @@ def make_05f5(sound_id, loop=0, volume=100, balance=50):
 def make_05fa(sound_id, loop=0, volume=100, balance=50):
 	"""ジングルを再生する"""
 	result = general.pack_int(sound_id) #SoundID #play(";data/sound/jin_%d.wav";)
-	result += general.pack_byte((loop and 1 or 0)) #ループさせるかどうか
+	result += general.pack_byte(1 if loop else 0) #ループさせるかどうか
 	result += general.pack_byte(0) #00固定
 	result += general.pack_int(volume) #音量 (100がMax)
 	result += general.pack_byte(balance) #バランス(0で左から50で中央100で右から)
@@ -1076,12 +1076,12 @@ def make_05fa(sound_id, loop=0, volume=100, balance=50):
 
 def make_060e(pc, effect_id, id=None, x=None, y=None, dir=None):
 	"""エフェクト受信"""
-	result = general.pack_int((id == None and pc.id or id))
+	result = general.pack_int(pc.id if id is None else id)
 	result += general.pack_unsigned_int(effect_id) #エフェクトID(EFFECT.dat&attr.dat
 	#自キャラに掛かった場合 x, yは255
-	result += general.pack_unsigned_byte(int(x == None and 255 or x))
-	result += general.pack_unsigned_byte(int(y == None and 255 or y))
-	result += general.pack_byte((dir == None and pc.dir or dir))
+	result += general.pack_unsigned_byte(int(255 if x is None else x))
+	result += general.pack_unsigned_byte(int(255 if y is None else y))
+	result += general.pack_byte(int(pc.dir if dir is None else dir))
 	#result = general.pack_int(pc.id)
 	#result += general.pack_int(effect_id) #エフェクトID(EFFECT.
 	#result += "\xff"
@@ -1217,20 +1217,22 @@ def make_1d06(emotion_ex_enum):
 def make_0a0b(result):
 	"""trade ask result"""
 	#0 Success
-	#-1～-13
-	#GAME_SMSG_TRADE_REQERR1,";トレード中です";
-	#GAME_SMSG_TRADE_REQERR2,";イベント中です";
-	#GAME_SMSG_TRADE_REQERR3,";相手がトレード中です";
-	#GAME_SMSG_TRADE_REQERR4,";相手がイベント中です";
-	#GAME_SMSG_TRADE_REQERR5,";相手が見つかりません";
-	#GAME_SMSG_TRADE_REQERR6,";トレードを断られました";
-	#GAME_SMSG_TRADE_REQERR7,";ゴーレムショップ起動中です";
-	#GAME_SMSG_TRADE_REQERR8,";相手がゴーレムショップ起動中です";
-	#GAME_SMSG_TRADE_REQERR9,";憑依中です";
-	#GAME_SMSG_TRADE_REQERR10,";相手が憑依中です";
-	#GAME_SMSG_TRADE_REQERR11,";相手のトレード設定が不許可になっています";
-	#GAME_SMSG_TRADE_REQERR12,";トレードを行える状態ではありません";
-	#GAME_SMSG_TRADE_REQERR13,";トレード相手との距離が離れすぎています";
+	#-1～-15
+	#GAME_SMSG_TRADE_REQERR1,"トレード中です"
+	#GAME_SMSG_TRADE_REQERR2,"イベント中です"
+	#GAME_SMSG_TRADE_REQERR3,"相手がトレード中です"
+	#GAME_SMSG_TRADE_REQERR4,"相手がイベント中です"
+	#GAME_SMSG_TRADE_REQERR5,"相手が見つかりません"
+	#GAME_SMSG_TRADE_REQERR6,"トレードを断られました"
+	#GAME_SMSG_TRADE_REQERR7,"ゴーレムショップ起動中です"
+	#GAME_SMSG_TRADE_REQERR8,"相手がゴーレムショップ起動中です"
+	#GAME_SMSG_TRADE_REQERR9,"憑依中です"
+	#GAME_SMSG_TRADE_REQERR10,"相手が憑依中です"
+	#GAME_SMSG_TRADE_REQERR11,"相手のトレード設定が不許可になっています"
+	#GAME_SMSG_TRADE_REQERR12,"トレードを行える状態ではありません"
+	#GAME_SMSG_TRADE_REQERR13,"トレード相手との距離が離れすぎています"
+	#GAME_SMSG_TRADE_REQERR14,"ゲストID期間中はトレードが行なえません"
+	#GAME_SMSG_TRADE_REQERR15,"対象がゲストID期間中であるため、トレードが行なえません"
 	return general.pack_byte(result)
 
 def make_0a0c(pc):
@@ -1253,6 +1255,76 @@ def make_0a1e(item, count):
 	"""trade item data"""
 	result = make_0203(item, 0, 0x02, count)[1:]
 	result += general.pack_byte(0) #unknow
+	return result
+
+def make_07d1(result):
+	"""put item error (won't send if success)"""
+	#-2～-22
+	#GAME_SMSG_ITEM_DROPERR2,"存在しないアイテムです"
+	#GAME_SMSG_ITEM_DROPERR3,"イベントアイテムなので捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR4,"変身中のマリオネットは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR5,"起動中のゴーレムは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR6,"ゴーレムショップに出品中のアイテムは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR7,"行動不能時はアイテムを捨てる事が出来ません"
+	#GAME_SMSG_ITEM_DROPERR8,"トレード中はアイテムを捨てる事が出来ません"
+	#GAME_SMSG_ITEM_DROPERR9,"使用中のアイテムを捨てる事はできません"
+	#GAME_SMSG_ITEM_DROPERR10,"イベント中はアイテムを捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR11,"装備中のアイテムは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR15,"ゲストID期間中はアイテムをドロップすることができません。アイテムを捨てたい場合は、アイテムウィンドウにあるゴミ箱のアイコンをクリックしてください"
+	#GAME_SMSG_ITEM_DROPERR16_0,"「あ、あわわわわ･･･それは捨てることはできませんよ！」"
+	#GAME_SMSG_ITEM_DROPERR16_1,"「ギルド商人までお持ちください。」"
+	#GAME_SMSG_ITEM_DROPERR17,"レンタルアイテムは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR18,"ＤＥＭ強化チップを捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR19,"変形したアイテムを捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR20,"変形中のアイテムを捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR21,"ロックアイテムは捨てることが出来ません"
+	#GAME_SMSG_ITEM_DROPERR22,"ユニオンペットは捨てることが出来ません"
+	return general.pack_int(-1)+general.pack_byte(result)
+
+def make_07d5(mapitem_obj):
+	"""drop item info"""
+	#0～通常ドロップ（マップごとに割り振り, 1000000000～憑依アイテム
+	result = general.pack_int(mapitem_obj.id) #落ちているアイテムに振られたID
+	result += general.pack_unsigned_int(mapitem_obj.item.item_id) #アイテムのID
+	result += general.pack_unsigned_byte(mapitem_obj.x)
+	result += general.pack_unsigned_byte(mapitem_obj.y)
+	result += general.pack_unsigned_short(mapitem_obj.item.count)
+	#アイテムを落としたキャラのサーバキャラID。憑依アイテムは0固定
+	result += general.pack_int(mapitem_obj.id_from)
+	result += general.pack_int(0) #unknow
+	result += general.pack_int(0) #unknow
+	result += general.pack_unsigned_byte(0) #憑依装備は1。通常アイテムは0
+	#result += general.pack_str("") #憑依装備のコメント。(憑依装備のみ)
+	result += general.pack_unsigned_byte(1) #鑑定されているかどうか
+	result += general.pack_unsigned_byte(0) #融合されてるかどうか
+	return result
+
+def make_07e6(error):
+	"""pick up item error"""
+	#GAME_SMSG_ITEM_PICKUPERR0,"アイテムを拾うことが出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR1,"存在しないアイテムです"
+	#GAME_SMSG_ITEM_PICKUPERR2,"行動不能時はアイテムを拾うことが出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR3,"憑依中はアイテムを拾うことが出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR4,"憑依者とレベルが離れすぎているので装備出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR5,"装備箇所は既に装備中です"
+	#GAME_SMSG_ITEM_PICKUPERR6,"憑依装備は定員オーバーです"
+	#GAME_SMSG_ITEM_PICKUPERR7,"憑依アイテムは装備出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR8,"トレード中はアイテムを拾うことが出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR9,"イベント中はアイテムを拾うことが出来ません"
+	#GAME_SMSG_ITEM_PICKUPERR10,"取得権限がありません"
+	#GAME_SMSG_ITEM_PICKUPERR11,"これ以上アイテムを所持することはできません"
+	#GAME_SMSG_ITEM_PICKUPERR12,"憑依者取得中です"
+	#GAME_SMSG_ITEM_PICKUPERR13,"拾える状態ではありません"
+	#GAME_SMSG_ITEM_PICKUPERR14,"憑依アイテムは闘技場モードでないと拾えません"
+	#GAME_SMSG_ITEM_PICKUPERR15,"憑依アイテムはチャンプバトルに参戦していないと拾えません"
+	#GAME_SMSG_ITEM_PICKUPERR16,"マシナフォーム中は憑依アイテムを拾うことができません"
+	return general.pack_int(-1)+general.pack_byte(error)
+
+def make_07df(mapitem_obj):
+	"""pick up item"""
+	result = general.pack_int(mapitem_obj.id) #落ちているアイテムに振られたID
+	result += general.pack_unsigned_byte(0) #unknow
+	result += general.pack_int(-1) #unknow
 	return result
 
 name_map = general.get_name_map(globals(), "make_")

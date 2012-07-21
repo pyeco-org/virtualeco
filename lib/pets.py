@@ -12,22 +12,22 @@ pet_list_lock = threading.RLock()
 def set_pet(pc):
 	with pc.lock:
 		if pc.pet:
-			#general.log("set_pet failed: pc.pet exist")
+			#general.log("[ pet ] set_pet failed: pc.pet exist")
 			return
 		if not pc.equip.pet:
-			#general.log("set_pet failed: pc.equip.pet not exist")
+			#general.log("[ pet ] set_pet failed: pc.equip.pet not exist")
 			return False
 		item = pc.item.get(pc.equip.pet)
 		if not item:
-			#general.log("set_pet failed: item not exist")
+			#general.log("[ pet ] set_pet failed: item not exist")
 			return False
 		pet = general.get_pet(item.petid)
 		if not pet:
-			#general.log("set_pet failed: pet not exist")
+			#general.log("[ pet ] set_pet failed: pet not exist")
 			return False
 		pet.reset()
 		with pet_list_lock:
-			pet.id = get_new_pet_id()
+			pet.id = general.make_id(pet_id_list, PET_ID_START_FROM)
 			pet_list.append(pet)
 			pet_id_list.append(pet.id)
 		with pc.user.lock and pet.lock:
@@ -43,7 +43,7 @@ def set_pet(pc):
 def unset_pet(pc, logout):
 	with pc.lock:
 		if not pc.pet:
-			#general.log("unset_pet failed: pc.pet not exist")
+			#general.log("[ pet ] unset_pet failed: pc.pet not exist")
 			return
 		with pc.user.lock and pc.pet.lock:
 			if logout:
@@ -70,13 +70,3 @@ def get_pet_from_id(i):
 		with pet.lock:
 			if pet.id == i:
 				return pet
-
-def get_new_pet_id():
-	last_id = PET_ID_START_FROM
-	with pet_list_lock:
-		for i in sorted(pet_id_list):
-			if i > last_id+1:
-				return last_id+1
-			else:
-				last_id = i
-	return last_id+1

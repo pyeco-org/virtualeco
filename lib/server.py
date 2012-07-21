@@ -125,7 +125,7 @@ class StandardClient(threading.Thread):
 			except:
 				general.log_error(traceback.format_exc())
 				self.stop()
-		general.log("quit", self)
+		general.log("[ srv ] quit", self)
 	def send_packet(self, packet):
 		with self.lock:
 			#general.log("[ srv ] send", packet.encode("hex"))
@@ -181,12 +181,12 @@ class MapServer(StandardServer):
 		self.client_list.append(MapClient(self, s, src))
 class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
-		general.log("new login client", args)
+		general.log("[ srv ] login client", args)
 		LoginDataHandler.__init__(self)
 		StandardClient.__init__(self, *args)
 class MapClient(StandardClient, MapDataHandler):
 	def __init__(self, *args):
-		general.log("new map client", args)
+		general.log("[ srv ] map client", args)
 		MapDataHandler.__init__(self)
 		StandardClient.__init__(self, *args)
 
@@ -196,7 +196,11 @@ def load():
 	config = serverconfig.ServerConfig(SERVER_CONFIG)
 	global loginserver
 	loginserver = LoginServer(config.loginserverport)
-	general.log("Start login server with\t%s:%d"%(BIND_ADDRESS, config.loginserverport))
+	general.log("[ srv ] Start login server with\t%s:%d"%(
+		BIND_ADDRESS, config.loginserverport
+	))
 	global mapserver
 	mapserver = MapServer(config.mapserverport)
-	general.log("Start map server with\t%s:%d"%(BIND_ADDRESS, config.mapserverport))
+	general.log("[ srv ] Start map server with\t%s:%d"%(
+		BIND_ADDRESS, config.mapserverport
+	))

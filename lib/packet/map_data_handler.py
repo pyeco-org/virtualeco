@@ -44,24 +44,18 @@ class MapDataHandler:
 		with self.pc.lock:
 			if not self.pc.map_obj:
 				return
-			with self.pc.map_obj.lock:
-				for p in self.pc.map_obj.pc_list:
-					if not p.online:
-						continue
-					if self.pc == p:
-						continue
-					p.user.map_client.send(*args)
+			script.send_map_obj(self.pc.map_obj, (self.pc,), *args)
 	
 	def send_map(self, *args):
-		self.send_map_without_self(*args)
-		self.send(*args)
+		with self.pc.lock:
+			if not self.pc.map_obj:
+				general.log_error("[ map ] send_map: not self.pc.map_obj", self.pc)
+				return
+			script.send_map_obj(self.pc.map_obj, (), *args)
 	
 	def send_server(self, *args):
-		for p in users.get_pc_list():
-			with p.lock and p.user.lock:
-				if not p.online:
-					continue
-				p.user.map_client.send(*args)
+		with self.pc.lock:
+			script.send_server(*args)
 	
 	def stop(self):
 		if self.user:
@@ -104,36 +98,39 @@ class MapDataHandler:
 	def _send_item_list(self):
 		for iid in self.pc.sort.item:
 			self.send("0203",
-					self.pc.item[iid],
-					iid,
-					self.pc.get_item_part(iid)
-					)
+				self.pc.item[iid],
+				iid,
+				self.pc.get_item_part(iid)
+			)
 	
 	def sync_map(self):
 		with self.pc.lock:
-			if self.pc.map_obj:
-				with self.pc.map_obj.lock:
-					for pc in self.pc.map_obj.pc_list:
-						if not pc.online:
-							continue
-						if not pc.visible:
-							continue
-						if self.pc == pc:
-							continue
-						general.log("sync_map", self.pc, "<->", pc)
-						#他キャラ情報→自キャラ
-						self.send("120c", pc)
-						#自キャラ情報→他キャラ
-						pc.user.map_client.send("120c", self.pc)
-					for pet in self.pc.map_obj.pet_list:
-						if not pet.master:
-							continue
-						self.send("122f", pet) #pet info
-					for monster in self.pc.map_obj.monster_list:
-						if monster.hp <= 0:
-							continue
-						self.send("122a", (monster.id,)) #モンスターID通知
-						self.send("1220", monster) #モンスター情報
+			if not self.pc.map_obj:
+				return
+			with self.pc.map_obj.lock:
+				for pc in self.pc.map_obj.pc_list:
+					if not pc.online:
+						continue
+					if not pc.visible:
+						continue
+					if self.pc == pc:
+						continue
+					general.log("sync_map", self.pc, "<->", pc)
+					#他キャラ情報→自キャラ
+					self.send("120c", pc)
+					#自キャラ情報→他キャラ
+					pc.user.map_client.send("120c", self.pc)
+				for pet in self.pc.map_obj.pet_list:
+					if not pet.master:
+						continue
+					self.send("122f", pet) #pet info
+				for monster in self.pc.map_obj.monster_list:
+					if monster.hp <= 0:
+						continue
+					self.send("122a", (monster.id,)) #モンスターID通知
+					self.send("1220", monster) #モンスター情報
+				for mi in self.pc.map_obj.mapitem_list:
+					self.send("07d5", mi) #drop item info
 	
 	def update_equip_status(self):
 		self.pc.update_status()
@@ -307,7 +304,7 @@ class MapDataHandler:
 	def do_121b(self, data_io):
 		#モーションセット＆ログアウト
 		motion_id = general.io_unpack_short(data_io)
-		loop = general.io_unpack_byte(data_io) and True or False
+		loop = True if general.io_unpack_byte(data_io) else False
 		general.log("[ map ] motion %d loop %s"%(motion_id, loop))
 		#self.pc.set_motion(motion_id, loop)
 		#self.send_map("121c", self.pc) #モーション通知
@@ -320,8 +317,6 @@ class MapDataHandler:
 	def do_001e(self, data_io):
 		#ログアウト(PASS鍵リセット・マップサーバーとのみ通信)
 		general.log("[ map ] logout")
-		self.pc.unset_pet()
-		self.send_map_without_self("1211", self.pc) #PC消去
 	
 	def do_001f(self, data_io):
 		#ログアウト開始&ログアウト失敗
@@ -441,17 +436,8 @@ class MapDataHandler:
 	def do_0a14(self, data_io):
 		#トレードのOK状態
 		general.log("[ map ] trade: send ok")
-		with self.pc.lock:
-			self.pc.trade_state = -1 #OK押した状態
-			p = self.pc.get_trade_target()
-			if not p:
-				return
-			with p and p.user.lock:
-				#自分・相手がOKやキャンセルを押した際に双方に送信される
-				self.send("0a19", self.pc, p)
-				#自分・相手がOKやキャンセルを押した際に双方に送信される
-				p.user.map_client.send("0a19", p, self.pc)
-	
+		self.pc.set_trade_ok()
+
 	def do_0a15(self, data_io):
 		#トレードのTradeを押した際に送信
 		general.log("[ map ]","trade: send trade")
@@ -486,7 +472,7 @@ class MapDataHandler:
 		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] take item from warehouse", item_iid, item_count)
 		with self.pc.lock:
-			if self.pc.warehouse_open == None:
+			if self.pc.warehouse_open is None:
 				#倉庫から取り出した時の結果 #倉庫を開けていません
 				self.send("09fc", -1)
 				return
@@ -499,20 +485,18 @@ class MapDataHandler:
 				#倉庫から取り出した時の結果 #指定された数量が不正です
 				self.send("09fc", -3)
 				return
-			item.count -= item_count
-			if item.count <= 0:
-				self.pc.sort.warehouse.remove(item_iid)
-				self.pc.warehouse.pop(item_iid)
+			elif item.count == item_count:
+				self.pc.warehouse_pop(item_iid)
+			else:
+				item.count -= item_count
+				script.msg(self.pc, "%sを%s個取り出しました"%(item.name, item_count))
 			if item.stock:
 				script.item(self.pc, item.item_id, item_count)
 			else:
-				item_iid = self.pc.get_new_iid()
 				item_take = general.copy(item)
 				item_take.count = item_count
 				item_take.warehouse = 0
-				self.pc.sort.item.append(item_iid)
-				self.pc.item[item_iid] = item_take
-				self.send("09d4", item_take, item_iid, 0x02) #アイテム取得 #0x02: body
+				self.pc.item_append(item_take)
 			#倉庫から取り出した時の結果 #成功
 			self.send("09fc", 0)
 		self.update_item_status()
@@ -523,7 +507,7 @@ class MapDataHandler:
 		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] store item to warehouse", item_iid, item_count)
 		with self.pc.lock:
-			if self.pc.warehouse_open == None:
+			if self.pc.warehouse_open is None:
 				#倉庫に預けた時の結果 #倉庫を開けていません
 				self.send("09fe", -1)
 				return
@@ -535,20 +519,16 @@ class MapDataHandler:
 			if item.count < item_count:
 				#倉庫に預けた時の結果 #指定された数量が不正です
 				self.send("09fe", -3)
-			item.count -= item_count
-			if item.count <= 0:
-				self.pc.sort.item.remove(item_iid)
-				self.pc.item.pop(item_iid)
-				self.send("09ce", item_iid) #インベントリからアイテム消去
+			elif item.count == item_count:
+				self.pc.item_pop(item_iid)
 			else:
+				item.count -= item_count
 				self.send("09cf", item, item_iid) #アイテム個数変化
-			item_iid = self.pc.get_new_iid()
+				script.msg(self.pc, "%sを%s個失いました"%(item.name, item_count))
 			item_store = general.copy(item)
 			item_store.count = item_count
 			item_store.warehouse = self.pc.warehouse_open
-			self.pc.sort.warehouse.append(item_iid)
-			self.pc.warehouse[item_iid] = item_store
-			self.send("09f9", item_store, item_iid, 30) #倉庫インベントリーデータ
+			self.pc.warehouse_append(item_store)
 			#倉庫に預けた時の結果 #成功
 			self.send("09fe", 0)
 		self.update_item_status()
@@ -590,8 +570,8 @@ class MapDataHandler:
 		#NPCショップのアイテム購入
 		general.log("[ map ] npcshop")
 		with self.pc.lock:
-			if self.pc.shop_open == None:
-				general.log_error("do_0614: shop_open == None")
+			if self.pc.shop_open is None:
+				general.log_error("do_0614: shop_open is None")
 				return
 			shop = db.shop.get(self.pc.shop_open)
 			if not shop:
@@ -656,12 +636,13 @@ class MapDataHandler:
 					general.log_error("do_0616: item.count < item_count")
 					continue
 				if script.gold(self.pc, (int(item.price/100.0) or 1)*item_count):
-					item.count -= item_count
-					if item.count <= 0:
-						self.pc.sort.item.remove(item_iid)
-						self.pc.item.pop(item_iid)
-						self.send("09ce", item_iid) #インベントリからアイテム消去
+					if item.count <= item_count:
+						self.pc.item_pop(item_iid)
 					else:
+						item.count -= item_count
+						script.msg(self.pc, "%sを%s個失いました"%(
+							item.name, item_count
+						))
 						self.send("09cf", item, item_iid) #アイテム個数変化
 		self.update_item_status()
 	
@@ -723,7 +704,7 @@ class MapDataHandler:
 		with self.pc.lock and p.lock:
 			rawdir = general.get_angle_from_coord(self.pc.x, self.pc.y, p.x, p.y)
 			p_rawdir = general.get_angle_from_coord(p.x, p.y, self.pc.x, self.pc.y)
-			if rawdir == None or p_rawdir == None:
+			if rawdir is None or p_rawdir is None:
 				self.pc.set_raw_dir(0.0)
 				p.set_raw_dir(180.0)
 			else:
@@ -790,5 +771,55 @@ class MapDataHandler:
 				p.trade = True
 				p.user.map_client.send("0a0f", self.pc.name) #トレードウィンドウ表示
 				self.send("0a0f", p.name) #トレードウィンドウ表示
+	
+	def do_07d0(self, data_io):
+		#put item request
+		iid = general.io_unpack_int(data_io)
+		count = general.io_unpack_short(data_io)
+		general.log("[ map ] put item: iid", iid, "count", count)
+		with self.pc.lock:
+			if self.pc.trade:
+				#put item error, トレード中はアイテムを捨てる事が出来ません
+				self.send("07d1", -8)
+				return
+			if self.pc.event_id:
+				#put item error, イベント中はアイテムを捨てることが出来ません
+				self.send("07d1", -10)
+				return
+			item, err = script.takeitem_byiid(self.pc, iid, count)
+			if err:
+				self.send("07d1", err)
+				return
+			if not item:
+				general.log("[ map ] put item: not item but err = 0", iid, count)
+				return
+			self.pc.map_obj.mapitem_append(item, self.pc.x, self.pc.y, self.pc.id)
+		self.update_item_status()
+	
+	def do_07e4(self, data_io):
+		#pick up item request
+		mapitem_id = general.io_unpack_int(data_io)
+		general.log("[ map ] pick up item: mapitem_id", mapitem_id)
+		with self.pc.lock:
+			if self.pc.trade:
+				#pick up item error, トレード中はアイテムを拾うことが出来ません
+				self.send("07e6", -8)
+				return
+			if self.pc.event_id:
+				#pick up item error, イベント中はアイテムを拾うことが出来ません
+				self.send("07e6", -9)
+				return
+			mapitem_obj = self.pc.map_obj.mapitem_pop(mapitem_id)
+			if not mapitem_obj:
+				#pick up item error, 存在しないアイテムです
+				self.send("07e6", -1)
+				return
+			self.send_map("07df", mapitem_obj) #pick up item
+			item = mapitem_obj.item
+			if item.stock:
+				script.item(self.pc, item.item_id, item.count)
+			else:
+				self.pc.item_append(mapitem_obj.item)
+		self.update_item_status()
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

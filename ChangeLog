@@ -1,3 +1,13 @@
+2012-07-21
+	support drop and pick up item
+	add general.make_id
+	move monster.send_map to script.send_map
+	add script.send_map_obj(map_obj, without_list, *args)
+	add script.send_server(*args)
+	add PC.item_append, item_pop, warehouse_append, warehouse_pop with system message
+	remove script.item_object_add (PC.item_append instead of)
+	clean up code
+
 2012-07-20
 	support pc to pc trade (unstable)
 	fix script.setgold, npcmotion, npcshop, npcsell affect other pc on the same map
