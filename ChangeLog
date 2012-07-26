@@ -1,3 +1,7 @@
+2012-07-26
+	update db to 343
+	fix pc look sync problem
+
 2012-07-21
 	support drop and pick up item
 	add general.make_id

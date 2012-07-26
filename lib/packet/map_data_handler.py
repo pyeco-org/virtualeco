@@ -425,7 +425,8 @@ class MapDataHandler:
 				self.send("09e8", iid, -1, -2, 1) #アイテム装備
 			else:
 				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
-				self.send("09e9", self.pc) #キャラの見た目を変更
+				self.send_map("09e9", self.pc) #キャラの見た目を変更
+				#self.send_map_without_self("020e", self.pc) #キャラ情報
 		self.update_equip_status()
 	
 	def do_0a16(self, data_io):
