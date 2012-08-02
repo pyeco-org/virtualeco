@@ -209,8 +209,8 @@ def help(pc):
 /emotion_ex emotion_ex_id
 /shownpc npc_id
 /hidenpc npc_id
-#blackout time_ms
-#whiteout time_ms
+/blackout time_ms
+/whiteout time_ms
 """)
 
 def handle_cmd(pc, cmd):

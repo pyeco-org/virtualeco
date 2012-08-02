@@ -1,3 +1,6 @@
+2012-08-02
+	make dump files load and save with pyc format (if DUMP_WITH_ZLIB off)
+
 2012-07-26
 	update db to 343
 	fix pc look sync problem

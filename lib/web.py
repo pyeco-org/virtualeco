@@ -19,8 +19,12 @@ MODIFY_PASSWORD_PAGE_PATH = "/modify_password.html"
 def web_open(name, mode="r", buffering=True, base=WEB_DIR):
 	return general.secure_open(name, mode, buffering, base)
 SocketServer.open = web_open
+SocketServer.file = web_open
 BaseHTTPServer.open = web_open
+BaseHTTPServer.file = web_open
 SimpleHTTPServer.open = web_open
+SimpleHTTPServer.file = web_open
+#do_GET(...) -> send_head(...) -> open(...) -> copyfile(..., wfile)
 
 def parse_post(string):
 	post_dict = {}

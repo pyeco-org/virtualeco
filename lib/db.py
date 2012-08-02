@@ -6,15 +6,16 @@ import csv
 import traceback
 import __builtin__
 DATA_DIR = "./data"
-DATA_PATH = {	"item": "./data/item.csv",
-			"job": "./data/job.csv",
-			"map": "./data/map.csv",
-			"monster": "./data/monster.csv",
-			"npc": "./data/npc.csv",
-			"pet": "./data/pet.csv",
-			"shop": "./data/shop.csv",
-			"skill": "./data/skill.csv",
-			}
+DATA_PATH = {
+	"item": "./data/item.csv",
+	"job": "./data/job.csv",
+	"map": "./data/map.csv",
+	"monster": "./data/monster.csv",
+	"npc": "./data/npc.csv",
+	"pet": "./data/pet.csv",
+	"shop": "./data/shop.csv",
+	"skill": "./data/skill.csv",
+}
 
 def _detect_type(s):
 	if s == "" or s == ".": return 0

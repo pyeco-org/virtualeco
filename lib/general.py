@@ -13,6 +13,7 @@ import random
 import copy as py_copy
 import ConfigParser
 import math
+import imp
 import threading
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
@@ -284,28 +285,31 @@ def get_config(path=None, base=DEFAULT_BASE):
 	return cfg
 
 def load_dump(path, base=DEFAULT_BASE):
+	#simplejson and cPickle compatible all version of python but cannot dump script
 	dump_path = str(path)+".dump"
 	if not os.path.exists(dump_path):
 		return
-	modify_time = int(os.stat(path).st_mtime)
-	python_ver = int("".join(map(str, sys.version_info[:3])))
+	magic_number = imp.get_magic()
+	modify_time = struct.pack("<I", int(os.stat(path).st_mtime))
 	with open(dump_path, "rb", base=base) as dump:
 		try:
-			if (unpack_int(dump.read(4)) == modify_time and
-				unpack_int(dump.read(4)) == python_ver):
-				if DUMP_WITH_ZLIB:
-					return marshal.loads(dump.read().decode("zlib"))
-				else:
-					return marshal.loads(dump.read())
+			if dump.read(4) != magic_number:
+				return
+			if dump.read(4) != modify_time:
+				return
+			if DUMP_WITH_ZLIB:
+				return marshal.loads(dump.read().decode("zlib"))
+			else:
+				return marshal.loads(dump.read())
 		except:
 			log_error("dump file %s broken."%dump_path, traceback.format_exc())
 def save_dump(path, obj, base=DEFAULT_BASE):
 	dump_path = str(path)+".dump"
-	modify_time = int(os.stat(path).st_mtime)
-	python_ver = int("".join(map(str, sys.version_info[:3])))
+	magic_number = imp.get_magic()
+	modify_time = struct.pack("<I", int(os.stat(path).st_mtime))
 	with open(dump_path, "wb", base=base) as dump:
-		dump.write(pack_int(modify_time))
-		dump.write(pack_int(python_ver))
+		dump.write(magic_number)
+		dump.write(modify_time)
 		if DUMP_WITH_ZLIB:
 			dump.write(marshal.dumps(obj).encode("zlib"))
 		else:

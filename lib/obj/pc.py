@@ -620,6 +620,7 @@ class PC:
 			self.set_trade_return()
 			self.reset_trade(False) #don't clear return list
 			self.user.map_client.send("0a1c") #トレード終了通知
+			self.user.map_client.update_item_status()
 			script.update_item(self)
 	
 	def reset_trade(self, reset_return=True):
