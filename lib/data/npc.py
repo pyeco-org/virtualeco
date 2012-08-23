@@ -3,9 +3,9 @@
 import sys
 
 class Npc:
-	def __init__(self, row):
-		self.npc_id = row[0]
-		self.name = row[1]
+	def __init__(self, d):
+		d.update(self.__dict__)
+		self.__dict__ = d
 	
 	def __str__(self):
 		return "%s<%s, %s>"%(repr(self), self.npc_id,

@@ -161,7 +161,10 @@ NAME_WITH_TYPE = {
 	"hidenpc": (int,),
 	"blackout": (int,),
 	"whiteout": (int,),
-	}
+	"size": (int,),
+	"petstandby_on": (),
+	"petstandby_off": (),
+}
 
 def help(pc):
 	msg(pc, """
@@ -211,6 +214,9 @@ def help(pc):
 /hidenpc npc_id
 /blackout time_ms
 /whiteout time_ms
+/size pc_size
+/petstandby_on
+/petstandby_off
 """)
 
 def handle_cmd(pc, cmd):
@@ -710,5 +716,28 @@ def whiteout(pc, time_ms):
 	wait(pc, time_ms)
 	with pc.lock and pc.user.lock:
 		pc.user.map_client.send("0609", 0, 1) #whiteout off
+
+def size(pc, pc_size):
+	general.assert_value_range("pc_size", pc_size, general.RANGE_UNSIGNED_INT)
+	with pc.lock:
+		#default: 1000
+		pc.size = pc_size
+	with pc.lock and pc.user.lock:
+		pc.user.map_client.send_map("020f", pc, pc_size) #size
+	#update(pc)
+
+def petstandby_on(pc):
+	with pc.lock:
+		if not pc.pet:
+			return
+		with pc.pet.lock:
+			pc.pet.standby = True
+
+def petstandby_off(pc):
+	with pc.lock:
+		if not pc.pet:
+			return
+		with pc.pet.lock:
+			pc.pet.standby = False
 
 name_map = general.get_name_map(globals(), "")

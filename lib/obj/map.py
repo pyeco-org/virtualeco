@@ -11,11 +11,9 @@ class Map:
 		return "%s<%s, %s>"%(repr(self), self.map_id,
 			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
 	
-	def __init__(self, row):
-		self.map_id = row[0]
-		self.name = row[1]
-		self.centerx = row[2]
-		self.centery = row[3]
+	def __init__(self, d):
+		d.update(self.__dict__)
+		self.__dict__ = d
 		self.pc_list = []
 		self.pet_list = []
 		self.monster_list = []

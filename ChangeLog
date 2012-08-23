@@ -1,3 +1,11 @@
+2012-08-23
+	update db to 345
+	add dbmap, change database dump format from raw_list to raw_dict {id: __dict__}
+	(auto generate attribute location and boost startup speed)
+	add script.size and command /size pc_size
+	add script.petstandby_on and command /petstandby_on
+	add script.petstandby_off and command /petstandby_off
+
 2012-08-02
 	make dump files load and save with pyc format (if DUMP_WITH_ZLIB off)
 

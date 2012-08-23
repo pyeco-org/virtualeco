@@ -5,12 +5,10 @@ import threading
 from lib import db
 
 class Pet:
-	def __init__ (self, row):
-		self.pet_id = row[0] #pet id
-		self.name = row[1]
-		self.pict_id = row[2] #pet pictid
-		self.hp = row[19]
-		self.maxhp = row[19]
+	def __init__ (self, d):
+		d.update(self.__dict__)
+		self.__dict__ = d
+		self.hp = self.maxhp
 		self.map_id = 0
 		self.map_obj = None
 	
@@ -50,6 +48,8 @@ class Pet:
 		self.wing = 0
 		self.wingcolor = 0
 		self.wrprank = 0
+		self.size = 1000
+		self.standby = False
 		self.item = {1: Pet.Item(self.pict_id)}
 		self.equip = Pet.Equip()
 	

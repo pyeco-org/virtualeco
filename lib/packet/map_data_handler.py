@@ -344,15 +344,17 @@ class MapDataHandler:
 			new_x, new_y = self.pc.x, self.pc.y
 		self.send_map_without_self("11f9", self.pc, move_type) #キャラ移動アナウンス
 		with self.pc.lock:
-			if not self.pc.pet:
-				return
 			if old_x == new_x and old_y == new_y:
 				return
 			if self.pc.logout:
 				general.log("[ map ] logout cancel")
 				self.pc.logout = False
 				self.send("0020", self.pc, "logoutcancel")
+			if not self.pc.pet:
+				return
 			with self.pc.pet.lock:
+				if self.pc.pet.standby:
+					return
 				#pet_x = self.pc.pet.x+(new_x-old_x)
 				#pet_y = self.pc.pet.y+(new_y-old_y)
 				#self.pc.pet.set_coord(pet_x, pet_y)

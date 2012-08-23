@@ -648,6 +648,7 @@ class PC:
 					self.map_obj.pc_list.remove(self)
 			self.online = False
 			self.visible = False
+			self.size = 1000
 			self.motion_id = 111
 			self.motion_loop = False
 			self.rawx = 0

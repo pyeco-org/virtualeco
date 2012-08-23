@@ -79,9 +79,9 @@ class Monster:
 		self.die = 0 #hide after 5 sec
 		self.damage_dic = None #if set {} , will bug with copy.copy
 	
-	def __init__(self, row):
-		self.monster_id = row[0]
-		self.name = row[1]
+	def __init__(self, d):
+		d.update(self.__dict__)
+		self.__dict__ = d
 		self.map_id = 0
 		self.map_obj = None
 	
@@ -96,3 +96,5 @@ class Monster:
 			self.maxsp = 1
 			self.ep = 0
 			self.maxep = 0
+
+

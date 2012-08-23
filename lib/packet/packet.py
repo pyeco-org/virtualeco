@@ -784,7 +784,7 @@ def make_020e(pc):
 	result += general.pack_str("") #看板
 	result += general.pack_str("") #露店看板
 	result += general.pack_byte(0) #プレイヤー露店かどうか
-	result += general.pack_int(1000) #chara size (1000が標準
+	result += general.pack_int(pc.size) #chara size (1000が標準
 	result += general.pack_unsigned_short(pc.motion_id) #モーション#ただし座り(135)や移動や
 										#武器・騎乗ペットによるモーションの場合0
 	result += general.pack_int(0) #不明
@@ -1325,6 +1325,13 @@ def make_07df(mapitem_obj):
 	result = general.pack_int(mapitem_obj.id) #落ちているアイテムに振られたID
 	result += general.pack_unsigned_byte(0) #unknow
 	result += general.pack_int(-1) #unknow
+	return result
+
+def make_020f(pc, pc_size):
+	"""size"""
+	result = general.pack_int(pc.id)
+	result += general.pack_unsigned_int(pc_size)
+	result += general.pack_unsigned_int(1500)
 	return result
 
 name_map = general.get_name_map(globals(), "make_")
