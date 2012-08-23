@@ -32,7 +32,7 @@ class Pet:
 		self.rawy = 0
 		self.rawdir = 0
 		self.speed = 310 #410
-		self.motion_id = 0
+		self.motion_id = 111
 		self.motion_loop = False
 		self.lv_base = 1
 		#for CreatePacket.create020e
@@ -73,6 +73,11 @@ class Pet:
 				with self.map_obj.lock:
 					self.map_obj.pet_list.append(self)
 		return True
+	
+	def set_motion(self, motion_id, motion_loop):
+		with self.lock:
+			self.motion_id = motion_id
+			self.motion_loop = True if motion_loop else False
 	
 	def set_coord_from_master(self):
 		with self.lock and self.master.lock:

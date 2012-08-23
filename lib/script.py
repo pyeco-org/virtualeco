@@ -164,6 +164,8 @@ NAME_WITH_TYPE = {
 	"size": (int,),
 	"petstandby_on": (),
 	"petstandby_off": (),
+	"petmotion": (int, int), #motion_id, motion_loop
+	"petmotion_loop": (int,), #motion_id
 }
 
 def help(pc):
@@ -217,6 +219,8 @@ def help(pc):
 /size pc_size
 /petstandby_on
 /petstandby_off
+/petmotion motion_id motion_loop
+/petmotion_loop motion_id
 """)
 
 def handle_cmd(pc, cmd):
@@ -739,5 +743,17 @@ def petstandby_off(pc):
 			return
 		with pc.pet.lock:
 			pc.pet.standby = False
+
+def petmotion(pc, motion_id, motion_loop=False):
+	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
+	with pc.lock and pc.user.lock:
+		if not pc.pet:
+			return
+		pc.pet.set_motion(motion_id, motion_loop)
+		#モーション通知
+		pc.user.map_client.send_map("121c", pc, pc.pet.id, motion_id, motion_loop)
+
+def petmotion_loop(pc, motion_id):
+	petmotion(pc, motion_id, True)
 
 name_map = general.get_name_map(globals(), "")

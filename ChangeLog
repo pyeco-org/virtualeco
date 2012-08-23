@@ -1,4 +1,8 @@
 2012-08-23
+	add script.petmotion and command /petmotion motion_id motion_loop
+	add script.petmotion_loop and command /petmotion_loop motion_id
+
+2012-08-23
 	update db to 345
 	add dbmap, change database dump format from raw_list to raw_dict {id: __dict__}
 	(auto generate attribute location and boost startup speed)
