@@ -1,3 +1,8 @@
+2012-08-24
+	add type info in database row map (not use _detect_type any more)
+	add version info in database dump
+	database format version 1.1.0
+
 2012-08-23
 	add script.petmotion and command /petmotion motion_id motion_loop
 	add script.petmotion_loop and command /petmotion_loop motion_id

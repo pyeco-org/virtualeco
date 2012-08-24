@@ -2,23 +2,21 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
-import dbmap
 import traceback
 import __builtin__
 DATA_DIR = "./data"
-
-def _detect_type(s):
-	if s == "" or s == ".": return 0
-	try: return int(s)
-	except:
-		try: return float(s)
-		except: return s
+DATABASE_FORMAT_VERSION = "1.1.0"
 
 def get_raw_dict(name):
 	db_path = dbmap.DATABASE_PATH[name]
-	raw_dict = general.load_dump(db_path, DATA_DIR)
-	if raw_dict and type(raw_dict) == dict:
-		return raw_dict
+	dump_data = general.load_dump(db_path, DATA_DIR)
+	if dump_data is not None and type(dump_data) == dict:
+		ver = dump_data.get("ver")
+		raw_dict = dump_data.get("raw_dict")
+		if ver == DATABASE_FORMAT_VERSION:
+			if raw_dict is not None and type(raw_dict) == dict:
+				return raw_dict
+	general.log("Update", name, "database dump ...")
 	
 	raw_dict = {}
 	row_map = {}
@@ -35,15 +33,15 @@ def get_raw_dict(name):
 			attr = attr.strip()
 			if not attr:
 				continue
-			key = row_map_raw.get(attr)
-			if key is None:
+			value = row_map_raw.get(attr)
+			if value is None:
 				general.log_error("attr not define:", attr)
 				continue
-			if not key:
+			if value is NULL:
 				continue
 			if i > min_length:
 				min_length = i
-			row_map[i] = key
+			row_map[i] = value
 		min_length += 1
 		row_map.update(row_map_ext)
 		
@@ -54,11 +52,19 @@ def get_raw_dict(name):
 			if len(row) < min_length:
 				continue
 			d = {}
-			for i, key in row_map.iteritems():
-				d[key] = _detect_type(row[i])
-			raw_dict[_detect_type(row[0])] = d
+			for i, value in row_map.iteritems():
+				try:
+					d[value[1]] = value[0](row[i])
+				except:
+					general.log_error("attr:", attr_type, attr_name)
+					raise
+			raw_dict[int(row[0])] = d
 	
-	general.save_dump(db_path, raw_dict, DATA_DIR)
+	general.save_dump(
+		db_path,
+		{"ver": DATABASE_FORMAT_VERSION, "raw_dict": raw_dict},
+		DATA_DIR,
+	)
 	return raw_dict
 
 def load_database(name, obj):
@@ -75,10 +81,16 @@ def load_database(name, obj):
 	return db_dict
 
 def load():
-	import data
 	global general
+	global NULL
+	global dbmap
 	from lib import general
+	from general import NULL
+	import dbmap
+	
+	import data
 	from lib import obj
+	
 	global item
 	item = load_database("item", data.item.Item)
 	global job
@@ -95,6 +107,3 @@ def load():
 	shop = load_database("shop", data.shop.Shop)
 	global skill
 	skill = load_database("skill", data.skill.Skill)
-
-
-

@@ -34,56 +34,65 @@ RANGE_SHORT = (-32768, 32767)
 RANGE_UNSIGNED_SHORT = (0, 65535)
 RANGE_BYTE = (-128, 127)
 RANGE_UNSIGNED_BYTE = (0, 255)
-ACCESORY_TYPE_LIST = ("ACCESORY_NECK",
-				"JOINT_SYMBOL",
-				)
-UPPER_TYPE_LIST = ("ARMOR_UPPER",
-				#"ONEPIECE",
-				"COSTUME",
-				"BODYSUIT",
-				"WEDDING",
-				"OVERALLS",
-				"FACEBODYSUIT",
-				)
-LOWER_TYPE_LIST = ("ARMOR_LOWER",
-				"SLACKS",
-				)
-RIGHT_TYPE_LIST = ("CLAW",
-				"HAMMER",
-				"STAFF",
-				"SWORD",
-				"AXE",
-				"SPEAR",
-				"HANDBAG",
-				"GUN",
-				"ETC_WEAPON",
-				"SHORT_SWORD",
-				"RAPIER",
-				"BOOK",
-				"DUALGUN",
-				"RIFLE",
-				"THROW",
-				"ROPE",
-				"BULLET",
-				"ARROW",
-				"STRINGS",
-				"EXSWORD"
-				)
-LEFT_TYPE_LIST = ("BOW",
-				"SHIELD",
-				"LEFT_HANDBAG",
-				"ACCESORY_FINGER",
-				)
-BOOTS_TYPE_LIST = ("LONGBOOTS",
-				"BOOTS",
-				"SHOES",
-				"HALFBOOTS",
-				)
-PET_TYPE_LIST = ("BACK_DEMON",
-				"PET",
-				"RIDE_PET",
-				"PET_NEKOMATA",
-				)
+NULL = 0
+
+ACCESORY_TYPE_LIST = (
+	"ACCESORY_NECK",
+	"JOINT_SYMBOL",
+)
+UPPER_TYPE_LIST = (
+	"ARMOR_UPPER",
+	#"ONEPIECE",
+	"COSTUME",
+	"BODYSUIT",
+	"WEDDING",
+	"OVERALLS",
+	"FACEBODYSUIT",
+)
+LOWER_TYPE_LIST = (
+	"ARMOR_LOWER",
+	"SLACKS",
+)
+RIGHT_TYPE_LIST = (
+	"CLAW",
+	"HAMMER",
+	"STAFF",
+	"SWORD",
+	"AXE",
+	"SPEAR",
+	"HANDBAG",
+	"GUN",
+	"ETC_WEAPON",
+	"SHORT_SWORD",
+	"RAPIER",
+	"BOOK",
+	"DUALGUN",
+	"RIFLE",
+	"THROW",
+	"ROPE",
+	"BULLET",
+	"ARROW",
+	"STRINGS",
+	"EXSWORD"
+)
+LEFT_TYPE_LIST = (
+	"BOW",
+	"SHIELD",
+	"LEFT_HANDBAG",
+	"ACCESORY_FINGER",
+)
+BOOTS_TYPE_LIST = (
+	"LONGBOOTS",
+	"BOOTS",
+	"SHOES",
+	"HALFBOOTS",
+)
+PET_TYPE_LIST = (
+	"BACK_DEMON",
+	"PET",
+	"RIDE_PET",
+	"PET_NEKOMATA",
+)
 
 # make server more safe from remote attack by special user input
 # don't work if code or script writeable
