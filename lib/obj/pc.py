@@ -12,8 +12,7 @@ from lib import script
 
 class PC:
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.id, self.name)
 	
 	def load(self):
 		with self.lock:

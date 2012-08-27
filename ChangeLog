@@ -1,3 +1,8 @@
+2012-08-26
+	use system encoding for all log
+	move general.Null to general.NullClass
+	remove lib/unit_test (no longer use)
+
 2012-08-24
 	add type info in database row map (not use _detect_type any more)
 	add version info in database dump

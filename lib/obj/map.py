@@ -8,8 +8,7 @@ from lib.obj import mapitem
 
 class Map:
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.map_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.map_id, self.name)
 	
 	def __init__(self, d):
 		d.update(self.__dict__)

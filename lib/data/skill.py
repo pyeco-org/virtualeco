@@ -8,5 +8,4 @@ class Skill:
 		self.__dict__ = d
 	
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.skill_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.skill_id, self.name)

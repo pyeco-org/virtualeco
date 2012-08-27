@@ -6,8 +6,7 @@ from lib import db
 
 class Monster:
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.monster_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.monster_id, self.name)
 	
 	def set_map(self, *args):
 		with self.lock:

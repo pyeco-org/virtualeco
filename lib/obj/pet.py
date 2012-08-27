@@ -13,8 +13,7 @@ class Pet:
 		self.map_obj = None
 	
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.pet_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.pet_id, self.name)
 	
 	def reset(self):
 		if self.map_obj:

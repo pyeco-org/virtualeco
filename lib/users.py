@@ -29,8 +29,7 @@ class User:
 		self.load()
 	
 	def __str__(self):
-		return "%s<%s, %s>"%(repr(self), self.user_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()))
+		return "%s<%s, %s>"%(repr(self), self.user_id, self.name)
 	
 	def load(self):
 		cfg = general.get_config(

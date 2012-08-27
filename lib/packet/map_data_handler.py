@@ -658,7 +658,7 @@ class MapDataHandler:
 		VIT = general.io_unpack_short(data_io)
 		AGI = general.io_unpack_short(data_io)
 		MAG = general.io_unpack_short(data_io)
-		nullpc = general.Null()
+		nullpc = general.NullClass()
 		self.send("0209", STR, DEX, INT, VIT, AGI, MAG) #ステータス上昇s0208の結果
 		with self.pc.lock:
 			STR += self.pc.stradd

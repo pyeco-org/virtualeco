@@ -27,6 +27,7 @@ STDERR = sys.stderr
 STDOUT_LOG = "./log/%s.log"
 STDERR_LOG = "./log/%s_error.log"
 LOG_DIR = "./log"
+SYSTEM_ENCODING = sys.getfilesystemencoding()
 
 RANGE_INT = (-2147483648, 2147483647)
 RANGE_UNSIGNED_INT = (0, 4294967295)
@@ -200,6 +201,8 @@ if os.name == "posix":
 	os.chroot = lambda *args: __raise(IOError("cannot chroot everywhere"))
 	os.mkfifo = lambda *args: __raise(IOError("cannot mkfifo everywhere"))
 
+class NullClass: pass
+
 class Log:
 	def __init__(self, handle, base_path):
 		self.handle = handle
@@ -237,14 +240,27 @@ class Log:
 	def _close(self):
 		self.logfile.close()
 
-class Null:
-	pass
-
 def use_log():
 	if not os.path.exists(LOG_DIR):
 		os.mkdir(LOG_DIR)
 	sys.stdout = Log(STDOUT, STDOUT_LOG)
 	sys.stderr = Log(STDERR, STDERR_LOG)
+
+def get_str(s):
+	return s.encode("utf-8") if type(s) == unicode else str(s)
+def get_unicode(s):
+	return s if type(s) == unicode else str(s).decode("utf-8")
+def get_str_log(s):
+	return get_unicode(s).encode(SYSTEM_ENCODING)
+
+def log(*args):
+	sys.stdout.write(" ".join(map(get_str_log, args))+"\n")
+def log_line(*args):
+	sys.stdout.write(" ".join(map(get_str_log, args)))
+def log_error(*args):
+	sys.stderr.write(" ".join(map(get_str_log, args))+"\n")
+def log_error_line(*args):
+	sys.stderr.write(" ".join(map(get_str_log, args)))
 
 def list_to_str(l):
 	return ",".join(map(str, l))
@@ -356,15 +372,6 @@ def get_name_map(namespace, head):
 			continue
 		name_map[key[head_length:]] = value
 	return name_map
-
-def log(*args):
-	sys.stdout.write(" ".join(map(str, args))+"\n")
-def log_line(*args):
-	sys.stdout.write(" ".join(map(str, args)))
-def log_error(*args):
-	sys.stderr.write(" ".join(map(str, args))+"\n")
-def log_error_line(*args):
-	sys.stderr.write(" ".join(map(str, args)))
 
 def pack_int(i):
 	return struct.pack(">i", i)

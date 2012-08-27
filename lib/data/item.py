@@ -10,11 +10,7 @@ class Item:
 		self.warehouse = 0
 	
 	def __str__(self):
-		return "%s<%s, %s, %d>"%(
-			repr(self),
-			self.item_id,
-			self.name.decode("utf-8").encode(sys.getfilesystemencoding()),
-			self.count)
+		return "%s<%s, %s, %d>"%(repr(self), self.item_id, self.name, self.count)
 	
 	def check_type(self, item_type):
 		if not item_type:
