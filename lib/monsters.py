@@ -12,11 +12,13 @@ from lib import script
 from lib import db
 MONSTER_ID_START_FROM = 10000
 MONSTER_DEL_DELAY = 5000
+MAX_MONSTER_ID = 20000
 monster_id_list = []
 monster_list = []
 monster_list_lock = threading.RLock()
 
 def spawn(monster_id, map_id, x, y):
+	error = None
 	monster = general.get_monster(monster_id)
 	if not monster:
 		error = "spawn: monster_id %s not exist."%monster_id
@@ -29,7 +31,12 @@ def spawn(monster_id, map_id, x, y):
 		return error
 	monster.reset()
 	with monster_list_lock and monster.lock:
-		monster.id = general.make_id(monster_id_list, MONSTER_ID_START_FROM)
+		monster_id = general.make_id(monster_id_list, MONSTER_ID_START_FROM)
+		if monster_id >= MAX_MONSTER_ID:
+			error = "[monster] ERROR: monster_id [%s] >= MAX_MONSTER_ID"%monster_id
+			general.log_error(error)
+			return error
+		monster.id = monster_id
 		monster.set_map(map_id)
 		monster.set_coord(x, y)
 		monster_list.append(monster)
@@ -47,7 +54,7 @@ def delete(monster):
 		monster_list.remove(monster)
 		monster_id_list.remove(monster.id)
 		if monster.map_obj:
-			script.send_map_obj(monster.map_obj, "1225", monster) #モンスター消去
+			script.send_map_obj(monster.map_obj, (), "1225", monster) #モンスター消去
 		general.log("[monster] delete monster id %s"%(monster.id))
 		monster.reset()
 	del monster

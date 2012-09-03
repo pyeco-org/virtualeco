@@ -38,7 +38,7 @@ class MapDataHandler:
 		)
 	
 	def send(self, *args):
-		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
+		self.send_packet(general.encode(packet.make(*args), self.rijndael_obj))
 	
 	def send_map_without_self(self, *args):
 		with self.pc.lock:
@@ -108,18 +108,18 @@ class MapDataHandler:
 			if not self.pc.map_obj:
 				return
 			with self.pc.map_obj.lock:
-				for pc in self.pc.map_obj.pc_list:
-					if not pc.online:
+				for p in self.pc.map_obj.pc_list:
+					if not p.online:
 						continue
-					if not pc.visible:
+					if not p.visible:
 						continue
-					if self.pc == pc:
+					if self.pc == p:
 						continue
-					general.log("sync_map", self.pc, "<->", pc)
+					general.log("sync_map", self.pc, "<->", p)
 					#他キャラ情報→自キャラ
-					self.send("120c", pc)
+					self.send("120c", p)
 					#自キャラ情報→他キャラ
-					pc.user.map_client.send("120c", self.pc)
+					p.user.map_client.send("120c", self.pc)
 				for pet in self.pc.map_obj.pet_list:
 					if not pet.master:
 						continue

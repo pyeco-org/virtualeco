@@ -13,10 +13,14 @@ USER_BAK_DIR = "./user_bak"
 USER_CONFIG_NAME = "user.ini"
 PC_CONIG_NAME = "%d.ini"
 PC_CONFIG_MAX = 4
+MAX_USER_ID = 10000
+MAX_PC_ID = 10000
+MIN_USER_ID = 100
+MIN_PC_ID = 100
 user_list = []
+user_id_set = set()
+pc_id_set = set()
 user_list_lock = threading.RLock()
-next_user_id = 1
-next_pc_id = 1
 
 class User:
 	def __init__(self, name, path):
@@ -38,6 +42,9 @@ class User:
 		self.password = cfg.get("main","password")
 		self.delpassword = cfg.get("main","delpassword")
 		self.user_id = cfg.getint("main","user_id")
+		if self.pc_list:
+			general.log_error("[users] ERROR: pc_list already load.", self)
+			return
 		for i in xrange(PC_CONFIG_MAX):
 			path = os.path.join(self.path, PC_CONIG_NAME%i)
 			if not os.path.exists(path):
@@ -45,14 +52,9 @@ class User:
 				continue
 			self.pc_list.append(PC(self, path))
 		with user_list_lock:
-			global next_user_id
-			global next_pc_id
-			if next_user_id <= self.user_id:
-				next_user_id = self.user_id+1
-			for pc in self.pc_list:
-				if not pc: continue
-				if next_pc_id <= pc.id:
-					next_pc_id = pc.id+1
+			user_id_set.add(self.user_id)
+			for p in self.pc_list:
+				if p: pc_id_set.add(p.id)
 	
 	def save(self):
 		cfg = ConfigParser.SafeConfigParser()
@@ -68,10 +70,12 @@ class User:
 		with self.lock:
 			if self.login_client:
 				self.login_client._stop()
-			for pc in self.pc_list:
-				if not pc: continue
-				if pc.online: pc.save()
-				pc.reset_login()
+			for p in self.pc_list:
+				if not p: continue
+				if p.online:
+					p.reset_login()
+					general.log("[users] reset save", p)
+					p.save()
 			self.login_client = None
 		self.reset_map()
 	
@@ -79,20 +83,18 @@ class User:
 		with self.lock:
 			if self.map_client:
 				self.map_client._stop()
-			for pc in self.pc_list:
-				if not pc: continue
-				if pc.online: pc.save()
-				pc.reset_map()
 			self.map_client = None
 
 def make_new_user(user_name, password, delpassword):
 	if get_user_from_name(user_name):
 		return False
 	with user_list_lock:
-		global next_user_id
-		user_id = next_user_id
-		next_user_id += 1
-		general.log("[users] next_user_id", next_user_id)
+		user_id = general.make_id(user_id_set, MIN_USER_ID)
+		if user_id >= MAX_USER_ID:
+			general.log_error("[users] ERROR: user_id [%s] >= MAX_USER_ID"%user_id)
+			return False
+		general.log("[users] add user id", user_id)
+		user_id_set.add(user_id)
 	cfg = general.get_config()
 	cfg.add_section("main")
 	cfg.set("main", "user_id", str(user_id))
@@ -115,9 +117,18 @@ def delete_user(user_name, password, delete_password):
 		delete_password_md5 = hashlib.md5(delete_password).hexdigest()
 		if user.password != password_md5: return 0x02 #password error
 		if user.delpassword != delete_password_md5: return 0x02 #password error
-		with user_list_lock:
-			user_list.remove(user)
 		user.reset_login() #close connection
+		with user_list_lock:
+			try:
+				user_list.remove(user)
+				general.log("[users] remove user id", user.user_id)
+				user_id_set.remove(user.user_id)
+				for p in user.pc_list:
+					if p:
+						general.log("[users] remove pc id", p.id)
+						pc_id_set.remove(p.id)
+			except:
+				general.log_error(traceback.format_exc())
 		for name in os.listdir(user.path, base=USER_DIR):
 			os.remove(os.path.join(user.path, name), base=USER_DIR)
 		os.rmdir(user.path, base=USER_DIR)
@@ -147,10 +158,12 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	if os.path.exists(path):
 		return False
 	with user_list_lock:
-		global next_pc_id
-		pc_id = next_pc_id
-		next_pc_id += 1
-		general.log("[users] next_pc_id", next_pc_id)
+		pc_id = general.make_id(pc_id_set, MIN_PC_ID)
+		if pc_id >= MAX_PC_ID:
+			general.log_error("[users] ERROR: pc_id [%s] >= MAX_PC_ID"%pc_id)
+			return False
+		general.log("[users] add pc id", pc_id)
+		pc_id_set.add(pc_id)
 	cfg = general.get_config()
 	cfg.add_section("main")
 	cfg.set("main", "id", str(pc_id))
@@ -250,19 +263,18 @@ def get_pc_list():
 	with user_list_lock:
 		for user in user_list:
 			with user.lock:
-				for pc in filter(None, user.pc_list):
-					l.append(pc)
-	return l
+				l += user.pc_list
+	return filter(None, l)
 def get_pc_from_name(name):
-	for pc in get_pc_list():
-		with pc.lock:
-			if pc.name == name:
-				return pc
+	for p in get_pc_list():
+		with p.lock:
+			if p.name == name:
+				return p
 def get_pc_from_id(i):
-	for pc in get_pc_list():
-		with pc.lock:
-			if pc.id == i:
-				return pc
+	for p in get_pc_list():
+		with p.lock:
+			if p.id == i:
+				return p
 
 def backup_user_data():
 	try:
@@ -287,9 +299,9 @@ def backup_user_data_every_day():
 
 def save_user_data():
 	try:
-		for pc in get_pc_list():
-			if pc.online:
-				pc.save()
+		for p in get_pc_list():
+			if p.online:
+				p.save()
 	except:
 		general.log_error("save_user_data", traceback.format_exc())
 def save_user_data_every_min_thread():
@@ -319,7 +331,5 @@ def load():
 				raise
 	for user in get_user_list():
 		general.log(user)
-	for pc in get_pc_list():
-		general.log(pc)
-	general.log("[users] next_user_id", next_user_id)
-	general.log("[users] next_pc_id", next_pc_id)
+	for p in get_pc_list():
+		general.log(p)

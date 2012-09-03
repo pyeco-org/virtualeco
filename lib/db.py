@@ -4,8 +4,8 @@ import sys
 import os
 import traceback
 import __builtin__
+from lib.version import DATABASE_FORMAT_VERSION
 DATA_DIR = "./data"
-DATABASE_FORMAT_VERSION = "1.1.0"
 
 def get_raw_dict(name):
 	db_path = dbmap.DATABASE_PATH[name]
@@ -85,7 +85,7 @@ def load():
 	global NULL
 	global dbmap
 	from lib import general
-	from general import NULL
+	from lib.general import NULL
 	import dbmap
 	
 	import data

@@ -12,9 +12,11 @@ import traceback
 	#thread.stack_size(256*1024)
 #except:
 #	print traceback.format_exc()
-print "-----------------------------------------"
-print " virtualeco	2012-08-26"
-print "-----------------------------------------"
+import lib.version
+sys.stdout.write("""-----------------------------------------
+ virtualeco	%s
+-----------------------------------------
+"""%lib.version.LAST_UPDATE)
 from lib import db
 from lib import server
 from lib import users

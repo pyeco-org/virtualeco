@@ -8,6 +8,7 @@ import struct
 from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
+from lib.site_packages import rijndael
 SERVER_CONFIG = "./server.ini"
 BIND_ADDRESS = "0.0.0.0"
 MAX_CONNECTION_FROM_ONE_IP = 3
@@ -90,6 +91,7 @@ class StandardClient(threading.Thread):
 		self.recv_init = False
 		self.recv_key = False
 		self.rijndael_key = None
+		self.rijndael_obj = None
 		self.start()
 	def __str__(self):
 		return "%s<%s:%s>"%(repr(self), self.src_address[0], self.src_address[1])
@@ -156,12 +158,16 @@ class StandardClient(threading.Thread):
 				#general.log("[ srv ] length:", len(share_key_bytes))
 				#get rijndael key (str)
 				self.rijndael_key = general.get_rijndael_key(share_key_bytes)
+				self.rijndael_obj = rijndael.rijndael(
+					self.rijndael_key, block_size=16
+				)
+				self.rijndael_obj.lock = threading.RLock()
 			general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
 		else:
 			packet = self.recv_enc_packet()
 			with self.lock:
 				try:
-					self.handle_data(general.decode(packet, self.rijndael_key))
+					self.handle_data(general.decode(packet, self.rijndael_obj))
 				except:
 					general.log_error(traceback.format_exc())
 	def _stop(self):

@@ -20,8 +20,8 @@ def make(data_type, *args):
 
 def pack_user_data(pack, user, attr):
 	result = "\x04"
-	for pc in user.pc_list:
-		result += pack(getattr(pc, attr) if pc else 0)
+	for p in user.pc_list:
+		result += pack(getattr(p, attr) if p else 0)
 	return result
 def pack_user_byte(*args):
 	return pack_user_data(general.pack_byte, *args)
@@ -114,8 +114,8 @@ def make_00a8(pc):
 def make_0028(user):
 	"""4キャラクターの基本属性"""
 	result = general.pack_byte(len(user.pc_list)) #キャラ数
-	for pc in user.pc_list:
-		result += general.pack_str(pc.name) if pc else "\x00" #名前
+	for p in user.pc_list:
+		result += general.pack_str(p.name) if p else "\x00" #名前
 	result += pack_user_byte(user, "race") #種族
 	result += pack_user_byte(user, "form") #フォーム（DEMの）
 	result += pack_user_byte(user, "gender") #性別
@@ -124,8 +124,8 @@ def make_0028(user):
 	#ウィング #ない時は\xFF\xFF
 	result += pack_user_short(user, "wig")
 	result += general.pack_byte(len(user.pc_list)) #不明
-	for pc in user.pc_list:
-		result += general.pack_byte(-1 if pc else 0)
+	for p in user.pc_list:
+		result += general.pack_byte(-1 if p else 0)
 	result += pack_user_short(user, "face") #顔
 	#転生前のレベル #付ければ上位種族になる
 	result += pack_user_byte(user, "base_lv")
@@ -140,8 +140,8 @@ def make_0028(user):
 	result += pack_user_byte(user, "lv_base") #レベル
 	result += pack_user_byte(user, "lv_job1") #1次職レベル
 	result += general.pack_byte(len(user.pc_list)) #残りクエスト数
-	for pc in user.pc_list:
-		result += general.pack_short(3 if pc else 0)
+	for p in user.pc_list:
+		result += general.pack_short(3 if p else 0)
 	result += pack_user_byte(user, "lv_job2x") #2次職レベル
 	result += pack_user_byte(user, "lv_job2t") #2.5次職レベル
 	result += pack_user_byte(user, "lv_job3") #3次職レベル
@@ -231,9 +231,9 @@ def make_09e9(pc):
 def make_0029(user):
 	"""4キャラクターの装備"""
 	result = ""
-	for pc in user.pc_list:
-		if pc:
-			result += "\x0d"+make_09e9(pc)[5:5+13*4]
+	for p in user.pc_list:
+		if p:
+			result += "\x0d"+make_09e9(p)[5:5+13*4]
 		else:
 			result += "\x0d"+general.pack_int(0)*13
 	return result

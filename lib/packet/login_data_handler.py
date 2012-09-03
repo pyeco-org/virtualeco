@@ -21,7 +21,7 @@ class LoginDataHandler:
 		)
 	
 	def send(self, *args):
-		self.send_packet(general.encode(packet.make(*args), self.rijndael_key))
+		self.send_packet(general.encode(packet.make(*args), self.rijndael_obj))
 	
 	def stop(self):
 		if self.user:
@@ -107,7 +107,7 @@ class LoginDataHandler:
 		hair = general.io_unpack_short(data_io)
 		hair_color = general.io_unpack_byte(data_io)
 		face = general.io_unpack_short(data_io)
-		general.log("[login] new character:", "num", num, "name", name,
+		general.log("[login] create character:", "num", num, "name", name,
 			"race", race, "gender", gender, "hair", hair,
 			"haircolor", hair_color, "face", face)
 		try:
@@ -139,13 +139,16 @@ class LoginDataHandler:
 		#キャラクター削除 #num + delpassword
 		num = general.io_unpack_byte(data_io)
 		delpassword_md5 = general.io_unpack_raw(data_io)[:32]
-		general.log("[login] delete character", "num", num,
+		general.log("[login] remove character", "num", num,
 			"delpassword", delpassword_md5)
 		try:
 			if self.user.delpassword != delpassword_md5:
 				raise (Exception, "delpassword error")
 			with self.user.lock:
-				os.remove(self.user.pc_list[num].path, base=users.USER_DIR)
+				p = self.user.pc_list[num]
+				with users.user_list_lock:
+					users.pc_id_set.remove(p.id)
+				os.remove(p.path, base=users.USER_DIR)
 				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
 		except:

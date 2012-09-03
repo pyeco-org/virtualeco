@@ -26,7 +26,7 @@ def main(pc):
 		packet_raw += data_type
 		packet_raw += data_value
 		#create encrypted packet
-		packet_enc = general.encode(packet_raw, pc.user.map_client.rijndael_key)
+		packet_enc = general.encode(packet_raw, pc.user.map_client.rijndael_obj)
 		#send
 		general.log("send", data_type.encode("hex"), data_value.encode("hex"))
 		pc.user.map_client.send_packet(packet_enc)

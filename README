@@ -1,10 +1,1 @@
-A eco server rewrite from pyeco.
-
-different from pyeco:
-cleanly code
-base socket and threading.Thread
-high-speed database loader (like pyc)
-multi-character support (make / delete)
-
-recommend use pyecolauncher for launch eco
-pyeco_extra: https://github.com/pyeco/pyeco_extra
+Rewrite from pyeco.

@@ -5,6 +5,7 @@ import os
 import threading
 from lib import general
 PET_ID_START_FROM = 20000
+MAX_PET_ID = 30000
 pet_id_list = []
 pet_list = []
 pet_list_lock = threading.RLock()
@@ -27,7 +28,11 @@ def set_pet(pc):
 			return False
 		pet.reset()
 		with pet_list_lock:
-			pet.id = general.make_id(pet_id_list, PET_ID_START_FROM)
+			pet_id = general.make_id(pet_id_list, PET_ID_START_FROM)
+			if pet_id >= MAX_PET_ID:
+				general.log_error("[ pet ] ERROR: pet_id [%s] >= MAX_PET_ID"%pet_id)
+				return False
+			pet.id = pet_id
 			pet_list.append(pet)
 			pet_id_list.append(pet.id)
 		with pc.user.lock and pet.lock:

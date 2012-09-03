@@ -500,21 +500,21 @@ def get_rijndael_key(share_key_bytes):
 		else: rijndael_key_hex += s
 	return rijndael_key_hex.decode("hex")
 
-def encode(string, key):
+def encode(string, rijndael_obj):
 	if not string:
 		log_error("[error] encode error: not string", string)
 		return
 	#key = "\x00"*16
 	string_size = len(string)
 	string += "\x00"*(16-len(string)%16)
-	r = rijndael.rijndael(key, block_size=16)
 	code = ""
-	for i in xrange(len(string)/16):
-		code += r.encrypt(string[i*16:i*16+16])
+	with rijndael_obj.lock:
+		for i in xrange(len(string)/16):
+			code += rijndael_obj.encrypt(string[i*16:i*16+16])
 	code_size = len(code)
 	return pack_int(code_size)+pack_int(string_size)+code
 
-def decode(code, key):
+def decode(code, rijndael_obj):
 	if not code:
 		log_error("[error] decode error: not code", code)
 		return
@@ -524,10 +524,10 @@ def decode(code, key):
 		log_error("[error] decode error: (len(code)-4) % 16 != 0", code.encode("hex"))
 		return
 	#key = "\x00"*16
-	r = rijndael.rijndael(key, block_size=16)
 	string = ""
-	for i in xrange(len(code)/16):
-		string += r.decrypt(code[i*16+4:i*16+20])
+	with rijndael_obj.lock:
+		for i in xrange(len(code)/16):
+			string += rijndael_obj.decrypt(code[i*16+4:i*16+20])
 	return string[:string_size]
 
 def sin(angle): return math.sin(math.radians(angle))
@@ -572,10 +572,12 @@ def make_id(id_list_exist, min_id=0):
 	i = min_id
 	sorted_list = sorted(id_list_exist)
 	for j in sorted_list:
+		if j < min_id:
+			continue
 		if j > i+1:
 			break
 		else:
 			i = j
 	i += 1
-	log("[gener] make_id", sorted_list, i)
+	log("[gener] make_id", sorted_list, min_id, i)
 	return i
