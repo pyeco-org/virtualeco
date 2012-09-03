@@ -154,7 +154,7 @@ def make_0033(reply_ping=False):
 	else:
 		from lib import server
 		result = "\x01"
-		result += general.pack_str(server.config.serveraddress)
+		result += general.pack_str(server.config.serverpublicip)
 		result += general.pack_int(server.config.mapserverport)
 	return result
 

@@ -147,6 +147,7 @@ class LoginDataHandler:
 			with self.user.lock:
 				p = self.user.pc_list[num]
 				with users.user_list_lock:
+					general.log("[login] remove pc id", p.id)
 					users.pc_id_set.remove(p.id)
 				os.remove(p.path, base=users.USER_DIR)
 				self.user.pc_list[num] = None

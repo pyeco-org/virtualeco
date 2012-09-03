@@ -57,6 +57,10 @@ if __name__ == "__main__":
 	if USE_LOG:
 		general.use_log()
 	
+	server.init()
+	if os.name == "nt":
+		server.assert_address_not_used()
+	
 	db.load()
 	script.load()
 	users.load()

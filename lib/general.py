@@ -15,6 +15,7 @@ import ConfigParser
 import math
 import imp
 import threading
+import socket
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import db
@@ -249,7 +250,10 @@ def use_log():
 def get_str(s):
 	return s.encode("utf-8") if type(s) == unicode else str(s)
 def get_unicode(s):
-	return s if type(s) == unicode else str(s).decode("utf-8")
+	try:
+		return s if type(s) == unicode else str(s).decode("utf-8")
+	except UnicodeDecodeError: #0x97 bomb
+		return unicode(s, "utf-8", "ignore")
 def get_str_log(s):
 	return get_unicode(s).encode(SYSTEM_ENCODING)
 
@@ -566,6 +570,18 @@ def assert_value_range(name, value, value_range):
 		raise ValueError(
 			"%s > %s [%s]"%tuple(map(str, (name, value_range[1], value)))
 		)
+
+def assert_address_not_used(addr):
+	#cannot connect (0.0.0.0, port) in windows, socket errno 10049
+	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	try:	
+		#s.settimeout(0.01)
+		s.connect(addr)
+	except:
+		return
+	finally:
+		s.close()
+	raise Exception("Address [%s] already in use"%str(addr))
 
 def make_id(id_list_exist, min_id=0):
 	#not thread safe

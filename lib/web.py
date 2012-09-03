@@ -10,7 +10,6 @@ import SimpleHTTPServer
 from lib import general
 from lib import server
 from lib import users
-BIND_ADDRESS = "0.0.0.0"
 WEB_DIR = "./web"
 REG_USER_PAGE_PATH = "/index.html"
 DEL_USER_PAGE_PATH = "/delete.html"
@@ -181,8 +180,8 @@ class ThreadingWebServer(SocketServer.ThreadingMixIn,
 	def __init__(self, *args):
 		threading.Thread.__init__(self)
 		BaseHTTPServer.HTTPServer.__init__(self, *args)
-		#SocketServer.ThreadingMixIn.__init__(self, *args)
 		self.setDaemon(True)
+		self.start()
 	def run(self):
 		while True:
 			self.handle_request()
@@ -190,9 +189,6 @@ class ThreadingWebServer(SocketServer.ThreadingMixIn,
 
 def load():
 	global webserver
-	webserver = ThreadingWebServer(
-		(BIND_ADDRESS, server.config.webserverport), WebHandle)
-	webserver.start()
-	general.log("[ web ] Start web server with\t%s:%d"%(
-		BIND_ADDRESS, server.config.webserverport
-	))
+	webserver_bind_addr = (server.config.serverbindip, server.config.webserverport)
+	general.log("[ web ] Start web server with\t%s:%d"%webserver_bind_addr)
+	webserver = ThreadingWebServer(webserver_bind_addr, WebHandle)

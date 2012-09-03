@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import sys
+import os
 import socket
 import thread
 import threading
@@ -9,8 +11,7 @@ from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 from lib.site_packages import rijndael
-SERVER_CONFIG = "./server.ini"
-BIND_ADDRESS = "0.0.0.0"
+SERVER_CONFIG_PATH = "./server.ini"
 MAX_CONNECTION_FROM_ONE_IP = 3
 USE_NULL_KEY = False #emergency option
 if USE_NULL_KEY:
@@ -44,15 +45,15 @@ PACKET_NULL_KEY = "\x00\x00\x00\x01\x30"
 VALUE_NULL_KEY = 0
 
 class StandardServer(threading.Thread):
-	def __init__(self, port):
+	def __init__(self, addr):
 		threading.Thread.__init__(self)
 		self.setDaemon(True)
-		self.port = port
+		self.bind_addr = addr
 		self.client_list = []
 		self.lock = threading.RLock()
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		self.socket.bind((BIND_ADDRESS, port))
+		self.socket.bind(addr)
 		self.socket.listen(10)
 		self.start()
 	def ip_count_check(self, src):
@@ -196,17 +197,24 @@ class MapClient(StandardClient, MapDataHandler):
 		MapDataHandler.__init__(self)
 		StandardClient.__init__(self, *args)
 
-def load():
+def init():
 	from lib.obj import serverconfig
 	global config
-	config = serverconfig.ServerConfig(SERVER_CONFIG)
+	config = serverconfig.ServerConfig(SERVER_CONFIG_PATH)
+
+def assert_address_not_used():
+	general.log_line("server.assert_address_not_used ... ")
+	general.assert_address_not_used((config.serverpublicip, config.loginserverport))
+	general.assert_address_not_used((config.serverpublicip, config.mapserverport))
+	general.assert_address_not_used((config.serverpublicip, config.webserverport))
+	general.log("done.")
+
+def load():
 	global loginserver
-	loginserver = LoginServer(config.loginserverport)
-	general.log("[ srv ] Start login server with\t%s:%d"%(
-		BIND_ADDRESS, config.loginserverport
-	))
 	global mapserver
-	mapserver = MapServer(config.mapserverport)
-	general.log("[ srv ] Start map server with\t%s:%d"%(
-		BIND_ADDRESS, config.mapserverport
-	))
+	loginserver_bind_addr = (config.serverbindip, config.loginserverport)
+	mapserver_bind_addr = (config.serverbindip, config.mapserverport)
+	general.log("[ srv ] Start login server with\t%s:%d"%loginserver_bind_addr)
+	loginserver = LoginServer(loginserver_bind_addr)
+	general.log("[ srv ] Start map server with\t%s:%d"%mapserver_bind_addr)
+	mapserver = MapServer(mapserver_bind_addr)

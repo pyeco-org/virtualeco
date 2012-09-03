@@ -4,6 +4,10 @@
 	add MAX_USER_ID, MAX_PC_ID, MAX_PET_ID, MAX_MONSTER_ID
 	fix monster.spawn/delete error
 	use general.make_id to generate user and pc id when create
+	remove serveraddress from server.ini
+	add serverbindip to server.ini
+	add serverpublicip to server.ini
+	check address before bind on windows
 
 2012-08-26
 	use system encoding for all log

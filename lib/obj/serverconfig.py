@@ -17,7 +17,8 @@ class ServerConfig:
 		self.loginserverport = cfg.getint("main", "loginserverport")
 		self.mapserverport = cfg.getint("main", "mapserverport")
 		self.webserverport = cfg.getint("main", "webserverport")
-		self.serveraddress = cfg.get("main", "serveraddress")
+		self.serverbindip = cfg.get("main", "serverbindip")
+		self.serverpublicip = cfg.get("main", "serverpublicip")
 		self.defaultgmlevel = cfg.getint("player", "defaultgmlevel")
 		self.loginevent = cfg.getint("player", "loginevent")
 		for cmd in cfg.options("gmlevel"):
