@@ -3,6 +3,7 @@
 import sys
 import threading
 import traceback
+from lib import env
 from lib import general
 from lib import server
 from lib import db
@@ -18,7 +19,7 @@ class PC:
 		with self.lock:
 			self._load()
 	def _load(self):
-		cfg = general.get_config(self.path, base=users.USER_DIR)
+		cfg = general.get_config(self.path, base=env.USER_DIR)
 		self.id = cfg.getint("main","id")
 		self.name = cfg.get("main","name")
 		self.gmlevel = cfg.getint("main","gmlevel")
@@ -176,7 +177,7 @@ class PC:
 		cfg.add_section("skill")
 		cfg.set("skill", "list", general.list_to_str(self.skill_list))
 		#
-		cfg.write(open(self.path, "wb", base=users.USER_DIR))
+		cfg.write(open(self.path, "wb", base=env.USER_DIR))
 	
 	def get_item_part(self, *args):
 		with self.lock:

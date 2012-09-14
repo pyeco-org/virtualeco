@@ -7,15 +7,11 @@ import time
 import SocketServer
 import BaseHTTPServer
 import SimpleHTTPServer
+from lib import env
 from lib import general
 from lib import server
 from lib import users
-WEB_DIR = "./web"
-REG_USER_PAGE_PATH = "/index.html"
-DEL_USER_PAGE_PATH = "/delete.html"
-MODIFY_PASSWORD_PAGE_PATH = "/modify_password.html"
-
-def web_open(name, mode="r", buffering=True, base=WEB_DIR):
+def web_open(name, mode="r", buffering=True, base=env.WEB_DIR):
 	return general.secure_open(name, mode, buffering, base)
 SocketServer.open = web_open
 SocketServer.file = web_open
@@ -54,8 +50,8 @@ class WebHandle(SimpleHTTPServer.SimpleHTTPRequestHandler):
 	def translate_path(self, path):
 		if path.find("..") != -1:
 			return ""
-		path = WEB_DIR+"/"+path
-		if not os.path.abspath(path).startswith(os.path.abspath(WEB_DIR)):
+		path = env.WEB_DIR+"/"+path
+		if not os.path.abspath(path).startswith(os.path.abspath(env.WEB_DIR)):
 			return ""
 		return path
 	
@@ -66,11 +62,11 @@ class WebHandle(SimpleHTTPServer.SimpleHTTPRequestHandler):
 		self.send_response(200)
 		self.end_headers()
 		post = parse_post(self.rfile.read(int(self.headers["Content-Length"])))
-		if self.path.find(REG_USER_PAGE_PATH) != -1:
+		if self.path.find(env.REG_USER_PAGE_PATH) != -1:
 			self.wfile.write(self.reg_user(post))
-		elif self.path.find(DEL_USER_PAGE_PATH) != -1:
+		elif self.path.find(env.DEL_USER_PAGE_PATH) != -1:
 			self.wfile.write(self.del_user(post))
-		elif self.path.find(MODIFY_PASSWORD_PAGE_PATH) != -1:
+		elif self.path.find(env.MODIFY_PASSWORD_PAGE_PATH) != -1:
 			self.wfile.write(self.modify_password(post))
 		else:
 			self.wfile("page not found.")
@@ -190,5 +186,5 @@ class ThreadingWebServer(SocketServer.ThreadingMixIn,
 def load():
 	global webserver
 	webserver_bind_addr = (server.config.serverbindip, server.config.webserverport)
-	general.log("[ web ] Start web server with\t%s:%d"%webserver_bind_addr)
+	general.log("[ web ] start web server with\t%s:%d"%webserver_bind_addr)
 	webserver = ThreadingWebServer(webserver_bind_addr, WebHandle)

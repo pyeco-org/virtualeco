@@ -4,16 +4,15 @@ import sys
 import os
 import traceback
 import __builtin__
-from lib.version import DATABASE_FORMAT_VERSION
-DATA_DIR = "./data"
+from lib import env
 
 def get_raw_dict(name):
 	db_path = dbmap.DATABASE_PATH[name]
-	dump_data = general.load_dump(db_path, DATA_DIR)
+	dump_data = general.load_dump(db_path, env.DATABASE_DIR)
 	if dump_data is not None and type(dump_data) == dict:
 		ver = dump_data.get("ver")
 		raw_dict = dump_data.get("raw_dict")
-		if ver == DATABASE_FORMAT_VERSION:
+		if ver == env.DATABASE_FORMAT_VERSION:
 			if raw_dict is not None and type(raw_dict) == dict:
 				return raw_dict
 	general.log("Update", name, "database dump ...")
@@ -62,14 +61,14 @@ def get_raw_dict(name):
 	
 	general.save_dump(
 		db_path,
-		{"ver": DATABASE_FORMAT_VERSION, "raw_dict": raw_dict},
-		DATA_DIR,
+		{"ver": env.DATABASE_FORMAT_VERSION, "raw_dict": raw_dict},
+		env.DATABASE_DIR,
 	)
 	return raw_dict
 
 def load_database(name, obj):
 	db_path = dbmap.DATABASE_PATH[name]
-	general.log_line("Load %-20s"%("%s ..."%db_path))
+	general.log_line("[load ] load %-20s"%("%s ..."%db_path))
 	db_dict = {}
 	raw_dict = get_raw_dict(name)
 	for i, d in raw_dict.iteritems():

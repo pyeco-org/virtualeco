@@ -1,3 +1,8 @@
+2012-09-14
+	move lib.version to lib.env
+	move a part of settings to lib.env
+	move license from BSD to MIT
+
 2012-09-01
 	add lib.version
 	pass rijndael_obj instead of rijndael_key to general.encode/decode

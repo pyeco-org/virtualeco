@@ -8,10 +8,7 @@ import threading
 import hashlib
 import traceback
 import ConfigParser
-USER_DIR = "./user"
-USER_BAK_DIR = "./user_bak"
-USER_CONFIG_NAME = "user.ini"
-PC_CONIG_NAME = "%d.ini"
+from lib import env
 PC_CONFIG_MAX = 4
 MAX_USER_ID = 10000
 MAX_PC_ID = 10000
@@ -36,9 +33,9 @@ class User:
 		return "%s<%s, %s>"%(repr(self), self.user_id, self.name)
 	
 	def load(self):
-		cfg = general.get_config(
-			os.path.join(self.path, USER_CONFIG_NAME), base=USER_DIR
-		)
+		cfg = general.get_config(os.path.join(
+			self.path, env.USER_CONFIG_NAME
+		), base=env.USER_DIR)
 		self.password = cfg.get("main","password")
 		self.delpassword = cfg.get("main","delpassword")
 		self.user_id = cfg.getint("main","user_id")
@@ -46,7 +43,7 @@ class User:
 			general.log_error("[users] ERROR: pc_list already load.", self)
 			return
 		for i in xrange(PC_CONFIG_MAX):
-			path = os.path.join(self.path, PC_CONIG_NAME%i)
+			path = os.path.join(self.path, env.PC_CONIG_NAME%i)
 			if not os.path.exists(path):
 				self.pc_list.append(None)
 				continue
@@ -62,9 +59,9 @@ class User:
 		cfg.set("main", "password", self.password)
 		cfg.set("main", "delpassword", self.delpassword)
 		cfg.set("main", "user_id", str(self.user_id))
-		cfg.write(
-			open(os.path.join(self.path, USER_CONFIG_NAME), "wb", base=USER_DIR)
-		)
+		cfg.write(open(os.path.join(
+			self.path, env.USER_CONFIG_NAME
+		), "wb", base=env.USER_DIR))
 	
 	def reset_login(self):
 		with self.lock:
@@ -100,13 +97,13 @@ def make_new_user(user_name, password, delpassword):
 	cfg.set("main", "user_id", str(user_id))
 	cfg.set("main", "password", hashlib.md5(password).hexdigest())
 	cfg.set("main", "delpassword", hashlib.md5(delpassword).hexdigest())
-	if not os.path.exists(os.path.join(USER_DIR, user_name)):
-		os.mkdir(os.path.join(USER_DIR, user_name), base=USER_DIR)
-	cfg.write(
-		open(os.path.join(USER_DIR, user_name, USER_CONFIG_NAME), "wb", base=USER_DIR)
-	)
+	if not os.path.exists(os.path.join(env.USER_DIR, user_name)):
+		os.mkdir(os.path.join(env.USER_DIR, user_name), base=env.USER_DIR)
+	cfg.write(open(os.path.join(
+		env.USER_DIR, user_name, env.USER_CONFIG_NAME
+	), "wb", base=env.USER_DIR))
 	with user_list_lock:
-		user_list.append(User(user_name, os.path.join(USER_DIR, user_name)))
+		user_list.append(User(user_name, os.path.join(env.USER_DIR, user_name)))
 	return True
 
 def delete_user(user_name, password, delete_password):
@@ -129,9 +126,9 @@ def delete_user(user_name, password, delete_password):
 						pc_id_set.remove(p.id)
 			except:
 				general.log_error(traceback.format_exc())
-		for name in os.listdir(user.path, base=USER_DIR):
-			os.remove(os.path.join(user.path, name), base=USER_DIR)
-		os.rmdir(user.path, base=USER_DIR)
+		for name in os.listdir(user.path, base=env.USER_DIR):
+			os.remove(os.path.join(user.path, name), base=env.USER_DIR)
+		os.rmdir(user.path, base=env.USER_DIR)
 		del user
 	return 0x00 #success
 
@@ -154,7 +151,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	with user.lock:
 		if user.pc_list[num]:
 			return False
-	path = os.path.join(user.path, PC_CONIG_NAME%num)
+	path = os.path.join(user.path, env.PC_CONIG_NAME%num)
 	if os.path.exists(path):
 		return False
 	with user_list_lock:
@@ -236,7 +233,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	cfg.add_section("dic")
 	cfg.add_section("skill")
 	cfg.set("skill", "list", "")
-	cfg.write(open(path, "wb", base=USER_DIR))
+	cfg.write(open(path, "wb", base=env.USER_DIR))
 	with user.lock:
 		user.pc_list[num] = PC(user, path)
 	return True
@@ -278,12 +275,12 @@ def get_pc_from_id(i):
 
 def backup_user_data():
 	try:
-		zip_path = os.path.join(USER_BAK_DIR, "%s.zip"%general.get_today())
+		zip_path = os.path.join(env.USER_BAK_DIR, "%s.zip"%general.get_today())
 		if os.path.exists(zip_path):
 			return
-		if not os.path.exists(USER_BAK_DIR):
-			os.mkdir(USER_BAK_DIR)
-		general.save_zip(USER_DIR, zip_path, USER_DIR, USER_BAK_DIR)
+		if not os.path.exists(env.USER_BAK_DIR):
+			os.mkdir(env.USER_BAK_DIR)
+		general.save_zip(env.USER_DIR, zip_path, env.USER_DIR, env.USER_BAK_DIR)
 	except:
 		general.log_error("backup_user_data", traceback.format_exc())
 def backup_user_data_every_day_thread():
@@ -316,20 +313,18 @@ def save_user_data_every_min():
 		thread.start_new_thread(save_user_data_every_min_thread, ())
 
 def load():
-	global general
+	global general, PC, server
 	from lib import general
-	global PC
 	from lib.obj.pc import PC
-	global server
 	from lib import server
 	with user_list_lock:
-		for name in os.listdir(USER_DIR):
+		for name in os.listdir(env.USER_DIR):
 			try:
-				user_list.append(User(name, os.path.join(USER_DIR, name)))
+				user_list.append(User(name, os.path.join(env.USER_DIR, name)))
 			except:
 				general.log_error("load error:", name)
 				raise
-	for user in get_user_list():
-		general.log(user)
-	for p in get_pc_list():
-		general.log(p)
+	#for user in get_user_list():
+	#	general.log(user)
+	#for p in get_pc_list():
+	#	general.log(p)

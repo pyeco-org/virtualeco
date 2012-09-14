@@ -4,19 +4,10 @@ import sys
 import os
 import time
 import traceback
-#try:
-	#equal python -u
-	#sys.stdout = os.fdopen(sys.stdout.fileno(), "wb", 0)
-	#sys.stderr = os.fdopen(sys.stderr.fileno(), "wb", 0)
-	#sys.dont_write_bytecode = True #require python >= 2.6
-	#thread.stack_size(256*1024)
-#except:
-#	print traceback.format_exc()
-import lib.version
-sys.stdout.write("""-----------------------------------------
- virtualeco	%s
------------------------------------------
-"""%lib.version.LAST_UPDATE)
+import threading
+#reduce memory usage
+threading.stack_size(256*1024)
+from lib import env
 from lib import db
 from lib import server
 from lib import users
@@ -24,13 +15,10 @@ from lib import pets
 from lib import script
 from lib import web
 from lib import general
-STARTUP_TIME = time.time()
-USE_LOG = False
-BACKUP_USER_DATA_EVERY_DAY = False
 
 def debugger():
-	general.log("[debug] startup expend %s sec"%(time.time()-STARTUP_TIME))
-	general.log("[debug] you can input something and press return")
+	general.log("[debug] load time %s"%(time.time()-env.LOAD_STARTUP_TIME))
+	general.log("[debug] interpreter start")
 	while True:
 		try:
 			input_debug = raw_input()
@@ -48,26 +36,39 @@ def debugger():
 			break
 		except:
 			general.log_error("[debug]", traceback.format_exc())
-	if BACKUP_USER_DATA_EVERY_DAY:
+
+def atexit():
+	if env.BACKUP_USER_DATA_EVERY_DAY:
 		users.backup_user_data()
 	users.save_user_data()
 
-if __name__ == "__main__":
+def init():
 	general.secure_chdir()
-	if USE_LOG:
+	general.log("-"*30+"\n", env.NAME, env.LAST_UPDATE, "\n"+"-"*30)
+	if env.USE_LOGFILE:
 		general.use_log()
-	
 	server.init()
-	if os.name == "nt":
-		server.assert_address_not_used()
-	
+
+def load():
+	env.LOAD_STARTUP_TIME = time.time()
 	db.load()
 	script.load()
 	users.load()
 	server.load()
 	web.load()
-	
-	if BACKUP_USER_DATA_EVERY_DAY:
+	if env.BACKUP_USER_DATA_EVERY_DAY:
 		users.backup_user_data_every_day()
 	users.save_user_data_every_min()
-	debugger()
+
+def block():
+	if env.USE_DEBUGER:
+		debugger()
+		return
+	while True:
+		time.sleep(1)
+
+if __name__ == "__main__":
+	init()
+	load()
+	block()
+	atexit()

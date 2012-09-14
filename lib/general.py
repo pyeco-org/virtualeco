@@ -18,18 +18,9 @@ import threading
 import socket
 try: from cStringIO import StringIO
 except: from StringIO import StringIO
+from lib import env
 from lib import db
 from lib.site_packages import rijndael
-DUMP_WITH_ZLIB = False
-ZIP_MODE = "ZIP_STORED" #ZIP_DEFLATED, ZIP_STORED
-DEFAULT_BASE = "."
-STDOUT = sys.stdout
-STDERR = sys.stderr
-STDOUT_LOG = "./log/%s.log"
-STDERR_LOG = "./log/%s_error.log"
-LOG_DIR = "./log"
-SYSTEM_ENCODING = sys.getfilesystemencoding()
-
 RANGE_INT = (-2147483648, 2147483647)
 RANGE_UNSIGNED_INT = (0, 4294967295)
 RANGE_SHORT = (-32768, 32767)
@@ -102,7 +93,7 @@ def log_io(msg):
 	STDERR.write(msg)
 def within_base(path, base):
 	return os.path.abspath(path).startswith(os.path.abspath(base))
-def secure_open(name, mode="r", buffering=True, base=DEFAULT_BASE):
+def secure_open(name, mode="r", buffering=True, base=env.DEFAULT_BASE):
 	#don't check symbolic links at this moment
 	name = str(name)
 	mode = str(mode)
@@ -112,28 +103,28 @@ def secure_open(name, mode="r", buffering=True, base=DEFAULT_BASE):
 	if not within_base(name, base):
 		raise IOError("cannot open [%s] (%s) outside of [%s]"%(name, mode, base))
 	return __open(name, mode, buffering)
-def secure_listdir(path, base=DEFAULT_BASE):
+def secure_listdir(path, base=env.DEFAULT_BASE):
 	path = str(path)
 	base = str(base)
 	#log_io("secure_listdir [%s] within [%s]\n"%(path, base))
 	if not within_base(path, base):
 		raise IOError("cannot list [%s] outside of [%s]"%(path, base))
 	return __listdir(path)
-def secure_remove(path, base=DEFAULT_BASE):
+def secure_remove(path, base=env.DEFAULT_BASE):
 	path = str(path)
 	base = str(base)
 	#log_io("secure_remove [%s] within [%s]\n"%(path, base))
 	if not within_base(path, base):
 		raise IOError("cannot remove [%s] outside of [%s]"%(path, base))
 	return __remove(path)
-def secure_rmdir(path, base=DEFAULT_BASE):
+def secure_rmdir(path, base=env.DEFAULT_BASE):
 	path = str(path)
 	base = str(base)
 	#log_io("secure_rmdir [%s] within [%s]\n"%(path, base))
 	if not within_base(path, base):
 		raise IOError("cannot remove dir [%s] outside of [%s]"%(path, base))
 	return __rmdir(path)
-def secure_mkdir(path, mode=0777, base=DEFAULT_BASE):
+def secure_mkdir(path, mode=0777, base=env.DEFAULT_BASE):
 	path = str(path)
 	mode = int(mode)
 	base = str(base)
@@ -141,7 +132,7 @@ def secure_mkdir(path, mode=0777, base=DEFAULT_BASE):
 	if not within_base(path, base):
 		raise IOError("cannot create dir [%s] (%s) outside of [%s]"%(path, mode, base))
 	return __mkdir(path)
-def secure_rename(old, new, src_base=DEFAULT_BASE, dst_base=DEFAULT_BASE):
+def secure_rename(old, new, src_base=env.DEFAULT_BASE, dst_base=env.DEFAULT_BASE):
 	old = str(old)
 	new = str(new)
 	src_base = str(src_base)
@@ -176,7 +167,7 @@ os.link = lambda *args: __raise(IOError("cannot create hard link everywhere"))
 os.symlink = lambda *args: __raise(IOError("cannot create symbolic link everywhere"))
 os.chdir = lambda *args: __raise(IOError("cannot chdir everywhere"))
 if os.name == "posix":
-	def secure_chmod(path, mode, base=DEFAULT_BASE):
+	def secure_chmod(path, mode, base=env.DEFAULT_BASE):
 		path = str(path)
 		mode = int(mode)
 		#log_io("secure_chmod [%s] (%s) within [%s]\n"%(path, mode, base))
@@ -185,7 +176,7 @@ if os.name == "posix":
 				"cannot chmod [%s] (%s) outside of [%s]"%(path, mode, base)
 			)
 		return __chmod(path, mode)
-	def secure_chown(path, uid, gid, base=DEFAULT_BASE):
+	def secure_chown(path, uid, gid, base=env.DEFAULT_BASE):
 		path = str(path)
 		uid = int(uid)
 		gid = int(gid)
@@ -209,7 +200,7 @@ class Log:
 		self.handle = handle
 		self.today = get_today()
 		self.base_path = base_path
-		self.logfile = open(base_path%self.today, "ab", base=LOG_DIR)
+		self.logfile = open(base_path%self.today, "ab", base=env.LOG_DIR)
 		self.logtime = True
 	def write(self, s):
 		try: self._write(s)
@@ -221,7 +212,9 @@ class Log:
 			if self.today != get_today():
 				self.today = get_today()
 				self.logfile.close()
-				self.logfile = open(self.base_path%self.today, "ab", base=LOG_DIR)
+				self.logfile = open(
+					self.base_path%self.today, "ab", base=env.LOG_DIR
+				)
 			self.logfile.write(time.strftime("[%H:%M:%S]", time.localtime()))
 			self.logfile.write(" ")
 		self.logfile.write(s.replace("\r\n", "\n").replace("\n", "\r\n"))
@@ -242,10 +235,10 @@ class Log:
 		self.logfile.close()
 
 def use_log():
-	if not os.path.exists(LOG_DIR):
-		os.mkdir(LOG_DIR)
-	sys.stdout = Log(STDOUT, STDOUT_LOG)
-	sys.stderr = Log(STDERR, STDERR_LOG)
+	if not os.path.exists(env.LOG_DIR):
+		os.mkdir(env.LOG_DIR)
+	sys.stdout = Log(env.STDOUT, env.STDOUT_LOG)
+	sys.stderr = Log(env.STDERR, env.STDERR_LOG)
 
 def get_str(s):
 	return s.encode("utf-8") if type(s) == unicode else str(s)
@@ -255,7 +248,7 @@ def get_unicode(s):
 	except UnicodeDecodeError: #0x97 bomb
 		return unicode(s, "utf-8", "ignore")
 def get_str_log(s):
-	return get_unicode(s).encode(SYSTEM_ENCODING)
+	return get_unicode(s).encode(env.SYSTEM_ENCODING)
 
 def log(*args):
 	sys.stdout.write(" ".join(map(get_str_log, args))+"\n")
@@ -301,19 +294,19 @@ def get_map(map_id):
 		return
 	return map_obj #not need copy
 
-def get_config_io(path, base=DEFAULT_BASE):
+def get_config_io(path, base=env.DEFAULT_BASE):
 	with open(path, "rb", base=base) as r:
 		config = r.read()
 	if config.startswith("\xef\xbb\xbf"):
 		config = config[3:]
 	return StringIO(config.replace("\r\n", "\n"))
-def get_config(path=None, base=DEFAULT_BASE):
+def get_config(path=None, base=env.DEFAULT_BASE):
 	cfg = ConfigParser.SafeConfigParser()
 	if path:
 		cfg.readfp(get_config_io(path, base))
 	return cfg
 
-def load_dump(path, base=DEFAULT_BASE):
+def load_dump(path, base=env.DEFAULT_BASE):
 	#simplejson and cPickle compatible all version of python but cannot dump script
 	dump_path = str(path)+".dump"
 	if not os.path.exists(dump_path):
@@ -326,25 +319,26 @@ def load_dump(path, base=DEFAULT_BASE):
 				return
 			if dump.read(4) != modify_time:
 				return
-			if DUMP_WITH_ZLIB:
+			if env.DUMP_WITH_ZLIB:
 				return marshal.loads(dump.read().decode("zlib"))
 			else:
 				return marshal.loads(dump.read())
 		except:
 			log_error("dump file %s broken."%dump_path, traceback.format_exc())
-def save_dump(path, obj, base=DEFAULT_BASE):
+def save_dump(path, obj, base=env.DEFAULT_BASE):
 	dump_path = str(path)+".dump"
 	magic_number = imp.get_magic()
 	modify_time = struct.pack("<I", int(os.stat(path).st_mtime))
 	with open(dump_path, "wb", base=base) as dump:
 		dump.write(magic_number)
 		dump.write(modify_time)
-		if DUMP_WITH_ZLIB:
+		if env.DUMP_WITH_ZLIB:
 			dump.write(marshal.dumps(obj).encode("zlib"))
 		else:
 			dump.write(marshal.dumps(obj))
 
-def secure_save_zip(path_src, path_zip, src_base=DEFAULT_BASE, zip_base=DEFAULT_BASE):
+def secure_save_zip(path_src, path_zip,
+	src_base=env.DEFAULT_BASE, zip_base=env.DEFAULT_BASE):
 	path_src = str(path_src)
 	path_zip = str(path_zip)
 	src_base = str(src_base)
@@ -355,7 +349,7 @@ def secure_save_zip(path_src, path_zip, src_base=DEFAULT_BASE, zip_base=DEFAULT_
 		raise IOError("cannot save zip from [%s] outside of [%s]"%(path_src, src_base))
 	if not within_base(path_zip, zip_base):
 		raise IOError("cannot save zip to [%s] outside of [%s]"%(path_src, zip_base))
-	zip_obj = zipfile.ZipFile(path_zip, "w", getattr(zipfile, ZIP_MODE))
+	zip_obj = zipfile.ZipFile(path_zip, "w", getattr(zipfile, env.ZIP_MODE))
 	for root, dirs, files in os.walk(path_src):
 		for dir_name in dirs:
 			zip_obj.write(os.path.join(root, dir_name),
@@ -572,7 +566,7 @@ def assert_value_range(name, value, value_range):
 		)
 
 def assert_address_not_used(addr):
-	#cannot connect (0.0.0.0, port) in windows, socket errno 10049
+	#cannot connect (0.0.0.0, port) on windows, socket errno 10049
 	s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	try:	
 		#s.settimeout(0.01)

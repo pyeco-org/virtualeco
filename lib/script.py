@@ -6,12 +6,12 @@ import time
 import thread
 import threading
 import traceback
+from lib import env
 from lib import db
 from lib import users
 from lib import general
 server = None
 monsters = None
-SCRIPT_DIR = "./script"
 script_list = {}
 script_list_lock = threading.RLock()
 
@@ -21,9 +21,9 @@ def load():
 		from lib import server
 		from lib import monsters
 	with script_list_lock:
-		general.log_line("Load %-20s"%("%s ..."%SCRIPT_DIR))
+		general.log_line("[load ] load %-20s"%("%s ..."%env.SCRIPT_DIR))
 		script_list.clear()
-		for root, dirs, files in os.walk(SCRIPT_DIR):
+		for root, dirs, files in os.walk(env.SCRIPT_DIR):
 			for name in files:
 				path = os.path.join(root, name)
 				if not path.endswith(".py"):
@@ -37,16 +37,16 @@ def load():
 
 def load_single(path):
 	with script_list_lock:
-		obj = general.load_dump(path, SCRIPT_DIR)
+		obj = general.load_dump(path, env.SCRIPT_DIR)
 		if not obj:
 			obj = compile(
 				open(
-					path, "rb", base=SCRIPT_DIR
+					path, "rb", base=env.SCRIPT_DIR
 				).read().replace("\r\n", "\n")+"\n",
 				path,
 				"exec",
 			)
-			general.save_dump(path, obj, SCRIPT_DIR)
+			general.save_dump(path, obj, env.SCRIPT_DIR)
 		namespace = {}
 		exec obj in namespace
 		script_id = namespace["ID"]
@@ -264,7 +264,7 @@ def reloadsinglescript(pc, path):
 		path += ".py"
 	servermsg(pc, "reloadsinglescript %s ..."%path)
 	try:
-		load_single(SCRIPT_DIR+"/"+path)
+		load_single(env.SCRIPT_DIR+"/"+path)
 	except:
 		servermsg(pc, "reloadsinglescript failed")
 		raise

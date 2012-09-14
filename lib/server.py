@@ -7,12 +7,11 @@ import thread
 import threading
 import traceback
 import struct
+from lib import env
 from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 from lib.site_packages import rijndael
-SERVER_CONFIG_PATH = "./server.ini"
-MAX_CONNECTION_FROM_ONE_IP = 3
 USE_NULL_KEY = False #emergency option
 if USE_NULL_KEY:
 	GENERATOR = 1
@@ -64,7 +63,7 @@ class StandardServer(threading.Thread):
 				if ip == client.src_address[0]:
 					ip_count += 1
 			general.log("[ srv ] src: %s ip_count: %s"%(src, ip_count))
-			if ip_count > MAX_CONNECTION_FROM_ONE_IP:
+			if ip_count > env.MAX_CONNECTION_FROM_ONE_IP:
 				return False
 			else:
 				return True
@@ -200,10 +199,12 @@ class MapClient(StandardClient, MapDataHandler):
 def init():
 	from lib.obj import serverconfig
 	global config
-	config = serverconfig.ServerConfig(SERVER_CONFIG_PATH)
+	config = serverconfig.ServerConfig(env.SERVER_CONFIG_PATH)
+	if os.name == "nt":
+		assert_address_not_used()
 
 def assert_address_not_used():
-	general.log_line("server.assert_address_not_used ... ")
+	general.log_line("[ srv ] server.assert_address_not_used ... ")
 	general.assert_address_not_used((config.serverpublicip, config.loginserverport))
 	general.assert_address_not_used((config.serverpublicip, config.mapserverport))
 	general.assert_address_not_used((config.serverpublicip, config.webserverport))
@@ -214,7 +215,7 @@ def load():
 	global mapserver
 	loginserver_bind_addr = (config.serverbindip, config.loginserverport)
 	mapserver_bind_addr = (config.serverbindip, config.mapserverport)
-	general.log("[ srv ] Start login server with\t%s:%d"%loginserver_bind_addr)
+	general.log("[ srv ] start login server with\t%s:%d"%loginserver_bind_addr)
 	loginserver = LoginServer(loginserver_bind_addr)
-	general.log("[ srv ] Start map server with\t%s:%d"%mapserver_bind_addr)
+	general.log("[ srv ] start map server with\t%s:%d"%mapserver_bind_addr)
 	mapserver = MapServer(mapserver_bind_addr)

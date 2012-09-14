@@ -3,11 +3,13 @@
 import traceback
 import hashlib
 import os
+from lib import env
 from lib import general
 from lib.packet import packet
 from lib import users
-DATA_TYPE_NOT_PRINT = (	"000a", #接続確認
-					)
+DATA_TYPE_NOT_PRINT = (
+	"000a", #接続確認
+)
 
 class LoginDataHandler:
 	def __init__(self):
@@ -149,7 +151,7 @@ class LoginDataHandler:
 				with users.user_list_lock:
 					general.log("[login] remove pc id", p.id)
 					users.pc_id_set.remove(p.id)
-				os.remove(p.path, base=users.USER_DIR)
+				os.remove(p.path, base=env.USER_DIR)
 				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
 		except:
