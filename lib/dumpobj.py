@@ -11,7 +11,7 @@ class LoadError(Exception): pass
 class DumpError(Exception): pass
 
 def _read_block(s):
-	buf = []
+	buf = ""
 	while True:
 		j = s.read(1)
 		if not j:
@@ -19,8 +19,8 @@ def _read_block(s):
 		if j in (",", ":", "]", "}", ")", " "):
 			s.seek(s.tell()-1)
 			break
-		buf.append(j)
-	return "".join(buf)
+		buf += j
+	return buf
 def _seek_block(s, mask):
 	while True:
 		j = s.read(1)
@@ -40,10 +40,10 @@ def _seek_comma(s, mask):
 			raise LoadError("data corrupt: seek comma before %s failed, index %s"%(
 				mask, s.tell()
 			))
-		elif j == mask:
-			return False
 		elif j == ",":
 			return True
+		elif j == mask:
+			return False
 		elif j in _load_map:
 			raise LoadError("data corrupt: %s not found, index %s"%(mask, s.tell()))
 def _load_int(s):
@@ -152,32 +152,25 @@ def _dump_unicode(i):
 def _dump_list(i):
 	if not i:
 		return "[]"
-	l = ["["]
+	l = "["
 	for j in i:
-		l.append(_dump_obj(j))
-		l.append(", ")
-	l[-1] = "]"
-	return "".join(l)
+		#.join will use more time even join genexpr
+		l += _dump_obj(j)+", "
+	return l[:-2]+"]"
 def _dump_dict(i):
 	if not i:
 		return "{}"
-	l = ["{"]
+	l = "{"
 	for key, value in i.iteritems():
-		l.append(_dump_obj(key))
-		l.append(": ")
-		l.append(_dump_obj(value))
-		l.append(", ")
-	l[-1] = "}"
-	return "".join(l)
+		l += _dump_obj(key)+": "+_dump_obj(value)+", "
+	return l[:-2]+"}"
 def _dump_tuple(i):
 	if not i:
 		return "()"
-	l = ["("]
+	l = "("
 	for j in i:
-		l.append(_dump_obj(j))
-		l.append(", ")
-	l[-1] = ")"
-	return "".join(l)
+		l += _dump_obj(j)+", "
+	return l[:-2]+")"
 def _dump_none(i):
 	return "n"
 _dump_map = {
@@ -228,13 +221,13 @@ def _test_performance():
 	
 	start = time.time()
 	print "start dump"
-	for i in xrange(1000000):
-		s = dumps({-1:"0", "0":"HELLOWORLD", True:100000000})
+	for i in xrange(10000):
+		s = dumps({-1:"0", "0":"HELLOWORLD"*100, True:100000000})
 	print time.time()-start
 	
 	start = time.time()
 	print "start load"
-	for i in xrange(1000000):
+	for i in xrange(10000):
 		aa = loads(s)
 	print time.time()-start
 	print "done."
