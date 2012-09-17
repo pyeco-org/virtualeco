@@ -502,8 +502,8 @@ def int_to_bytes(i, length=0x100):
 		hex_code = hex_code[2:]
 	if hex_code.endswith("L"):
 		hex_code = hex_code[:-1]
-	return "0"*(length-len(hex_code))+hex_code
-	#return hex_code+"\x00"*(length-len(hex_code))
+	#return "0"*(length-len(hex_code))+hex_code
+	return hex_code+"0"*(length-len(hex_code))
 def bytes_to_int(bytes):
 	return int(bytes, 16)
 def get_prime():

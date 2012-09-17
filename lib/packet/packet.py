@@ -15,7 +15,6 @@ def make(data_type, *args):
 	packet = general.pack_short(len(data_value)+2)
 	packet += data_type.decode("hex")
 	packet += data_value
-	#general.log("make", packet.encode("hex"))
 	return packet
 
 def pack_user_data(pack, user, attr):
@@ -517,27 +516,26 @@ def make_0226(pc, job):
 	"""スキル一覧"""
 	result = ""
 	if job == 0:
-		skill_list_length = general.pack_unsigned_byte(len(pc.skill_list))
-		result += skill_list_length #スキルID
-		for skill_id in pc.skill_list:
-			result += general.pack_short(skill_id)
-		result += skill_list_length #習得Lv
-		for skill_id in pc.skill_list:
-			result += general.pack_short(db.skill[skill_id].maxlv)
-		result += skill_list_length #不明
-		for skill_id in pc.skill_list:
-			result += general.pack_short(0)
-		result += skill_list_length #習得可能Lv
-		for skill_id in pc.skill_list:
-			result += general.pack_short(1)
+		i = len(pc.skill_list)
+		#スキルID
+		result += general.pack_unsigned_byte(i)
+		result += "".join(map(general.pack_short, pc.skill_list))
+		#習得Lv
+		result += general.pack_unsigned_byte(i)
+		result += general.pack_byte(1)*i #db.skill[skill_id].maxlv
+		#不明
+		result += general.pack_unsigned_byte(i)
+		result += general.pack_byte(0)*i
+		#習得可能Lv
+		result += general.pack_unsigned_byte(i)
+		result += general.pack_byte(0)*i
 	else:
-		skill_list_length = general.pack_unsigned_byte(0)
-		result += skill_list_length #スキルID
-		result += skill_list_length #習得Lv
-		result += skill_list_length #不明
-		result += skill_list_length #習得可能Lv
+		result += general.pack_unsigned_byte(0) #スキルID
+		result += general.pack_unsigned_byte(0) #習得Lv
+		result += general.pack_unsigned_byte(0) #不明
+		result += general.pack_unsigned_byte(0) #習得可能Lv
 	result += general.pack_byte(job) #一次職0 エキスパ1 etc...
-	result += skill_list_length #習得スキル数 #TODO#レベル０のスキルを計算から外す
+	result += general.pack_unsigned_byte(0) #習得スキル数 #TODO#レベル０のスキルを計算から外す
 	return result
 
 def make_022e(pc):
@@ -927,19 +925,19 @@ def make_09f6(warehouse_id, num_here, num_all, num_max):
 	result += general.pack_int(num_here) #開いている倉庫にあるインベントリ数
 	result += general.pack_int(num_all) #すべての倉庫にあるインベントリ数
 	result += general.pack_int(num_max) #倉庫に入る最大インベントリ数
-	#GAME_WARE_NAME_0,";アクロポリスシティ";
-	#GAME_WARE_NAME_1,";ファーイースト国境駐在員";
-	#GAME_WARE_NAME_2,";アイアンサウス国境駐在員";
-	#GAME_WARE_NAME_3,";ノーザン国境駐在員";
-	#GAME_WARE_NAME_4,";廃炭鉱キャンプ	";
-	#GAME_WARE_NAME_5,";モーグシティ";
-	#GAME_WARE_NAME_6,";アイアンサウス連邦";
-	#GAME_WARE_NAME_7,";ノーザン王国";
-	#GAME_WARE_NAME_8,";トンカシティ";
-	#GAME_WARE_NAME_9,";";
-	#GAME_WARE_NAME_10,";";
-	#GAME_WARE_NAME_11,";";
-	#GAME_WARE_NAME_12,";ファーイースト共和国";"""
+	#0 アクロポリスシティ
+	#1 ファーイースト国境駐在員
+	#2 アイアンサウス国境駐在員
+	#3 ノーザン国境駐在員
+	#4 廃炭鉱キャンプ
+	#5 モーグシティ
+	#6 アイアンサウス連邦
+	#7 ノーザン王国
+	#8 トンカシティ
+	#9
+	#10
+	#11
+	#12 ファーイースト共和国
 	return result
 
 def make_09f9(item, iid, part):
@@ -955,47 +953,39 @@ def make_09fa():
 
 def make_09fc(result_id):
 	"""倉庫から取り出した時の結果"""
-	#0
-	#成功
-	#-1〜-8
-	#GAME_SMSG_WAREHOUSE_ERR1,";倉庫を開けていません";
-	#GAME_SMSG_WAREHOUSE_ERR2,";指定されたアイテムは存在しません";
-	#GAME_SMSG_WAREHOUSE_ERR3,";指定された数量が不正です";
-	#GAME_SMSG_WAREHOUSE_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
-	#GAME_SMSG_WAREHOUSE_ERR5,";キャラのアイテム数が100個を超えてしまうためキャンセルされました";
-	#GAME_SMSG_WAREHOUSE_ERR6,";イベントアイテムは預けられません";
-	#GAME_SMSG_WAREHOUSE_ERR7,";指定した格納場所は使用できません";
-	#GAME_SMSG_WAREHOUSE_ERR8,";変身中のマリオネットは預ける事ができません";
-	#それ以外
-	#GAME_SMSG_WAREHOUSE_ERR99,";倉庫移動に失敗しました";
+	#0 成功
+	#-1 倉庫を開けていません
+	#-2 指定されたアイテムは存在しません
+	#-3 指定された数量が不正です
+	#-4 倉庫のアイテム数が上限を超えてしまうためキャンセルされました
+	#-5 キャラのアイテム数が100個を超えてしまうためキャンセルされました
+	#-6 イベントアイテムは預けられません
+	#-7 指定した格納場所は使用できません
+	#-8 変身中のマリオネットは預ける事ができません
+	#-99 倉庫移動に失敗しました
 	return general.pack_int(result_id)
 
 def make_09fe(result_id):
 	"""倉庫に預けた時の結果"""
-	#0
-	#成功
-	#-1〜-8
-	#GAME_SMSG_WAREHOUSE_ERR1,";倉庫を開けていません";
-	#GAME_SMSG_WAREHOUSE_ERR2,";指定されたアイテムは存在しません";
-	#GAME_SMSG_WAREHOUSE_ERR3,";指定された数量が不正です";
-	#GAME_SMSG_WAREHOUSE_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
-	#GAME_SMSG_WAREHOUSE_ERR5,";キャラのアイテム数が100個を超えてしまうためキャンセルされました";
-	#GAME_SMSG_WAREHOUSE_ERR6,";イベントアイテムは預けられません";
-	#GAME_SMSG_WAREHOUSE_ERR7,";指定した格納場所は使用できません";
-	#GAME_SMSG_WAREHOUSE_ERR8,";変身中のマリオネットは預ける事ができません";
-	#それ以外
-	#GAME_SMSG_WAREHOUSE_ERR99,";倉庫移動に失敗しました";
+	#0 成功
+	#-1 倉庫を開けていません
+	#-2 指定されたアイテムは存在しません
+	#-3 指定された数量が不正です
+	#-4 倉庫のアイテム数が上限を超えてしまうためキャンセルされました
+	#-5 キャラのアイテム数が100個を超えてしまうためキャンセルされました
+	#-6 イベントアイテムは預けられません
+	#-7 指定した格納場所は使用できません
+	#-8 変身中のマリオネットは預ける事ができません
+	#-99 倉庫移動に失敗しました
 	return general.pack_int(result_id)
 
 def make_0a08(result_id):
 	"""搬送結果"""
-	#0
-	#GAME_SMSG_TRANSPORT_ERR0,";アイテムを搬送しました";
-	#-1〜-4
-	#GAME_SMSG_TRANSPORT_ERR1,";倉庫を開けていません";
-	#GAME_SMSG_TRANSPORT_ERR2,";指定されたアイテムは存在しません";
-	#GAME_SMSG_TRANSPORT_ERR3,";指定された数量が不正です";
-	#GAME_SMSG_TRANSPORT_ERR4,";倉庫のアイテム数が上限を超えてしまうためキャンセルされました";
+	#0 アイテムを搬送しました
+	#-1 倉庫を開けていません
+	#-2 指定されたアイテムは存在しません
+	#-3 指定された数量が不正です
+	#-4 倉庫のアイテム数が上限を超えてしまうためキャンセルされました
 	return general.pack_int(result_id)
 
 def make_0604(option_list, title):
@@ -1154,7 +1144,7 @@ def make_0212(pc, STR=0, DEX=0, INT=0, VIT=0, AGI=0, MAG=0):
 	result += general.pack_short(0) #cha
 	return result
 
-def make_0fa1(src, dst, attack_type=0, damage=1, color_flag=1):
+def make_0fa1(src, dst, attack_type=0, damage=1, color=1):
 	"""攻撃結果"""
 	result = general.pack_int(src.id)
 	result += general.pack_int(dst.id)
@@ -1163,7 +1153,7 @@ def make_0fa1(src, dst, attack_type=0, damage=1, color_flag=1):
 	result += general.pack_int(0) #mp damage
 	result += general.pack_int(0) #sp damage
 	#アイテム使用やスキル使用結果のHP・MP・SPの色やエフェクト
-	result += general.pack_int(color_flag)
+	result += general.pack_int(color)
 	#行動できるようになるまでの長さ(＝モーションの長さ) 2000が標準 ASPDにより短くなる 単位 0.1% ?
 	result += general.pack_int(2000)
 	#delayと同値? delayはDC等で短くなってもこの値は元のまま
@@ -1216,23 +1206,22 @@ def make_1d06(emotion_ex_enum):
 
 def make_0a0b(result):
 	"""trade ask result"""
-	#0 Success
-	#-1～-15
-	#GAME_SMSG_TRADE_REQERR1,"トレード中です"
-	#GAME_SMSG_TRADE_REQERR2,"イベント中です"
-	#GAME_SMSG_TRADE_REQERR3,"相手がトレード中です"
-	#GAME_SMSG_TRADE_REQERR4,"相手がイベント中です"
-	#GAME_SMSG_TRADE_REQERR5,"相手が見つかりません"
-	#GAME_SMSG_TRADE_REQERR6,"トレードを断られました"
-	#GAME_SMSG_TRADE_REQERR7,"ゴーレムショップ起動中です"
-	#GAME_SMSG_TRADE_REQERR8,"相手がゴーレムショップ起動中です"
-	#GAME_SMSG_TRADE_REQERR9,"憑依中です"
-	#GAME_SMSG_TRADE_REQERR10,"相手が憑依中です"
-	#GAME_SMSG_TRADE_REQERR11,"相手のトレード設定が不許可になっています"
-	#GAME_SMSG_TRADE_REQERR12,"トレードを行える状態ではありません"
-	#GAME_SMSG_TRADE_REQERR13,"トレード相手との距離が離れすぎています"
-	#GAME_SMSG_TRADE_REQERR14,"ゲストID期間中はトレードが行なえません"
-	#GAME_SMSG_TRADE_REQERR15,"対象がゲストID期間中であるため、トレードが行なえません"
+	#0 success
+	#-1 トレード中です
+	#-2 イベント中です
+	#-3 相手がトレード中です
+	#-4 相手がイベント中です
+	#-5 相手が見つかりません
+	#-6 トレードを断られました
+	#-7 ゴーレムショップ起動中です
+	#-8 相手がゴーレムショップ起動中です
+	#-9 憑依中です
+	#-10 相手が憑依中です
+	#-11 相手のトレード設定が不許可になっています
+	#-12 トレードを行える状態ではありません
+	#-13 トレード相手との距離が離れすぎています
+	#-14 ゲストID期間中はトレードが行なえません
+	#-15 対象がゲストID期間中であるため、トレードが行なえません
 	return general.pack_byte(result)
 
 def make_0a0c(pc):
@@ -1259,26 +1248,26 @@ def make_0a1e(item, count):
 
 def make_07d1(result):
 	"""put item error (won't send if success)"""
-	#-2～-22
-	#GAME_SMSG_ITEM_DROPERR2,"存在しないアイテムです"
-	#GAME_SMSG_ITEM_DROPERR3,"イベントアイテムなので捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR4,"変身中のマリオネットは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR5,"起動中のゴーレムは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR6,"ゴーレムショップに出品中のアイテムは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR7,"行動不能時はアイテムを捨てる事が出来ません"
-	#GAME_SMSG_ITEM_DROPERR8,"トレード中はアイテムを捨てる事が出来ません"
-	#GAME_SMSG_ITEM_DROPERR9,"使用中のアイテムを捨てる事はできません"
-	#GAME_SMSG_ITEM_DROPERR10,"イベント中はアイテムを捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR11,"装備中のアイテムは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR15,"ゲストID期間中はアイテムをドロップすることができません。アイテムを捨てたい場合は、アイテムウィンドウにあるゴミ箱のアイコンをクリックしてください"
-	#GAME_SMSG_ITEM_DROPERR16_0,"「あ、あわわわわ･･･それは捨てることはできませんよ！」"
-	#GAME_SMSG_ITEM_DROPERR16_1,"「ギルド商人までお持ちください。」"
-	#GAME_SMSG_ITEM_DROPERR17,"レンタルアイテムは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR18,"ＤＥＭ強化チップを捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR19,"変形したアイテムを捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR20,"変形中のアイテムを捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR21,"ロックアイテムは捨てることが出来ません"
-	#GAME_SMSG_ITEM_DROPERR22,"ユニオンペットは捨てることが出来ません"
+	#-1
+	#-2 存在しないアイテムです
+	#-3 イベントアイテムなので捨てることが出来ません
+	#-4 変身中のマリオネットは捨てることが出来ません
+	#-5 起動中のゴーレムは捨てることが出来ません
+	#-6 ゴーレムショップに出品中のアイテムは捨てることが出来ません
+	#-7 行動不能時はアイテムを捨てる事が出来ません
+	#-8 トレード中はアイテムを捨てる事が出来ません
+	#-9 使用中のアイテムを捨てる事はできません
+	#-10 イベント中はアイテムを捨てることが出来ません
+	#-11 装備中のアイテムは捨てることが出来ません
+	#-15 ゲストID期間中はアイテムをドロップすることができません。アイテムを捨てたい場合は、アイテムウィンドウにあるゴミ箱のアイコンをクリックしてください
+	#-16_0 「あ、あわわわわ･･･それは捨てることはできませんよ！」
+	#-16_1 「ギルド商人までお持ちください。」
+	#-17 レンタルアイテムは捨てることが出来ません
+	#-18 ＤＥＭ強化チップを捨てることが出来ません
+	#-19 変形したアイテムを捨てることが出来ません
+	#-20 変形中のアイテムを捨てることが出来ません
+	#-21 ロックアイテムは捨てることが出来ません
+	#-22 ユニオンペットは捨てることが出来ません
 	return general.pack_int(-1)+general.pack_byte(result)
 
 def make_07d5(mapitem_obj):
@@ -1301,23 +1290,23 @@ def make_07d5(mapitem_obj):
 
 def make_07e6(error):
 	"""pick up item error"""
-	#GAME_SMSG_ITEM_PICKUPERR0,"アイテムを拾うことが出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR1,"存在しないアイテムです"
-	#GAME_SMSG_ITEM_PICKUPERR2,"行動不能時はアイテムを拾うことが出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR3,"憑依中はアイテムを拾うことが出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR4,"憑依者とレベルが離れすぎているので装備出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR5,"装備箇所は既に装備中です"
-	#GAME_SMSG_ITEM_PICKUPERR6,"憑依装備は定員オーバーです"
-	#GAME_SMSG_ITEM_PICKUPERR7,"憑依アイテムは装備出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR8,"トレード中はアイテムを拾うことが出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR9,"イベント中はアイテムを拾うことが出来ません"
-	#GAME_SMSG_ITEM_PICKUPERR10,"取得権限がありません"
-	#GAME_SMSG_ITEM_PICKUPERR11,"これ以上アイテムを所持することはできません"
-	#GAME_SMSG_ITEM_PICKUPERR12,"憑依者取得中です"
-	#GAME_SMSG_ITEM_PICKUPERR13,"拾える状態ではありません"
-	#GAME_SMSG_ITEM_PICKUPERR14,"憑依アイテムは闘技場モードでないと拾えません"
-	#GAME_SMSG_ITEM_PICKUPERR15,"憑依アイテムはチャンプバトルに参戦していないと拾えません"
-	#GAME_SMSG_ITEM_PICKUPERR16,"マシナフォーム中は憑依アイテムを拾うことができません"
+	#0 アイテムを拾うことが出来ません
+	#-1 存在しないアイテムです
+	#-2 行動不能時はアイテムを拾うことが出来ません
+	#-3 憑依中はアイテムを拾うことが出来ません
+	#-4 憑依者とレベルが離れすぎているので装備出来ません
+	#-5 装備箇所は既に装備中です
+	#-6 憑依装備は定員オーバーです
+	#-7 憑依アイテムは装備出来ません
+	#-8 トレード中はアイテムを拾うことが出来ません
+	#-9 イベント中はアイテムを拾うことが出来ません
+	#-10 取得権限がありません
+	#-11 これ以上アイテムを所持することはできません
+	#-12 憑依者取得中です
+	#-13 拾える状態ではありません
+	#-14 憑依アイテムは闘技場モードでないと拾えません
+	#-15 憑依アイテムはチャンプバトルに参戦していないと拾えません
+	#-16 マシナフォーム中は憑依アイテムを拾うことができません
 	return general.pack_int(-1)+general.pack_byte(error)
 
 def make_07df(mapitem_obj):
@@ -1338,6 +1327,67 @@ def make_1e7e(result, status):
 	"""dem form change result"""
 	result = general.pack_byte(result) #change result
 	result += general.pack_byte(status) #dem form status
+	return result
+
+def make_1389(pc, target_id, x, y, skill_id, skill_lv, error=0, cast=0):
+	"""スキル使用通知"""
+	result = general.pack_short(skill_id) #スキルID
+	result += general.pack_byte(error) #エラー値 [00]成功時。失敗時に値が入っている。
+	result += general.pack_int(pc.id) #スキル使用者のサーバキャラID
+	result += general.pack_int(cast) #詠唱時間っぽ（ミリ秒単位）。失敗時は-1
+	result += general.pack_int(target_id) #スキル対象者のサーバキャラID。失敗時は-1
+	result += general.pack_byte(x)
+	result += general.pack_byte(y)
+	result += general.pack_byte(skill_lv) #スキルLv
+	result += general.pack_byte(0) #H.E.ARTを使ったときの白い玉の数
+	return result
+
+def make_138a(pc, error=0):
+	"""スキル使用通知"""
+	result = general.pack_int(pc.id) #サーバキャラID
+	result += general.pack_byte(error) #エラー値
+	return result
+
+def make_1392(pc, target_list, skill_id, skill_lv, damage_list=None, color_list=None):
+	"""スキル使用結果通知（対象：単体）"""
+	if damage_list is not None:
+		assert len(target_list) == len(damage_list)
+	i = len(target_list)
+	#スキルID
+	result = general.pack_short(skill_id)
+	#不明の数
+	result += general.pack_unsigned_byte(i) 
+	result += general.pack_byte(0)*i
+	#使用キャラのサーバキャラID
+	result += general.pack_int(pc.id)
+	#対象のサーバキャラID #エフェクトが出る対象
+	result += general.pack_int(target_list[0] if target_list else 0)
+	#対象キャラ数
+	result += general.pack_unsigned_byte(i) 
+	result += "".join(map(general.pack_int, target_list))
+	#xy
+	result += general.pack_byte(pc.x)
+	result += general.pack_byte(pc.y)
+	#HPダメージ数
+	result += general.pack_unsigned_byte(i)
+	if damage_list is not None:
+		result += "".join(map(general.pack_int, damage_list))
+	else:
+		result += general.pack_int(0)*i
+	#MPダメージ数
+	result += general.pack_unsigned_byte(i)
+	result += general.pack_int(0)*i
+	#SPダメージ数
+	result += general.pack_unsigned_byte(i)
+	result += general.pack_int(0)*i
+	#数字の色の数
+	result += general.pack_unsigned_byte(i)
+	if color_list is not None:
+		result += "".join(map(general.pack_int, color_list))
+	else:
+		result += general.pack_int(0)*i
+	#スキルLv
+	result += general.pack_byte(skill_lv)
 	return result
 
 name_map = general.get_name_map(globals(), "make_")

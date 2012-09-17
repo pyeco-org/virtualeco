@@ -63,6 +63,8 @@ class PC:
 		self.item = {}
 		self.sort.item = general.str_to_list(cfg.get("sort", "item"))
 		for i in self.sort.item:
+			if i <= 0:
+				general.log_error("[ pc  ] item iid < 0", self)
 			itemcfg = general.str_to_list(cfg.get("item", str(i)))
 			item = general.get_item(itemcfg[0])
 			item.count = itemcfg[1]
@@ -71,6 +73,8 @@ class PC:
 		self.warehouse = {}
 		self.sort.warehouse = general.str_to_list(cfg.get("sort", "warehouse"))
 		for i in self.sort.warehouse:
+			if i <= 0:
+				general.log_error("[ pc  ] warehouse iid < 0", self)
 			itemcfg = general.str_to_list(cfg.get("warehouse", str(i)))
 			item = general.get_item(itemcfg[0])
 			item.count = itemcfg[1]
@@ -485,8 +489,7 @@ class PC:
 	def item_append(self, item, place=0x02):
 		#0x02: body
 		with self.lock:
-			#min_iid = 1
-			item_iid = general.make_id(self.sort.item+self.sort.warehouse, 1)
+			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
 			self.item[item_iid] = item
 			self.sort.item.append(item_iid)
 			if self.online:
@@ -748,6 +751,15 @@ class PC:
 	
 	def unset_pet(self, logout=False):
 		return pets.unset_pet(self, logout)
+	
+	def set_battlestatus(self, i):
+		self.battlestatus = int(i)
+		self.map_send_map("0fa6", self) #戦闘状態変更通知
+	
+	def exp_add(self, exp, job_exp):
+		#self.exp += exp
+		#self.job_exp += job_exp
+		script.msg(self, "基本経験値 %s、職業経験値 %sを取得しました"%(exp, job_exp))
 	
 	def dem_form_change(self, status):
 		if self.race != 3:

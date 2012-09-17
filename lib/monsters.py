@@ -64,25 +64,23 @@ def delete_monster_thread(monster):
 	delete(monster)
 
 def attack_monster(pc, monster):
-	with pc.lock and pc.user.lock and monster.lock:
-		if monster.status.hp <= 0:
-			general.log_error("[monster] monster.hp <= 0")
-			pc.reset_attack()
-			return
-		damage = 10
-		state01 = 0
-		flag = 1 #HPダメージ
-		monster.status.hp -= damage
-		if monster.status.hp <= 0:
-			monster.status.hp = 0
-			state01 = 0x200 #行動不能
-			flag = 0x4001 #HPダメージ + 消滅モーション
-			pc.reset_attack()
-			thread.start_new_thread(delete_monster_thread, (monster,))
-			script.msg(pc, "基本経験値 0、職業経験値 0を取得しました")
-		pc.map_send_map("0fa1", pc, monster, 0, damage, flag) #攻撃結果
-		pc.map_send_map("021c", monster) #現在のHP/MP/SP/EP
-		pc.map_send_map("157c", monster, state01) #キャラの状態
+	damage = 30
+	color = 1 #HPダメージ
+	monster_hp = monster.damage(damage)
+	if monster_hp <= 0:
+		color = 0x4001 #HPダメージ+消滅モーション
+		pc.exp_add(0, 0)
+	pc.map_send_map("0fa1", pc, monster, 0, damage, color) #攻撃結果
+
+def magic_attack_monster(pc, monster, damage, skill_id, skill_lv):
+	color = 1 #HPダメージ
+	if monster.damage(damage) <= 0:
+		color = 0x4001 #HPダメージ+消滅モーション
+		pc.exp_add(0, 0)
+	#スキル使用結果通知（対象：単体）
+	pc.map_send_map(
+		"1392", pc, (monster.id,), skill_id, skill_lv, (damage,), (color,)
+	)
 
 def get_monster_list():
 	l = []
@@ -96,3 +94,19 @@ def get_monster_from_id(i):
 		with monster.lock:
 			if monster.id == i:
 				return monster
+
+#color
+#0x01 hp damage
+#0x02 mp damage
+#0x04 sp damage
+#0x11 hp heal
+#0x22 mp heal
+#0x44 sp heal
+#0x100 critical
+#0x200 miss
+#0x400 avoid
+#0x800 avoid
+#0x1000 guard
+#0x2000 
+#0x4000 dead
+#0x10000 barrier 

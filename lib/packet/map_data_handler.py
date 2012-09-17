@@ -12,6 +12,7 @@ from lib import script
 from lib import pets
 from lib import monsters
 from lib import db
+from lib import skills
 DATA_TYPE_NOT_PRINT = (
 	"11f8", #自キャラの移動
 	"0032", #接続確認(マップサーバとのみ) 20秒一回
@@ -276,10 +277,7 @@ class MapDataHandler:
 	
 	def do_0fa5(self, data_io):
 		#戦闘状態変更通知
-		with self.pc.lock:
-			self.pc.battlestatus = general.io_unpack_byte(data_io)
-		#戦闘状態変更通知
-		self.send("0fa6", self.pc)
+		self.pc.set_battlestatus(general.io_unpack_byte(data_io))
 	
 	def do_121b(self, data_io):
 		#モーションセット＆ログアウト
@@ -795,5 +793,25 @@ class MapDataHandler:
 		else:
 			general.log("[ map ] set dem parts failed", self.pc)
 			self.send("09e8", iid, -1, -2, 1) #アイテム装備
+	
+	def do_1387(self, data_io):
+		#スキル使用
+		skill_id = general.io_unpack_short(data_io)
+		target_id = general.io_unpack_int(data_io)
+		x = general.io_unpack_byte(data_io)
+		y = general.io_unpack_byte(data_io)
+		skill_lv = general.io_unpack_byte(data_io)
+		general.log("[ map ] use skill", skill_id, target_id, x, y, skill_lv)
+		r = skills.use(self.pc, target_id, x, y, skill_id, skill_lv)
+		if r:
+			return
+		elif r is None:
+			skill_obj = db.skill.get(skill_id)
+			skill_name = skill_obj.name if skill_obj else "unknow"
+			script.msg(self.pc, "skill %s %s not define"%(skill_id, skill_name))
+		#スキル使用 #スキルを使用できません
+		self.send("1389", self.pc , -1, x, y, skill_id, skill_lv, 13, -1)
+		#スキル使用通知 #スキルを使用できません
+		self.send("138a", self.pc, 13)
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

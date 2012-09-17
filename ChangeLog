@@ -4,6 +4,8 @@
 	add command /unsetallequip and script.unsetallequip
 	remove pc.dic (str:str dictionary)
 	add pc.var (str:object dictionary, support save and restore standard python object)
+	add lib.skills
+	add test skill heal, arrow
 
 2012-09-14
 	move lib.version to lib.env

@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
+import os
 import threading
+import traceback
+import thread
+from lib import general
 from lib import db
+from lib import script
+from lib import monsters
 
 class Monster:
 	def __str__(self):
@@ -59,6 +65,21 @@ class Monster:
 			self.rawdir = rawdir
 			self.dir = int(round(rawdir/45.0, 0))
 	
+	def damage(self, i):
+		with self.lock:
+			if self.status.hp <= 0:
+				general.log_error("[monster] monster.hp <= 0", self)
+				return 0
+			state01 = 0
+			self.status.hp -= i
+			if self.status.hp <= 0:
+				self.status.hp = 0
+				state01 = 0x200 #行動不能
+				thread.start_new_thread(monsters.delete_monster_thread, (self,))
+		script.send_map_obj(self.map_obj, (), "021c", self) #現在のHP/MP/SP/EP
+		script.send_map_obj(self.map_obj, (), "157c", self, state01) #キャラの状態
+		return self.status.hp
+	
 	def reset(self):
 		if self.map_obj:
 			with self.map_obj.lock:
@@ -95,5 +116,3 @@ class Monster:
 			self.maxsp = 1
 			self.ep = 0
 			self.maxep = 0
-
-
