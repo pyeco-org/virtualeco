@@ -515,6 +515,7 @@ def make_0244(pc):
 def make_0226(pc, job):
 	"""スキル一覧"""
 	result = ""
+	i = 0
 	if job == 0:
 		i = len(pc.skill_list)
 		#スキルID
@@ -535,7 +536,7 @@ def make_0226(pc, job):
 		result += general.pack_unsigned_byte(0) #不明
 		result += general.pack_unsigned_byte(0) #習得可能Lv
 	result += general.pack_byte(job) #一次職0 エキスパ1 etc...
-	result += general.pack_unsigned_byte(0) #習得スキル数 #TODO#レベル０のスキルを計算から外す
+	result += general.pack_unsigned_byte(i) #習得スキル数
 	return result
 
 def make_022e(pc):
