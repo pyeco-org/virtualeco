@@ -35,16 +35,17 @@ ACCESORY_TYPE_LIST = (
 )
 UPPER_TYPE_LIST = (
 	"ARMOR_UPPER",
-	#"ONEPIECE",
 	"COSTUME",
 	"BODYSUIT",
 	"WEDDING",
 	"OVERALLS",
 	"FACEBODYSUIT",
+	"PARTS_BODY", #dem
 )
 LOWER_TYPE_LIST = (
 	"ARMOR_LOWER",
 	"SLACKS",
+	"PARTS_LEG", #dem
 )
 RIGHT_TYPE_LIST = (
 	"CLAW",
@@ -66,7 +67,11 @@ RIGHT_TYPE_LIST = (
 	"BULLET",
 	"ARROW",
 	"STRINGS",
-	"EXSWORD"
+	"EXSWORD",
+	"PARTS_BLOW", #dem
+	"PARTS_SLASH", #dem
+	"PARTS_STAB", #dem
+	"PARTS_LONGRANGE", #dem
 )
 LEFT_TYPE_LIST = (
 	"BOW",
@@ -85,6 +90,49 @@ PET_TYPE_LIST = (
 	"PET",
 	"RIDE_PET",
 	"PET_NEKOMATA",
+)
+HEAD_TYPE_LIST = (
+	"HELM",
+	"PARTS_HEAD", #dem
+)
+ACCESORY_HEAD_TYPE_LIST = (
+	"ACCESORY_HEAD",
+)
+FULLFACE_TYPE_LIST = (
+	"FULLFACE",
+)
+ACCESORY_FACE_TYPE_LIST = (
+	"ACCESORY_FACE",
+)
+ONEPIECE_TYPE_LIST = (
+	"ONEPIECE",
+)
+BACKPACK_TYPE_LIST = (
+	"BACKPACK",
+	"PARTS_BACK", #dem
+)
+SOCKS_TYPE_LIST = (
+	"SOCKS",
+)
+PARTS_SET_TYPE_LIST = (
+	#not using
+	"SETPARTS_BLOW",
+	"SETPARTS_STAB",
+	"SETPARTS_SLASH",
+)
+
+EQUIP_ATTR_LIST = (
+	"head",
+	"face",
+	"chestacce",
+	"tops",
+	"bottoms",
+	"backpack",
+	"right",
+	"left",
+	"shoes",
+	"socks",
+	"pet",
 )
 
 # make server more safe from remote attack by special user input
@@ -245,8 +293,8 @@ def get_str(s):
 def get_unicode(s):
 	try:
 		return s if type(s) == unicode else str(s).decode("utf-8")
-	except UnicodeDecodeError: #0x97 bomb
-		return unicode(s, "utf-8", "ignore")
+	except UnicodeDecodeError: #0x80+ bomb
+		return unicode(s, "latin-1")
 def get_str_log(s):
 	return get_unicode(s).encode(env.SYSTEM_ENCODING)
 

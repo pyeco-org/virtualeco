@@ -60,8 +60,8 @@ def run_script(pc, event_id):
 	#general.log("run script id", event_id)
 	with pc.lock and pc.user.lock:
 		pc.event_id = event_id
-		pc.user.map_client.send("05dc") #イベント開始の通知
-		pc.user.map_client.send("05e8", event_id) #EventID通知 Event送信に対する応答
+		pc.map_send("05dc") #イベント開始の通知
+		pc.map_send("05e8", event_id) #EventID通知 Event送信に対する応答
 	with script_list_lock:
 		event = script_list.get(event_id)
 	try:
@@ -75,7 +75,7 @@ def run_script(pc, event_id):
 	with pc.lock and pc.user.lock:
 		pc.event_id = 0
 		if pc.online:
-			pc.user.map_client.send("05dd") #イベント終了の通知
+			pc.map_send("05dd") #イベント終了の通知
 
 def run(pc, event_id):
 	#if pc.event_id:
@@ -100,7 +100,7 @@ def send_map_obj(map_obj, without_list, *args):
 					continue
 				if p in without_list:
 					continue
-				p.user.map_client.send(*args)
+				p.map_send(*args)
 			except:
 				general.log_error("send_map error: %s"%traceback.format_exc())
 
@@ -110,7 +110,7 @@ def send_server(*args):
 			try:
 				if not p.online:
 					continue
-				p.user.map_client.send(*args)
+				p.map_send(*args)
 			except:
 				general.log_error("send_server error: %s"%traceback.format_exc())
 
@@ -166,6 +166,8 @@ NAME_WITH_TYPE = {
 	"petstandby_off": (),
 	"petmotion": (int, int), #motion_id, motion_loop
 	"petmotion_loop": (int,), #motion_id
+	"unsetallequip": (),
+	"printallequip": (),
 }
 
 def help(pc):
@@ -221,6 +223,8 @@ def help(pc):
 /petstandby_off
 /petmotion motion_id motion_loop
 /petmotion_loop motion_id
+/unsetallequip
+/printallequip
 """)
 
 def handle_cmd(pc, cmd):
@@ -294,22 +298,22 @@ def say(pc, message, npc_name=None, npc_motion_id=131, npc_id=None):
 		if npc: npc_name = npc.name
 		else: npc_name = ""
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("03f8") #NPCメッセージのヘッダー
+		pc.map_send("03f8") #NPCメッセージのヘッダー
 		message = message.replace("$r", "$R").replace("$p", "$P")
 		for message_line in message.split("$R"):
-			pc.user.map_client.send("03f7", 
+			pc.map_send("03f7", 
 				message_line+"$R", npc_name, npc_motion_id, npc_id) #NPCメッセージ
-		pc.user.map_client.send("03f9") #NPCメッセージのフッター
+		pc.map_send("03f9") #NPCメッセージのフッター
 
 def msg(pc, message):
 	with pc.lock and pc.user.lock:
 		for line in message.replace("\r\n", "\n").split("\n"):
-			pc.user.map_client.send("03e9", -1, line)
+			pc.map_send("03e9", -1, line)
 
 def servermsg(pc, message):
 	with pc.lock and pc.user.lock:
 		for line in message.replace("\r\n", "\n").split("\n"):
-			pc.user.map_client.send_server("03e9", 0, line)
+			pc.map_send_server("03e9", 0, line)
 
 def where(pc):
 	with pc.lock:
@@ -328,13 +332,13 @@ def warp(pc, map_id, x=None, y=None):
 			if x != None and y != None: pc.set_coord(x, y)
 			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
 			pc.set_dir(0)
-			pc.user.map_client.send("11fd", pc) #マップ変更通知
-			pc.user.map_client.send("122a") #モンスターID通知
+			pc.map_send("11fd", pc) #マップ変更通知
+			pc.map_send("122a") #モンスターID通知
 		else:
 			if x != None and y != None: pc.set_coord(x, y)
 			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
 			pc.unset_pet()
-			pc.user.map_client.send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
+			pc.map_send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
 			pc.set_pet()
 
 def warpraw(pc, rawx, rawy):
@@ -343,12 +347,12 @@ def warpraw(pc, rawx, rawy):
 	with pc.lock and pc.user.lock:
 		pc.set_raw_coord(rawx, rawy)
 		pc.unset_pet()
-		pc.user.map_client.send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
+		pc.map_send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
 		pc.set_pet()
 
 def update(pc):
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("020e", pc) #キャラ情報
+		pc.map_send_map("020e", pc) #キャラ情報
 
 def hair(pc, hair_id):
 	general.assert_value_range("hair_id", hair_id, general.RANGE_SHORT)
@@ -396,7 +400,7 @@ def motion(pc, motion_id, motion_loop=False):
 	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	pc.set_motion(motion_id, motion_loop)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("121c", pc) #モーション通知
+		pc.map_send_map("121c", pc) #モーション通知
 
 def motion_loop(pc, motion_id):
 	motion(pc, motion_id, True)
@@ -425,7 +429,7 @@ def _item(pc, item_id, item_count):
 					item_count_add = item_count
 					item_count = 0
 					item_exist.count += item_count_add
-				pc.user.map_client.send("09cf", item_exist, iid) #アイテム個数変化
+				pc.map_send("09cf", item_exist, iid) #アイテム個数変化
 				msg(pc, "%sを%s個入手しました"%(
 					item_exist.name, item_count_add
 				))
@@ -440,7 +444,7 @@ def _item(pc, item_id, item_count):
 			item.count = item_count
 			item_count = 0
 		pc.item_append(item)
-	pc.user.map_client.update_item_status()
+	pc.update_item_status()
 
 def printitem(pc):
 	with pc.lock:
@@ -479,14 +483,14 @@ def _takeitem(pc, item_id, item_count):
 			#general.log(item_count, item_exist.count)
 			if item_exist.count > item_count:
 				item_exist.count -= item_count
-				pc.user.map_client.send("09cf", item_exist, iid) #アイテム個数変化
+				pc.map_send("09cf", item_exist, iid) #アイテム個数変化
 				msg(pc, "%sを%s個失いました"%(item.name, item_count))
 			else:
 				pc.item_pop(iid)
 			break
 		else:
 			return item_count
-	pc.user.map_client.update_item_status()
+	pc.update_item_status()
 	return True
 
 def takeitem_byiid(pc, item_iid, item_count):
@@ -509,7 +513,7 @@ def takeitem_byiid(pc, item_iid, item_count):
 			item_exist.count -= item_count
 			item_return = general.copy(item_exist)
 			item_return.count = item_count
-			pc.user.map_client.send("09cf", item_exist, item_iid) #アイテム個数変化
+			pc.map_send("09cf", item_exist, item_iid) #アイテム個数変化
 			msg(pc, "%sを%s個失いました"%(item_exist.name, item_count))
 		elif item_exist.count == item_count:
 			item_return = pc.item_pop(item_iid)
@@ -523,7 +527,7 @@ def update_item(pc): #not for command
 		for iid, item in pc.item.iteritems():
 			if pc.in_equip(iid):
 				continue
-			pc.user.map_client.send("09cf", item, iid) #アイテム個数変化
+			pc.map_send("09cf", item, iid) #アイテム個数変化
 
 def npctrade(pc): #not for command
 	pc.reset_trade()
@@ -534,7 +538,7 @@ def npctrade(pc): #not for command
 	if npc: npc_name = npc.name
 	else: npc_name = ""
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("0a0f", npc_name, True) #トレードウィンドウ表示
+		pc.map_send("0a0f", npc_name, True) #トレードウィンドウ表示
 	while True:
 		with pc.lock:
 			if not pc.online:
@@ -557,16 +561,16 @@ def warehouse(pc, warehouse_id):
 				num_here += 1
 	with pc.lock and pc.user.lock:
 		#倉庫インベントリーヘッダ
-		pc.user.map_client.send("09f6", warehouse_id, num_here, num_all, num_max)
+		pc.map_send("09f6", warehouse_id, num_here, num_all, num_max)
 		for iid, item in pc.warehouse.iteritems():
 			if item.warehouse == warehouse_id:
 				part = 30 #倉庫
 			else:
 				part = item.warehouse
 			#倉庫インベントリーデータ
-			pc.user.map_client.send("09f9", item, iid, part)
+			pc.map_send("09f9", item, iid, part)
 		pc.warehouse_open = warehouse_id
-		pc.user.map_client.send("09fa") #倉庫インベントリーフッタ
+		pc.map_send("09fa") #倉庫インベントリーフッタ
 
 def select(pc, option_list, title=""): #not for command
 	option_list = filter(None, option_list)
@@ -574,7 +578,7 @@ def select(pc, option_list, title=""): #not for command
 	with pc.lock and pc.user.lock:
 		pc.select_result = None
 		#NPCのメッセージのうち、選択肢から選ぶもの
-		pc.user.map_client.send("0604", option_list, title)
+		pc.map_send("0604", option_list, title)
 	while True:
 		with pc.lock:
 			if not pc.online:
@@ -586,7 +590,7 @@ def select(pc, option_list, title=""): #not for command
 def wait(pc, time_ms): #not for command
 	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("05eb", time_ms) #イベント関連のウェイト
+		pc.map_send("05eb", time_ms) #イベント関連のウェイト
 	time.sleep(time_ms/1000.0)
 
 def playbgm(pc, sound_id, loop=1, volume=100):
@@ -594,7 +598,7 @@ def playbgm(pc, sound_id, loop=1, volume=100):
 	general.assert_value_range("volume", volume, (0, 100))
 	with pc.lock and pc.user.lock:
 		#音楽を再生する
-		pc.user.map_client.send("05f0", sound_id, (1 if loop else 0), volume)
+		pc.map_send("05f0", sound_id, (1 if loop else 0), volume)
 
 def playse(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
@@ -602,7 +606,7 @@ def playse(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#効果音を再生する
-		pc.user.map_client.send("05f5", sound_id, (1 if loop else 0), volume, balance)
+		pc.map_send("05f5", sound_id, (1 if loop else 0), volume, balance)
 
 def playjin(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("sound_id", sound_id, general.RANGE_UNSIGNED_INT)
@@ -610,7 +614,7 @@ def playjin(pc, sound_id, loop=0, volume=100, balance=50):
 	general.assert_value_range("balance", balance, (0, 100))
 	with pc.lock and pc.user.lock:
 		#ジングルを再生する
-		pc.user.map_client.send("05fa", sound_id, (1 if loop else 0), volume, balance)
+		pc.map_send("05fa", sound_id, (1 if loop else 0), volume, balance)
 
 def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
 	general.assert_value_range("effect_id", effect_id, general.RANGE_UNSIGNED_INT)
@@ -620,13 +624,13 @@ def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
 	general.assert_value_range("dir", dir, general.RANGE_BYTE)
 	with pc.lock and pc.user.lock:
 		#エフェクト受信
-		pc.user.map_client.send_map("060e", pc, effect_id, id, x, y, dir)
+		pc.map_send_map("060e", pc, effect_id, id, x, y, dir)
 
 def speed(pc, speed):
 	general.assert_value_range("speed", speed, general.RANGE_SHORT)
 	with pc.lock and pc.user.lock:
 		pc.status.speed = speed
-		pc.user.map_client.send_map("1239", pc) #キャラ速度通知・変更
+		pc.map_send_map("1239", pc) #キャラ速度通知・変更
 
 def setgold(pc, gold):
 	general.assert_value_range("gold", gold, general.RANGE_INT)
@@ -636,7 +640,7 @@ def setgold(pc, gold):
 			return False
 		else:
 			pc.gold = gold
-			pc.user.map_client.send("09ec", pc) #ゴールドを更新する、値は更新後の値
+			pc.map_send("09ec", pc) #ゴールドを更新する、値は更新後の値
 			return True
 
 def takegold(pc, gold_take):
@@ -654,7 +658,7 @@ def npcmotion(pc, npc_id, motion_id, motion_loop=False):
 	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
 		#モーション通知
-		pc.user.map_client.send("121c", pc, npc_id, motion_id, motion_loop) 
+		pc.map_send("121c", pc, npc_id, motion_id, motion_loop) 
 
 def npcmotion_loop(pc, npc_id, motion_id):
 	npcmotion(pc, npc_id, motion_id, True)
@@ -666,12 +670,12 @@ def npcshop(pc, shop_id):
 		return
 	with pc.lock and pc.user.lock:
 		pc.shop_open = shop_id
-		pc.user.map_client.send("0613", pc, shop.item) #NPCのショップウィンドウ
+		pc.map_send("0613", pc, shop.item) #NPCのショップウィンドウ
 
 def npcsell(pc):
 	with pc.lock and pc.user.lock:
 		pc.shop_open = 65535 #sell
-		pc.user.map_client.send("0615") #NPCショップウィンドウ（売却）
+		pc.map_send("0615") #NPCショップウィンドウ（売却）
 
 def spawn(pc, monster_id):
 	with pc.lock:
@@ -686,40 +690,40 @@ def killall(pc):
 def emotion(pc, emotion_id):
 	general.assert_value_range("emotion_id", emotion_id, general.RANGE_UNSIGNED_SHORT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("1217", pc, emotion_id) #emotion
+		pc.map_send_map("1217", pc, emotion_id) #emotion
 
 def emotion_ex(pc, emotion_ex_id):
 	general.assert_value_range(
 		"emotion_ex_id", emotion_ex_id, general.RANGE_UNSIGNED_BYTE
 	)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("1d0c", pc, emotion_ex_id) #emotion_ex
+		pc.map_send_map("1d0c", pc, emotion_ex_id) #emotion_ex
 
 def shownpc(pc, npc_id):
 	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("05e2", npc_id) #show npc
+		pc.map_send("05e2", npc_id) #show npc
 
 def hidenpc(pc, npc_id):
 	general.assert_value_range("npc_id", npc_id, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("05e3", npc_id) #hide npc
+		pc.map_send("05e3", npc_id) #hide npc
 
 def blackout(pc, time_ms):
 	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("0609", 1, 0) #blackout on
+		pc.map_send("0609", 1, 0) #blackout on
 	wait(pc, time_ms)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("0609", 0, 0) #blackout off
+		pc.map_send("0609", 0, 0) #blackout off
 
 def whiteout(pc, time_ms):
 	general.assert_value_range("time_ms", time_ms, general.RANGE_UNSIGNED_INT)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("0609", 1, 1) #whiteout on
+		pc.map_send("0609", 1, 1) #whiteout on
 	wait(pc, time_ms)
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send("0609", 0, 1) #whiteout off
+		pc.map_send("0609", 0, 1) #whiteout off
 
 def size(pc, pc_size):
 	general.assert_value_range("pc_size", pc_size, general.RANGE_UNSIGNED_INT)
@@ -727,7 +731,7 @@ def size(pc, pc_size):
 		#default: 1000
 		pc.size = pc_size
 	with pc.lock and pc.user.lock:
-		pc.user.map_client.send_map("020f", pc, pc_size) #size
+		pc.map_send_map("020f", pc, pc_size) #size
 	#update(pc)
 
 def petstandby_on(pc):
@@ -751,9 +755,16 @@ def petmotion(pc, motion_id, motion_loop=False):
 			return
 		pc.pet.set_motion(motion_id, motion_loop)
 		#モーション通知
-		pc.user.map_client.send_map("121c", pc, pc.pet.id, motion_id, motion_loop)
+		pc.map_send_map("121c", pc, pc.pet.id, motion_id, motion_loop)
 
 def petmotion_loop(pc, motion_id):
 	petmotion(pc, motion_id, True)
+
+def unsetallequip(pc):
+	pc.unset_all_equip()
+
+def printallequip(pc):
+	for attr in general.EQUIP_ATTR_LIST:
+		msg(pc, "%s %s"%(attr, pc.item.get(getattr(pc.equip, attr))))
 
 name_map = general.get_name_map(globals(), "")

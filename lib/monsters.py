@@ -80,9 +80,9 @@ def attack_monster(pc, monster):
 			pc.reset_attack()
 			thread.start_new_thread(delete_monster_thread, (monster,))
 			script.msg(pc, "基本経験値 0、職業経験値 0を取得しました")
-		pc.user.map_client.send_map("0fa1", pc, monster, 0, damage, flag) #攻撃結果
-		pc.user.map_client.send_map("021c", monster) #現在のHP/MP/SP/EP
-		pc.user.map_client.send_map("157c", monster, state01) #キャラの状態
+		pc.map_send_map("0fa1", pc, monster, 0, damage, flag) #攻撃結果
+		pc.map_send_map("021c", monster) #現在のHP/MP/SP/EP
+		pc.map_send_map("157c", monster, state01) #キャラの状態
 
 def get_monster_list():
 	l = []

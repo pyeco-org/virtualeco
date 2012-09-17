@@ -264,14 +264,14 @@ def get_pc_list():
 	return filter(None, l)
 def get_pc_from_name(name):
 	for p in get_pc_list():
-		with p.lock:
-			if p.name == name:
-				return p
+		if p.name == name:
+			return p
 def get_pc_from_id(i):
 	for p in get_pc_list():
-		with p.lock:
-			if p.id == i:
-				return p
+		if p.id == i:
+			return p
+def get_online_pc_list():
+	return filter(lambda p:p.online, get_pc_list())
 
 def backup_user_data():
 	try:
@@ -296,11 +296,13 @@ def backup_user_data_every_day():
 
 def save_user_data():
 	try:
-		for p in get_pc_list():
-			if p.online:
+		for p in get_online_pc_list():
+			try:
 				p.save()
+			except:
+				general.log_error(traceback.format_exc(), p)
 	except:
-		general.log_error("save_user_data", traceback.format_exc())
+		general.log_error(traceback.format_exc())
 def save_user_data_every_min_thread():
 	while True:
 		save_user_data()
@@ -311,6 +313,13 @@ def save_user_data_every_min():
 	if not save_user_data_every_min_thread_running:
 		save_user_data_every_min_thread_running = True
 		thread.start_new_thread(save_user_data_every_min_thread, ())
+def save_user_data_atexit():
+	for p in get_online_pc_list():
+		try:
+			general.log("[users] save atexit", p)
+			p.save()
+		except:
+			general.log_error(traceback.format_exc(), p)
 
 def load():
 	global general, PC, server

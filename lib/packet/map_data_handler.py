@@ -119,7 +119,7 @@ class MapDataHandler:
 					#他キャラ情報→自キャラ
 					self.send("120c", p)
 					#自キャラ情報→他キャラ
-					p.user.map_client.send("120c", self.pc)
+					p.map_send("120c", self.pc)
 				for pet in self.pc.map_obj.pet_list:
 					if not pet.master:
 						continue
@@ -131,26 +131,6 @@ class MapDataHandler:
 					self.send("1220", monster) #モンスター情報
 				for mi in self.pc.map_obj.mapitem_list:
 					self.send("07d5", mi) #drop item info
-	
-	def update_equip_status(self):
-		self.pc.update_status()
-		self.send("0230", self.pc) #現在CAPA/PAYL
-		self.send("0231", self.pc) #最大CAPA/PAYL
-		self.send_map("0221", self.pc) #最大HP/MP/SP
-		self.send_map("021c", self.pc) #現在のHP/MP/SP/EP
-		self.send("157c", self.pc) #キャラの状態
-		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
-		self.send("0217", self.pc) #詳細ステータス
-		self.send("0226", self.pc, 0) #スキル一覧 一次職
-		self.send("0226", self.pc, 1) #スキル一覧 エキスパ
-		self.send("022d", self.pc) #HEARTスキル
-		self.send("0223", self.pc) #属性値
-		self.send("0244", self.pc) #ステータスウィンドウの職業
-		
-	def update_item_status(self):
-		self.pc.update_status()
-		self.send("0230", self.pc) #現在CAPA/PAYL
-		self.send("0231", self.pc) #最大CAPA/PAYL
 	
 	def send_object_detail(self, i):
 		if i >= pets.PET_ID_START_FROM:
@@ -391,45 +371,16 @@ class MapDataHandler:
 		iid = general.io_unpack_int(data_io)
 		part = general.io_unpack_byte(data_io)
 		count = general.io_unpack_short(data_io)
-		with self.pc.lock:
-			if iid not in self.pc.item:
-				general.log_error(
-					"[ map ] do_09e2 iid %d not in item list"%iid, self.pc)
-				return
-			self.pc.unset_equip(iid)
-			self.pc.sort.item.remove(iid)
-			self.pc.sort.item.append(iid)
-			self.send("09e3", iid, part) #アイテム保管場所変更
-		self.send("09e8", -1, -1, 1, 1) #アイテムを外す
-		self.send("09e9", self.pc) #キャラの見た目を変更
-		self.update_equip_status()
+		self.pc.unset_equip(iid, part)
 	
 	def do_09e7(self, data_io):
 		#アイテム装備
 		iid = general.io_unpack_int(data_io)
-		with self.pc.lock:
-			if iid not in self.pc.item:
-				general.log_error(
-					"[ map ] do_09e7 iid %d not in item list"%iid, self.pc)
-				return
-			unset_iid_list, set_part = self.pc.set_equip(iid)
-			general.log("[ map ] item setup", self.pc.item.get(iid))
-			#general.log(unset_iid_list, set_part)
-			for i in unset_iid_list:
-				self.pc.sort.item.remove(i)
-				self.pc.sort.item.append(i)
-				self.send("09e3", i, 0x02) #アイテム保管場所変更 #body
-				#self.send("0203", pc.item[i], i, 0x02) #インベントリ情報
-			if not set_part:
-				#装備しようとする装備タイプが不明の場合
-				general.log_error(
-					"[ map ] do_09e7: not set_part, iid:", self.pc.item[iid])
-				self.send("09e8", iid, -1, -2, 1) #アイテム装備
-			else:
-				self.send("09e8", iid, set_part, 0, 1) #アイテム装備
-				self.send_map("09e9", self.pc) #キャラの見た目を変更
-				#self.send_map_without_self("020e", self.pc) #キャラ情報
-		self.update_equip_status()
+		if self.pc.dem_form_status():
+			general.log("[ map ] set equip failed", self.pc)
+			self.send("09e8", iid, -1, -2, 1) #アイテム装備
+		else:
+			self.pc.set_equip(iid)
 	
 	def do_0a16(self, data_io):
 		#トレードキャンセル
@@ -502,7 +453,7 @@ class MapDataHandler:
 				self.pc.item_append(item_take)
 			#倉庫から取り出した時の結果 #成功
 			self.send("09fc", 0)
-		self.update_item_status()
+		self.pc.update_item_status()
 	
 	def do_09fd(self, data_io):
 		#倉庫に預ける
@@ -534,7 +485,7 @@ class MapDataHandler:
 			self.pc.warehouse_append(item_store)
 			#倉庫に預けた時の結果 #成功
 			self.send("09fe", 0)
-		self.update_item_status()
+		self.pc.update_item_status()
 	
 	def do_09c4(self, data_io):
 		#アイテム使用
@@ -604,7 +555,7 @@ class MapDataHandler:
 				continue
 			if script.takegold(self.pc, (int(item.price/10.0) or 1)*item_count):
 				script.item(self.pc, item_id, item_count)
-		self.update_item_status()
+		self.pc.update_item_status()
 	
 	def do_0616(self, data_io):
 		#ショップで売却
@@ -647,7 +598,7 @@ class MapDataHandler:
 							item.name, item_count
 						))
 						self.send("09cf", item, item_iid) #アイテム個数変化
-		self.update_item_status()
+		self.pc.update_item_status()
 	
 	def do_0258(self, data_io):
 		#自キャラステータス試算 補正は含まない
@@ -750,7 +701,7 @@ class MapDataHandler:
 			if p.event_id:
 				self.send("0a0b", -4) #trade ask result, 相手がイベント中です
 				return
-			p.user.map_client.send("0a0c", self.pc) #receive trade ask
+			p.map_send("0a0c", self.pc) #receive trade ask
 			self.pc.trade_target_id = p.id
 			p.trade_target_id = self.pc.id
 	
@@ -768,11 +719,11 @@ class MapDataHandler:
 				#trade ask result, トレードを断られました
 				self.pc.trade_target_id = 0
 				p.trade_target_id = 0
-				p.user.map_client.send("0a0b", -6)
+				p.map_send("0a0b", -6)
 			else:
 				self.pc.trade = True
 				p.trade = True
-				p.user.map_client.send("0a0f", self.pc.name) #トレードウィンドウ表示
+				p.map_send("0a0f", self.pc.name) #トレードウィンドウ表示
 				self.send("0a0f", p.name) #トレードウィンドウ表示
 	
 	def do_07d0(self, data_io):
@@ -797,7 +748,7 @@ class MapDataHandler:
 				general.log("[ map ] put item: not item but err = 0", iid, count)
 				return
 			self.pc.map_obj.mapitem_append(item, self.pc.x, self.pc.y, self.pc.id)
-		self.update_item_status()
+		self.pc.update_item_status()
 	
 	def do_07e4(self, data_io):
 		#pick up item request
@@ -823,6 +774,26 @@ class MapDataHandler:
 				script.item(self.pc, item.item_id, item.count)
 			else:
 				self.pc.item_append(mapitem_obj.item)
-		self.update_item_status()
+		self.pc.update_item_status()
+	
+	def do_1e7d(self, data_io):
+		#DEMのフォームチェンジ
+		#point pc.equip to pc.eqiup_dem or pc.equip_std before change
+		#if not stable, it will back to unset all equip before change
+		status = general.io_unpack_byte(data_io)
+		if self.pc.dem_form_change(status):
+			general.log("[ map ] dem form change success")
+		else:
+			general.log("[ map ] dem form change failed")
+	
+	def do_1e87(self, data_io):
+		#DEMパーツ装着
+		#warning: cannot unset parts on dem parts window
+		iid = general.io_unpack_int(data_io)
+		if self.pc.dem_form_status():
+			self.pc.set_equip(iid)
+		else:
+			general.log("[ map ] set dem parts failed", self.pc)
+			self.send("09e8", iid, -1, -2, 1) #アイテム装備
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

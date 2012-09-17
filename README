@@ -3,6 +3,7 @@ Rewrite from pyeco.
 Step:
 * add "local,127.0.0.1:13000," to server.lst
 * run virtualeco_launcher
+* register user on http://127.0.0.1:13100/
 * copy and run pyecolauncher
 
 No more feature will be add because developer can't

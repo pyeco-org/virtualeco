@@ -40,7 +40,7 @@ def debugger():
 def atexit():
 	if env.BACKUP_USER_DATA_EVERY_DAY:
 		users.backup_user_data()
-	users.save_user_data()
+	users.save_user_data_atexit()
 
 def init():
 	general.secure_chdir()

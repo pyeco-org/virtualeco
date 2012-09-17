@@ -7,5 +7,5 @@ SCRIPT_PATH = "./script/say.py"
 
 def main(pc):
 	script.wait(pc, 1000)
-	pc.dic["test"] = 123
+	pc.var["test"] = ["☆★☆★☆", []]
 	script.say(pc, SCRIPT_PATH)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
+import os
 import threading
 import traceback
 from lib import env
@@ -10,6 +11,7 @@ from lib import db
 from lib import pets
 from lib import users
 from lib import script
+from lib import dumpobj
 
 class PC:
 	def __str__(self):
@@ -75,23 +77,29 @@ class PC:
 			item.warehouse = itemcfg[2]
 			self.warehouse[i] = item
 		#equip.place = iid
-		self.equip.head = cfg.getint("equip","head")
-		self.equip.face = cfg.getint("equip","face")
-		self.equip.chestacce = cfg.getint("equip","chestacce")
-		self.equip.tops = cfg.getint("equip","tops")
-		self.equip.bottoms = cfg.getint("equip","bottoms")
-		self.equip.backpack = cfg.getint("equip","backpack")
-		self.equip.right = cfg.getint("equip","right")
-		self.equip.left = cfg.getint("equip","left")
-		self.equip.shoes = cfg.getint("equip","shoes")
-		self.equip.socks = cfg.getint("equip","socks")
-		self.equip.pet = cfg.getint("equip","pet")
+		for attr in general.EQUIP_ATTR_LIST:
+			setattr(self.equip_std, attr, cfg.getint("equip", attr))
+		if cfg.has_section("equip_dem"):
+			for attr in general.EQUIP_ATTR_LIST:
+				setattr(self.equip_dem, attr, cfg.getint("equip_dem", attr))
 		#{name: value, ...}
-		self.dic = {}
-		for option in cfg.options("dic"):
-			self.dic[option] = cfg.get("dic", option)
+		self.var = {}
+		if cfg.has_section("dic"): #load droped str:str dictionary
+			for option in cfg.options("dic"):
+				self.var[option] = cfg.get("dic", option)
+		if cfg.has_section("var"):
+			for key in cfg.options("var"):
+				try:
+					self.var[key] = dumpobj.loads(cfg.get("var", key))
+				except:
+					general.log_error("[ pc  ] load var error", self, key)
+					general.log_error(traceback.format_exc())
 		#[skill_id, ...]
 		self.skill_list = general.str_to_list(cfg.get("skill", "list"))
+		if self.dem_form_status():
+			self.equip = self.equip_dem
+		else:
+			self.equip = self.equip_std
 	
 	def save(self):
 		with self.lock:
@@ -139,17 +147,11 @@ class PC:
 		cfg.set("status", "agiadd", str(self.agiadd))
 		cfg.set("status", "magadd", str(self.magadd))
 		cfg.add_section("equip")
-		cfg.set("equip", "head", str(self.equip.head))
-		cfg.set("equip", "face", str(self.equip.face))
-		cfg.set("equip", "chestacce", str(self.equip.chestacce))
-		cfg.set("equip", "tops", str(self.equip.tops))
-		cfg.set("equip", "bottoms", str(self.equip.bottoms))
-		cfg.set("equip", "backpack", str(self.equip.backpack))
-		cfg.set("equip", "right", str(self.equip.right))
-		cfg.set("equip", "left", str(self.equip.left))
-		cfg.set("equip", "shoes", str(self.equip.shoes))
-		cfg.set("equip", "socks", str(self.equip.socks))
-		cfg.set("equip", "pet", str(self.equip.pet))
+		for attr in general.EQUIP_ATTR_LIST:
+			cfg.set("equip", attr, str(getattr(self.equip_std, attr)))
+		cfg.add_section("equip_dem")
+		for attr in general.EQUIP_ATTR_LIST:
+			cfg.set("equip_dem", attr, str(getattr(self.equip_dem, attr)))
 		#"iid,iid,iid, ..."
 		cfg.add_section("sort")
 		cfg.set("sort", "item", general.list_to_str(self.sort.item))
@@ -170,39 +172,110 @@ class PC:
 				self.warehouse[i].count,
 				self.warehouse[i].warehouse)))
 		#"name = value"
-		cfg.add_section("dic")
-		for name, value in self.dic.iteritems():
-			cfg.set("dic", str(name), str(value))
+		cfg.add_section("var")
+		for key, value in self.var.iteritems():
+			try:
+				dump = dumpobj.dumps(value)
+			except:
+				general.log_error("[ pc  ] dump var error", self, key, value)
+				general.log_error(traceback.format_exc())
+				dump = str(value)
+			cfg.set("var", str(key), dump)
 		#"skill_id,skill_id,skill_id, ..."
 		cfg.add_section("skill")
 		cfg.set("skill", "list", general.list_to_str(self.skill_list))
 		#
 		cfg.write(open(self.path, "wb", base=env.USER_DIR))
 	
+	def map_send(self, *args):
+		if not self.user.map_client:
+			general.log("[ pc  ] skip map_send", *args)
+			return
+		self.user.map_client.send(*args)
+	
+	def map_send_map(self, *args):
+		if not self.user.map_client:
+			general.log("[ pc  ] skip map_send_map", *args)
+			return
+		self.user.map_client.send_map(*args)
+	
+	def map_send_map_without_self(self, *args):
+		if not self.user.map_client:
+			general.log("[ pc  ] skip map_send_map_without_self", *args)
+			return
+		self.user.map_client.send_map_without_self(*args)
+	
+	def map_send_server(self, *args):
+		if not self.user.map_client:
+			general.log("[ pc  ] skip map_send_server", *args)
+			return
+		self.user.map_client.send_server(*args)
+	
+	def login_send(self, *args):
+		if not self.user.login_client:
+			general.log("[ pc  ] skip login_send", *args)
+			return
+		self.user.login_client.send(*args)
+	
+	def update_item_status(self):
+		self.update_status()
+		self.map_send("0230", self) #現在CAPA/PAYL
+		self.map_send("0231", self) #最大CAPA/PAYL
+	
+	def update_equip_status(self):
+		self.update_status()
+		self.map_send("0230", self) #現在CAPA/PAYL
+		self.map_send("0231", self) #最大CAPA/PAYL
+		self.map_send_map("0221", self) #最大HP/MP/SP
+		self.map_send_map("021c", self) #現在のHP/MP/SP/EP
+		self.map_send("157c", self) #キャラの状態
+		self.map_send("0212", self) #ステータス・補正・ボーナスポイント
+		self.map_send("0217", self) #詳細ステータス
+		self.map_send("0226", self, 0) #スキル一覧 一次職
+		self.map_send("0226", self, 1) #スキル一覧 エキスパ
+		self.map_send("022d", self) #HEARTスキル
+		self.map_send("0223", self) #属性値
+		self.map_send("0244", self) #ステータスウィンドウの職業
+	
 	def get_item_part(self, *args):
 		with self.lock:
 			return self._get_item_part(*args)
 	def _get_item_part(self, iid):
-		if not iid: return
-		if iid not in self.item: return
-		part = 0x02 #body
-		item = self.item[iid]
-		if iid == self.equip.head:
-			if item.check_type("HELM")			: part = 6
-			elif item.check_type("ACCESORY_HEAD")	: part = 7
-		elif iid == self.equip.face:
-			if item.check_type("FULLFACE")		: part = 6 #8 before ver315
-			elif item.check_type("ACCESORY_FACE")	: part = 8 #9 before ver315
-		elif iid == self.equip.chestacce			: part = 10
-		elif iid == self.equip.tops				: part = 11
-		elif iid == self.equip.bottoms			: part = 12
-		elif iid == self.equip.backpack			: part = 13
-		elif iid == self.equip.right				: part = 14
-		elif iid == self.equip.left				: part = 15
-		elif iid == self.equip.shoes				: part = 16
-		elif iid == self.equip.socks				: part = 17
-		elif iid == self.equip.pet				: part = 18
-		return part
+		if not iid:
+			return
+		item = self.item.get(iid)
+		if item is None:
+			return
+		for equip in (self.equip_std, self.equip_dem):
+			if iid == equip.head:
+				if item.check_type(general.HEAD_TYPE_LIST):
+					return 0x06
+				elif item.check_type(general.ACCESORY_HEAD_TYPE_LIST):
+					return 0x07
+			elif iid == equip.face:
+				if item.check_type(general.FULLFACE_TYPE_LIST):
+					return 0x06 #0x08 before ver315
+				elif item.check_type(general.ACCESORY_FACE_TYPE_LIST):
+					return 0x08 #0x09 before ver315
+			elif iid == equip.chestacce:
+				return 10
+			elif iid == equip.tops:
+				return 11
+			elif iid == equip.bottoms:
+				return 12
+			elif iid == equip.backpack:
+				return 13
+			elif iid == equip.right:
+				return 14
+			elif iid == equip.left:
+				return 15
+			elif iid == equip.shoes:
+				return 16
+			elif iid == equip.socks:
+				return 17
+			elif iid == equip.pet:
+				return 18
+		return 0x02 #body
 	
 	def set_map(self, *args):
 		with self.lock:
@@ -215,10 +288,9 @@ class PC:
 			return False
 		#general.log(self, "set_map", map_obj)
 		with self.user.lock:
-			if self.user.map_client:
-				self.unset_pet()
-				if map_id:
-					self.user.map_client.send_map_without_self("1211", self) #PC消去
+			self.unset_pet()
+			if map_id:
+				self.map_send_map_without_self("1211", self) #PC消去
 		self.map_id = map_id
 		if self.map_obj:
 			with self.map_obj.lock:
@@ -273,23 +345,25 @@ class PC:
 		with self.lock:
 			return self._set_equip(*args)
 	def _set_equip(self, iid):
+		item = self.item.get(iid)
+		if not item:
+			general.log_error("[ pc  ] set_equip iid %d not exist"%iid, self)
+			return False
 		unset_iid_list = []
 		set_part = 0
-		item = self.item.get(iid)
-		if not item: return unset_iid_list, set_part
-		if item.check_type("HELM"): #頭
+		if item.check_type(general.HEAD_TYPE_LIST): #頭
 			unset_iid_list.append(self.equip.head)
 			self.equip.head = iid
 			set_part = 6
-		elif item.check_type("ACCESORY_HEAD"): #頭
+		elif item.check_type(general.ACCESORY_HEAD_TYPE_LIST): #頭
 			unset_iid_list.append(self.equip.head)
 			self.equip.head = iid
 			set_part = 7
-		elif item.check_type("FULLFACE"): #顔
+		elif item.check_type(general.FULLFACE_TYPE_LIST): #顔
 			unset_iid_list.append(self.equip.face)
 			self.equip.face = iid
 			set_part = 6 #8 before ver315
-		elif item.check_type("ACCESORY_FACE"): #顔
+		elif item.check_type(general.ACCESORY_FACE_TYPE_LIST): #顔
 			unset_iid_list.append(self.equip.face)
 			self.equip.face = iid
 			set_part = 8 #9 before ver315
@@ -297,7 +371,7 @@ class PC:
 			unset_iid_list.append(self.equip.chestacce)
 			self.equip.chestacce = iid
 			set_part = 10
-		elif item.check_type("ONEPIECE"): #...
+		elif item.check_type(general.ONEPIECE_TYPE_LIST): #...
 			unset_iid_list.append(self.equip.tops)
 			unset_iid_list.append(self.equip.bottoms)
 			self.equip.tops = iid
@@ -309,13 +383,13 @@ class PC:
 			set_part = 11
 		elif item.check_type(general.LOWER_TYPE_LIST): #下半身
 			item_tops = self.item.get(self.equip.tops)
-			if item_tops and item_tops.check_type("ONEPIECE"):
+			if item_tops and item_tops.check_type(general.ONEPIECE_TYPE_LIST):
 				unset_iid_list.append(self.equip.tops)
 				self.equip.tops = 0
 			unset_iid_list.append(self.equip.bottoms)
 			self.equip.bottoms = iid
 			set_part = 12
-		elif item.check_type("BACKPACK"): #背中
+		elif item.check_type(general.BACKPACK_TYPE_LIST): #背中
 			unset_iid_list.append(self.equip.backpack)
 			self.equip.backpack = iid
 			set_part = 13
@@ -331,7 +405,7 @@ class PC:
 			unset_iid_list.append(self.equip.shoes)
 			self.equip.shoes = iid
 			set_part = 16
-		elif item.check_type("SOCKS"): #靴下
+		elif item.check_type(general.SOCKS_TYPE_LIST): #靴下
 			unset_iid_list.append(self.equip.socks)
 			self.equip.socks = iid
 			set_part = 17
@@ -341,81 +415,83 @@ class PC:
 			self.equip.pet = iid
 			self.set_pet()
 			set_part = 18
-		return filter(None, unset_iid_list), set_part
+		else: #装備しようとする装備タイプが不明の場合
+			general.log_error("[ pc  ] set_equip unknow item type", item)
+			self.map_send("09e8", iid, -1, -2, 1) #アイテム装備
+			return False
+		general.log("[ pc  ] set_equip", item)
+		unset_iid_list = filter(None, unset_iid_list)
+		for i in unset_iid_list:
+			self.sort.item.remove(i)
+			self.sort.item.append(i)
+			self.map_send("09e3", i, 0x02) #アイテム保管場所変更 #body
+			#self.map_send("0203", self.item[i], i, 0x02) #インベントリ情報
+		self.map_send("09e8", iid, set_part, 0, 1) #アイテム装備
+		self.map_send_map("09e9", self) #キャラの見た目を変更
+		#self.map_send_map_without_self("020e", self.pc) #キャラ情報
+		self.update_equip_status()
+		return True
 	
 	def unset_equip(self, *args):
 		with self.lock:
 			return self._unset_equip(*args)
-	def _unset_equip(self, iid):
+	def _unset_equip(self, iid, part):
 		if iid == 0:
-			return
-		elif self.equip.head == iid:
-			self.equip.head = 0
-		elif self.equip.face == iid:
-			self.equip.face = 0
-		elif self.equip.chestacce == iid:
-			self.equip.chestacce = 0
-		elif self.equip.tops == iid:
-			self.equip.tops = 0
-		elif self.equip.bottoms == iid:
-			self.equip.bottoms = 0
-		elif self.equip.backpack == iid:
-			self.equip.backpack = 0
-		elif self.equip.right == iid:
-			self.equip.right = 0
-		elif self.equip.left == iid:
-			self.equip.left = 0
-		elif self.equip.shoes == iid:
-			self.equip.shoes = 0
-		elif self.equip.socks == iid:
-			self.equip.socks = 0
-		elif self.equip.pet == iid:
-			self.equip.pet = 0
+			general.log_error("[ pc  ] unset_equip iid == 0", self)
+			return False
+		if iid not in self.item:
+			general.log_error("[ pc  ] unset_equip iid %d not exist"%iid, self)
+			return False
+		if self.equip.pet == iid:
 			self.unset_pet()
+		for attr in general.EQUIP_ATTR_LIST:
+			if getattr(self.equip, attr) == iid:
+				setattr(self.equip, attr, 0)
+		general.log_error("[ pc  ] unset_equip iid %d"%iid)
+		self.sort.item.remove(iid)
+		self.sort.item.append(iid)
+		self.map_send("09e3", iid, part) #アイテム保管場所変更
+		self.map_send("09e8", -1, -1, 1, 1) #アイテムを外す
+		self.map_send_map("09e9", self) #キャラの見た目を変更
+		self.update_equip_status()
+		return True
+	
+	def unset_all_equip(self):
+		with self.lock:
+			#part body 0x02
+			for attr in general.EQUIP_ATTR_LIST:
+				i = getattr(self.equip, attr)
+				if i:
+					self._unset_equip(i, 0x02)
 	
 	def in_equip(self, iid):
-		if iid == 0: return
-		elif self.equip.head == iid: return True
-		elif self.equip.face == iid: return True
-		elif self.equip.chestacce == iid: return True
-		elif self.equip.tops == iid: return True
-		elif self.equip.bottoms == iid: return True
-		elif self.equip.backpack == iid: return True
-		elif self.equip.right == iid: return True
-		elif self.equip.left == iid: return True
-		elif self.equip.shoes == iid: return True
-		elif self.equip.socks == iid: return True
-		elif self.equip.pet == iid: return True
-		else: return False
+		if iid == 0:
+			return
+		for equip in (self.equip_std, self.equip_dem):
+			for attr in general.EQUIP_ATTR_LIST:
+				if getattr(equip, attr) == iid:
+					return True
+		return False
 	
 	def get_equip_list(self):
 		with self.lock:
 			item_list = []
-			item_list.append(self.equip.head and self.item.get(self.equip.head))
-			item_list.append(self.equip.face and self.item.get(self.equip.face))
-			item_list.append(
-				self.equip.chestacce and self.item.get(self.equip.chestacce))
-			item_list.append(self.equip.tops and self.item.get(self.equip.tops))
-			item_list.append(
-				self.equip.bottoms and self.item.get(self.equip.bottoms))
-			item_list.append(
-				self.equip.backpack and self.item.get(self.equip.backpack))
-			item_list.append(self.equip.right and self.item.get(self.equip.right))
-			item_list.append(self.equip.left and self.item.get(self.equip.left))
-			item_list.append(self.equip.shoes and self.item.get(self.equip.shoes))
-			item_list.append(self.equip.socks and self.item.get(self.equip.socks))
-			#item_list.append(self.equip.pet and self.item.get(self.equip.pet))
-			return filter(None, item_list)
+			for attr in general.EQUIP_ATTR_LIST:
+				i = getattr(self.equip, attr)
+				if i:
+					item_list.append(self.item.get(i))
+		return filter(None, item_list)
 	
 	def item_append(self, item, place=0x02):
 		#0x02: body
 		with self.lock:
-			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
+			#min_iid = 1
+			item_iid = general.make_id(self.sort.item+self.sort.warehouse, 1)
 			self.item[item_iid] = item
 			self.sort.item.append(item_iid)
 			if self.online:
 				#アイテム取得
-				self.user.map_client.send("09d4", item, item_iid, place)
+				self.map_send("09d4", item, item_iid, place)
 				script.msg(self, "%sを%s個入手しました"%(item.name, item.count))
 	
 	def item_pop(self, iid):
@@ -428,7 +504,7 @@ class PC:
 				return None
 			if self.online:
 				#インベントリからアイテム消去
-				self.user.map_client.send("09ce", iid)
+				self.map_send("09ce", iid)
 				script.msg(self, "%sを%s個失いました"%(item.name, item.count))
 		return item
 	
@@ -439,7 +515,7 @@ class PC:
 			self.sort.warehouse.append(item_iid)
 			if self.online:
 				#倉庫インベントリーデータ
-				self.user.map_client.send("09f9", item, item_iid, 30)
+				self.map_send("09f9", item, item_iid, 30)
 				script.msg(self, "%sを%s個預りました"%(item.name, item.count))
 	
 	def warehouse_pop(self, iid):
@@ -480,16 +556,16 @@ class PC:
 			general.log("[ pc  ] cancel_trade")
 			p = self.get_trade_target()
 			#自分・相手がOKやキャンセルを押した際に双方に送信される
-			self.user.map_client.send("0a19", self)
+			self.map_send("0a19", self)
 			self.reset_trade()
-			self.user.map_client.send("0a1c") #トレード終了通知
+			self.map_send("0a1c") #トレード終了通知
 			if not p:
 				return
 			with p.lock and p.user.lock:
 				#自分・相手がOKやキャンセルを押した際に双方に送信される
-				p.user.map_client.send("0a19", p)
+				p.map_send("0a19", p)
 				p.reset_trade()
-				p.user.map_client.send("0a1c") #トレード終了通知
+				p.map_send("0a1c") #トレード終了通知
 	
 	def set_trade_ok(self):
 		#won't send item list, item list will send when call set_trade_list
@@ -500,9 +576,9 @@ class PC:
 				return
 			with p and p.user.lock:
 				#自分・相手がOKやキャンセルを押した際に双方に送信される
-				self.user.map_client.send("0a19", self, p)
+				self.map_send("0a19", self, p)
 				#自分・相手がOKやキャンセルを押した際に双方に送信される
-				p.user.map_client.send("0a19", p, self)
+				p.map_send("0a19", p, self)
 	
 	def set_trade_list(self, trade_gold, trade_list):
 		with self.lock and self.user.lock:
@@ -520,12 +596,12 @@ class PC:
 			elif p is None:
 				return
 			with p.lock and p.user.lock:
-				p.user.map_client.send("0a1f", self.trade_gold) #trade gold
-				p.user.map_client.send("0a20") #trade item header
+				p.map_send("0a1f", self.trade_gold) #trade gold
+				p.map_send("0a20") #trade item header
 				for iid, count in self.trade_list:
 					item = self.item.get(iid)
-					p.user.map_client.send("0a1e", item, count)
-				p.user.map_client.send("0a21") #trade item footer
+					p.map_send("0a1e", item, count)
+				p.map_send("0a21") #trade item footer
 	
 	def check_trade_list(self):
 		with self.lock:
@@ -559,7 +635,7 @@ class PC:
 					item_return = general.copy(item)
 					item_return.count = count
 					self.trade_return_list.append(item_return)
-					#self.user.map_client.send("09cf", item, iid) #アイテム個数変化
+					#self.map_send("09cf", item, iid) #アイテム個数変化
 					script.msg(self, "%sを%s個失いました"%(item.name, count))
 				else:
 					item_return = self.item_pop(iid)
@@ -602,25 +678,25 @@ class PC:
 							self.item_append(item)
 					self.reset_trade()
 					p.reset_trade()
-					self.user.map_client.send("0a1c") #トレード終了通知
-					p.user.map_client.send("0a1c") #トレード終了通知
-					self.user.map_client.update_item_status()
-					p.user.map_client.update_item_status()
+					self.map_send("0a1c") #トレード終了通知
+					p.map_send("0a1c") #トレード終了通知
+					self.update_item_status()
+					p.update_item_status()
 					script.update_item(self)
 					script.update_item(p)
 				else: #send trade status
 					#自分・相手がOKやキャンセルを押した際に双方に送信される
-					self.user.map_client.send("0a19", self, p)
+					self.map_send("0a19", self, p)
 					#自分・相手がOKやキャンセルを押した際に双方に送信される
-					p.user.map_client.send("0a19", p, self)
+					p.map_send("0a19", p, self)
 		elif p is False:
 			#target offline or map changed
 			self.cancel_trade()
 		else: #p is None: npctrade
 			self.set_trade_return()
 			self.reset_trade(False) #don't clear return list
-			self.user.map_client.send("0a1c") #トレード終了通知
-			self.user.map_client.update_item_status()
+			self.map_send("0a1c") #トレード終了通知
+			self.update_item_status()
 			script.update_item(self)
 	
 	def reset_trade(self, reset_return=True):
@@ -672,6 +748,25 @@ class PC:
 	
 	def unset_pet(self, logout=False):
 		return pets.unset_pet(self, logout)
+	
+	def dem_form_change(self, status):
+		if self.race != 3:
+			self.map_send("1e7e", -1, 0) #dem form change failed
+			return False
+		with self.lock:
+			#if not stable, it will back to unset all equip before change
+			#self.unset_all_equip()
+			if status:
+				self.equip = self.equip_dem
+			else:
+				self.equip = self.equip_std
+			self.form = status
+			script.update(self)
+			self.map_send("1e7e", 0, status) #dem form change success
+		return True
+	
+	def dem_form_status(self):
+		return (self.race == 3 and self.form != 0)
 	
 	def get_status(self, LV, STR, DEX, INT, VIT, AGI, MAG):
 		def get_base_status(self):
@@ -811,7 +906,9 @@ class PC:
 		self.attack_target = None
 		self.attack_delay = 0
 		self.sort = PC.Sort()
-		self.equip = PC.Equip()
+		self.equip_std = PC.Equip()
+		self.equip_dem = PC.Equip()
+		self.equip = self.equip_std
 		self.status = PC.Status()
 		self.reset_login()
 		self.load()
@@ -822,7 +919,8 @@ class PC:
 			pass
 	class Equip:
 		def __init__(self):
-			pass
+			for attr in general.EQUIP_ATTR_LIST:
+				setattr(self, attr, 0)
 	class Status:
 		def __init__(self):
 			self.maxhp = 0

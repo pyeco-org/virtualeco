@@ -190,24 +190,24 @@ def make_09e9(pc):
 		item_right, "d_motion", general.RIGHT_TYPE_LIST
 	)
 	#頭
-	result += pack_pict_id(item_head, "HELM")
+	result += pack_pict_id(item_head, general.HEAD_TYPE_LIST)
 	#頭アクセサリ
-	result += pack_pict_id(item_head, "ACCESORY_HEAD")
+	result += pack_pict_id(item_head, general.ACCESORY_HEAD_TYPE_LIST)
 	#顔
-	result += pack_pict_id(item_face, "FULLFACE")
+	result += pack_pict_id(item_face, general.FULLFACE_TYPE_LIST)
 	#顔アクセサリ
-	result += pack_pict_id(item_face, "ACCESORY_FACE")
+	result += pack_pict_id(item_face, general.ACCESORY_FACE_TYPE_LIST)
 	#胸アクセサリ
 	result += pack_pict_id(item_chestacce, general.ACCESORY_TYPE_LIST)
 	#上半身+下半身
-	if item_tops and item_tops.check_type("ONEPIECE"):
+	if item_tops and item_tops.check_type(general.ONEPIECE_TYPE_LIST):
 		result += pack_pict_id(item_tops, None)
 		result += general.pack_int(0)
 	else:
 		result += pack_pict_id(item_tops, general.UPPER_TYPE_LIST)
 		result += pack_pict_id(item_buttoms, general.LOWER_TYPE_LIST)
 	#背中
-	result += pack_pict_id(item_backpack, "BACKPACK")
+	result += pack_pict_id(item_backpack, general.BACKPACK_TYPE_LIST)
 	#右手装備
 	result += pack_pict_id(item_right, general.RIGHT_TYPE_LIST)
 	#左手装備
@@ -215,7 +215,7 @@ def make_09e9(pc):
 	#靴
 	result += pack_pict_id(item_shoes, general.BOOTS_TYPE_LIST)
 	#靴下
-	result += pack_pict_id(item_socks, "SOCKS")
+	result += pack_pict_id(item_socks, general.SOCKS_TYPE_LIST)
 	#ペット
 	result += pack_pict_id(item_pet, general.PET_TYPE_LIST)
 	#左手モーションタイプ size=3 (片手, 両手, 攻撃)
@@ -1332,6 +1332,12 @@ def make_020f(pc, pc_size):
 	result = general.pack_int(pc.id)
 	result += general.pack_unsigned_int(pc_size)
 	result += general.pack_unsigned_int(1500)
+	return result
+
+def make_1e7e(result, status):
+	"""dem form change result"""
+	result = general.pack_byte(result) #change result
+	result += general.pack_byte(status) #dem form status
 	return result
 
 name_map = general.get_name_map(globals(), "make_")

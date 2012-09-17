@@ -5,12 +5,13 @@ ID = 90000074
 
 def main(pc):
 	result = script.select(pc, (
-			"warehouse",
-			"warp",
-			"help",
-			"quit",
-			),
-		"select")
+		"warehouse",
+		"warp",
+		"help",
+		"printallequip",
+		"unsetallequip",
+		"exit",
+	), "select")
 	if result == 1:
 		script.warehouse(pc, 0)
 	elif result == 2:
@@ -18,4 +19,6 @@ def main(pc):
 	elif result == 3:
 		script.help(pc)
 	elif result == 4:
-		pass
+		script.printallequip(pc)
+	elif result == 5:
+		script.unsetallequip(pc)

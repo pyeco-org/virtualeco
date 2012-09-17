@@ -41,7 +41,7 @@ def set_pet(pc):
 			pet.set_map(pc.map_id)
 			pet.set_coord_from_master()
 			pet.set_dir(pc.dir)
-			pc.user.map_client.send_map("122f", pet) #pet info
+			pc.map_send_map("122f", pet) #pet info
 			general.log("[ pet ] set pet id %s"%(pc.pet.id))
 	return True
 
@@ -52,9 +52,9 @@ def unset_pet(pc, logout):
 			return
 		with pc.user.lock and pc.pet.lock:
 			if logout:
-				pc.user.map_client.send_map_without_self("1234", pc.pet) ##hide pet
+				pc.map_send_map_without_self("1234", pc.pet) ##hide pet
 			else:
-				pc.user.map_client.send_map("1234", pc.pet) ##hide pet
+				pc.map_send_map("1234", pc.pet) ##hide pet
 			with pet_list_lock:
 				pet_list.remove(pc.pet)
 				pet_id_list.remove(pc.pet.id)
