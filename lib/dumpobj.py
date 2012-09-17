@@ -11,12 +11,16 @@ class LoadError(Exception): pass
 class DumpError(Exception): pass
 
 def _read_block(s):
-	i = s.tell()
-	l = filter(
-		lambda i: i != -1,
-		(s.getvalue().find(mask, i) for mask in (",", ":", "]", "}", ")", " "))
-	)
-	return s.read(min(l)-i) if l else s.read()
+	buf = []
+	while True:
+		j = s.read(1)
+		if not j:
+			break
+		if j in (",", ":", "]", "}", ")", " "):
+			s.seek(s.tell()-1)
+			break
+		buf.append(j)
+	return "".join(buf)
 def _seek_block(s, mask):
 	while True:
 		j = s.read(1)
@@ -196,7 +200,7 @@ def _dump_obj(i):
 def dumps(i):
 	return _dump_obj(i)
 
-if __name__ == "__main__":
+def _test_data():
 	s = dumps({
 		"string": "abc",
 		"int": 123,
@@ -205,7 +209,7 @@ if __name__ == "__main__":
 		"unicode": u"abcde",
 		"dict": {
 			"dict_int": -123,
-			"dict_string": "↓↓↓↓↓",
+			"dict_string": "☆★☆★☆",
 		},
 		"list": [10, 100, (101, True, None)],
 		0: [("", "", [])],
@@ -218,3 +222,23 @@ if __name__ == "__main__":
 	s = dumps("".join((chr(i) for i in xrange(256))))
 	print s
 	print loads(s)
+
+def _test_performance():
+	import time
+	
+	start = time.time()
+	print "start dump"
+	for i in xrange(1000000):
+		s = dumps({-1:"0", "0":"HELLOWORLD", True:100000000})
+	print time.time()-start
+	
+	start = time.time()
+	print "start load"
+	for i in xrange(1000000):
+		aa = loads(s)
+	print time.time()-start
+	print "done."
+
+if __name__ == "__main__":
+	_test_data()
+	_test_performance()
