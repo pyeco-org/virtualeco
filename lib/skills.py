@@ -17,8 +17,8 @@ def use(pc, target_id, x, y, skill_id, skill_lv):
 
 def use_thread(mod, pc, target_id, x, y, skill_id, skill_lv):
 	try:
-		with pc.lock:
-			mod(pc, target_id, x, y, skill_id, skill_lv)
+		#with pc.lock: #remove global lock because time.sleep blocking
+		mod(pc, target_id, x, y, skill_id, skill_lv)
 	except:
 		general.log_error("[skill] error", pc, target_id, x, y, skill_id, skill_lv)
 		general.log_error(traceback.format_exc())
