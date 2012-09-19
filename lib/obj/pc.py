@@ -314,6 +314,7 @@ class PC:
 		with self.lock:
 			self.motion_id = motion_id
 			self.motion_loop = True if motion_loop else False
+		self.map_send_map("121c", self) #モーション通知
 	
 	def set_coord(self, x, y):
 		with self.lock:

@@ -77,6 +77,9 @@ class Pet:
 		with self.lock:
 			self.motion_id = motion_id
 			self.motion_loop = True if motion_loop else False
+		self.master.map_send_map(
+			"121c", self.master, self.id, self.motion_id, self.motion_loop
+		) #モーション通知
 	
 	def set_coord_from_master(self):
 		with self.lock and self.master.lock:

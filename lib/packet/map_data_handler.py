@@ -286,7 +286,7 @@ class MapDataHandler:
 		general.log("[ map ] motion %d loop %s"%(motion_id, loop))
 		#self.pc.set_motion(motion_id, loop)
 		#self.send_map("121c", self.pc) #モーション通知
-		script.motion(self.pc, motion_id, loop)
+		self.pc.set_motion(motion_id, loop)
 		if motion_id == 135 and loop: #ログアウト開始
 			general.log("[ map ]", "start logout")
 			self.send("0020", self.pc, "logoutstart")
@@ -328,6 +328,7 @@ class MapDataHandler:
 				general.log("[ map ] logout cancel")
 				self.pc.logout = False
 				self.send("0020", self.pc, "logoutcancel")
+			self.pc.set_motion(111, True)
 			if not self.pc.pet:
 				return
 			with self.pc.pet.lock:
@@ -349,9 +350,9 @@ class MapDataHandler:
 	def do_13ba(self, data_io):
 		#座る/立つの通知
 		if self.pc.motion_id != 135:
-			script.motion(self.pc, 135, True) #座る
+			self.pc.set_motion(135, True) #座る
 		else:
-			script.motion(self.pc, 111, True) #立つ
+			self.pc.set_motion(111, True) #立つ
 	
 	def do_03e8(self, data_io):
 		#オープンチャット送信
@@ -665,8 +666,8 @@ class MapDataHandler:
 		self.send_map("11f9", self.pc, 0x01) #キャラ移動アナウンス 向き変更のみ
 		self.send_map("11f9", p, 0x01) #キャラ移動アナウンス 向き変更のみ
 		motion = random.choice((113, 163, 164))
-		script.motion(self.pc, motion, False)
-		script.motion(p, motion, False)
+		self.pc.set_motion(motion, False)
+		p.set_motion(motion, False)
 	
 	def do_0a0a(self, data_io):
 		#send trade ask

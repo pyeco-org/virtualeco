@@ -399,8 +399,6 @@ def wingcolor(pc, wingcolor_id):
 def motion(pc, motion_id, motion_loop=False):
 	general.assert_value_range("motion_id", motion_id, general.RANGE_UNSIGNED_SHORT)
 	pc.set_motion(motion_id, motion_loop)
-	with pc.lock and pc.user.lock:
-		pc.map_send_map("121c", pc) #モーション通知
 
 def motion_loop(pc, motion_id):
 	motion(pc, motion_id, True)
@@ -754,8 +752,6 @@ def petmotion(pc, motion_id, motion_loop=False):
 		if not pc.pet:
 			return
 		pc.pet.set_motion(motion_id, motion_loop)
-		#モーション通知
-		pc.map_send_map("121c", pc, pc.pet.id, motion_id, motion_loop)
 
 def petmotion_loop(pc, motion_id):
 	petmotion(pc, motion_id, True)
