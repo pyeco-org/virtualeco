@@ -251,6 +251,7 @@ DATABASE_ROW_MAP_RAW = {
 		"ドロップ": NULL,
 		"ドロップアイテム": NULL,
 		"旅人のメモ": NULL,
+		"パーティ": NULL,
 	},
 	"npc": {
 		"#NPCID": (dbint, "npc_id"),

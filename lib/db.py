@@ -47,6 +47,8 @@ def get_raw_dict(name):
 		for line in db_file:
 			if line.startswith("#"):
 				continue
+			if line in ("\n", "\r\n"):
+				continue
 			row = line.split(",")
 			if len(row) < min_length:
 				continue
@@ -55,7 +57,7 @@ def get_raw_dict(name):
 				try:
 					d[value[1]] = value[0](row[i])
 				except:
-					general.log_error("attr:", attr_type, attr_name)
+					general.log_error("attr:", value)
 					raise
 			raw_dict[int(row[0])] = d
 	
