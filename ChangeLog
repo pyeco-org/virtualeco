@@ -1,5 +1,10 @@
 2012-09-20
 	update db to 346
+	make pet heart visible
+	save item data with dumpobj
+	add lib.env.USERDATA_FORMAT_VERSION
+	add lib.obj.pc_data_lib to load mutil-version pc data
+	add lib.users.upgrade_user_data
 
 2012-09-17
 	limited support dem parts and form change

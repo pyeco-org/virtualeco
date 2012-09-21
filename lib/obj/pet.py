@@ -34,19 +34,19 @@ class Pet:
 		self.motion_id = 111
 		self.motion_loop = False
 		self.lv_base = 1
-		#for CreatePacket.create020e
-		self.race = 0
-		self.form = 0
-		self.gender = 1
-		self.hair = 0
-		self.haircolor = 0
-		self.wig = 0
-		self.face = 0
-		self.base_lv = 0
-		self.ex = 0
-		self.wing = 0
-		self.wingcolor = 0
-		self.wrprank = 0
+		#for packet.make_020e
+		self.race = -1
+		self.form = -1
+		self.gender = -1
+		self.hair = -1
+		self.haircolor = -1
+		self.wig = -1
+		self.face = -1
+		self.base_lv = -1
+		self.ex = -1
+		self.wing = -1
+		self.wingcolor = -1
+		self.wrprank = -1
 		self.size = 1000
 		self.standby = False
 		self.item = {1: Pet.Item(self.pict_id)}

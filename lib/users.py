@@ -320,6 +320,12 @@ def save_user_data_atexit():
 			p.save()
 		except:
 			general.log_error(traceback.format_exc(), p)
+def upgrade_user_data():
+	for p in get_pc_list():
+		try:
+			p.save()
+		except:
+			general.log_error(traceback.format_exc(), p)
 
 def load():
 	global general, PC, server

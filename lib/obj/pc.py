@@ -12,6 +12,7 @@ from lib import pets
 from lib import users
 from lib import script
 from lib import dumpobj
+from lib.obj import pc_data_lib
 
 class PC:
 	def __str__(self):
@@ -19,177 +20,12 @@ class PC:
 	
 	def load(self):
 		with self.lock:
-			self._load()
-	def _load(self):
-		cfg = general.get_config(self.path, base=env.USER_DIR)
-		self.id = cfg.getint("main","id")
-		self.name = cfg.get("main","name")
-		self.gmlevel = cfg.getint("main","gmlevel")
-		self.race = cfg.getint("main","race")
-		self.form = cfg.getint("main","form")
-		self.gender = cfg.getint("main","gender")
-		self.hair = cfg.getint("main","hair")
-		self.haircolor =cfg.getint("main","haircolor")
-		self.wig = cfg.getint("main","wig")
-		self.face = cfg.getint("main","face")
-		self.base_lv = cfg.getint("main","base_lv")
-		self.ex = cfg.getint("main","ex")
-		self.wing = cfg.getint("main","wing")
-		self.wingcolor = cfg.getint("main","wingcolor")
-		self.job = cfg.getint("main","job")
-		self.map_id = cfg.getint("main","map_id")
-		self.lv_base = cfg.getint("main","lv_base")
-		self.lv_job1 = cfg.getint("main","lv_job1")
-		self.lv_job2x = cfg.getint("main","lv_job2x")
-		self.lv_job2t = cfg.getint("main","lv_job2t")
-		self.lv_job3 = cfg.getint("main","lv_job3")
-		self.gold = cfg.getint("main","gold")
-		self.x = cfg.getfloat("main","x")
-		self.y = cfg.getfloat("main","y")
-		self.dir = cfg.getint("main","dir")
-		self.str = cfg.getint("status","str")
-		self.dex = cfg.getint("status","dex")
-		self.int = cfg.getint("status","int")
-		self.vit = cfg.getint("status","vit")
-		self.agi = cfg.getint("status","agi")
-		self.mag = cfg.getint("status","mag")
-		self.stradd = cfg.getint("status","stradd")
-		self.dexadd = cfg.getint("status","dexadd")
-		self.intadd = cfg.getint("status","intadd")
-		self.vitadd = cfg.getint("status","vitadd")
-		self.agiadd = cfg.getint("status","agiadd")
-		self.magadd = cfg.getint("status","magadd")
-		#{item_iid: item_object, ...}
-		self.item = {}
-		self.sort.item = general.str_to_list(cfg.get("sort", "item"))
-		for i in self.sort.item:
-			if i <= 0:
-				general.log_error("[ pc  ] item iid < 0", self)
-			itemcfg = general.str_to_list(cfg.get("item", str(i)))
-			item = general.get_item(itemcfg[0])
-			item.count = itemcfg[1]
-			self.item[i] = item
-		#{item_iid: item_object, ...}
-		self.warehouse = {}
-		self.sort.warehouse = general.str_to_list(cfg.get("sort", "warehouse"))
-		for i in self.sort.warehouse:
-			if i <= 0:
-				general.log_error("[ pc  ] warehouse iid < 0", self)
-			itemcfg = general.str_to_list(cfg.get("warehouse", str(i)))
-			item = general.get_item(itemcfg[0])
-			item.count = itemcfg[1]
-			item.warehouse = itemcfg[2]
-			self.warehouse[i] = item
-		#equip.place = iid
-		for attr in general.EQUIP_ATTR_LIST:
-			setattr(self.equip_std, attr, cfg.getint("equip", attr))
-		if cfg.has_section("equip_dem"):
-			for attr in general.EQUIP_ATTR_LIST:
-				setattr(self.equip_dem, attr, cfg.getint("equip_dem", attr))
-		#{name: value, ...}
-		self.var = {}
-		if cfg.has_section("dic"): #load droped str:str dictionary
-			for option in cfg.options("dic"):
-				self.var[option] = cfg.get("dic", option)
-		if cfg.has_section("var"):
-			for key in cfg.options("var"):
-				try:
-					self.var[key] = dumpobj.loads(cfg.get("var", key))
-				except:
-					general.log_error("[ pc  ] load var error", self, key)
-					general.log_error(traceback.format_exc())
-		#[skill_id, ...]
-		self.skill_list = general.str_to_list(cfg.get("skill", "list"))
-		if self.dem_form_status():
-			self.equip = self.equip_dem
-		else:
-			self.equip = self.equip_std
+			pc_data_lib.load(self)
 	
 	def save(self):
 		with self.lock:
-			self._save()
+			pc_data_lib.save(self)
 			#general.log(self, "save")
-	def _save(self):
-		cfg = general.get_config()
-		cfg.add_section("main")
-		cfg.set("main", "id", str(self.id))
-		cfg.set("main", "name", str(self.name))
-		cfg.set("main", "gmlevel", str(self.gmlevel))
-		cfg.set("main", "race", str(self.race))
-		cfg.set("main", "form", str(self.form))
-		cfg.set("main", "gender", str(self.gender))
-		cfg.set("main", "hair", str(self.hair))
-		cfg.set("main", "haircolor", str(self.haircolor))
-		cfg.set("main", "wig", str(self.wig))
-		cfg.set("main", "face", str(self.face))
-		cfg.set("main", "base_lv", str(self.base_lv))
-		cfg.set("main", "ex", str(self.ex))
-		cfg.set("main", "wing", str(self.wing))
-		cfg.set("main", "wingcolor", str(self.wingcolor))
-		cfg.set("main", "job", str(self.job))
-		cfg.set("main", "map_id", str(self.map_id))
-		cfg.set("main", "lv_base", str(self.lv_base))
-		cfg.set("main", "lv_job1", str(self.lv_job1))
-		cfg.set("main", "lv_job2x", str(self.lv_job2x))
-		cfg.set("main", "lv_job2t", str(self.lv_job2t))
-		cfg.set("main", "lv_job3", str(self.lv_job3))
-		cfg.set("main", "gold", str(self.gold))
-		cfg.set("main", "x", str(self.x))
-		cfg.set("main", "y", str(self.y))
-		cfg.set("main", "dir", str(self.dir))
-		cfg.add_section("status")
-		cfg.set("status", "str", str(self.str))
-		cfg.set("status", "dex", str(self.dex))
-		cfg.set("status", "int", str(self.int))
-		cfg.set("status", "vit", str(self.vit))
-		cfg.set("status", "agi", str(self.agi))
-		cfg.set("status", "mag", str(self.mag))
-		cfg.set("status", "stradd", str(self.stradd))
-		cfg.set("status", "dexadd", str(self.dexadd))
-		cfg.set("status", "intadd", str(self.intadd))
-		cfg.set("status", "vitadd", str(self.vitadd))
-		cfg.set("status", "agiadd", str(self.agiadd))
-		cfg.set("status", "magadd", str(self.magadd))
-		cfg.add_section("equip")
-		for attr in general.EQUIP_ATTR_LIST:
-			cfg.set("equip", attr, str(getattr(self.equip_std, attr)))
-		cfg.add_section("equip_dem")
-		for attr in general.EQUIP_ATTR_LIST:
-			cfg.set("equip_dem", attr, str(getattr(self.equip_dem, attr)))
-		#"iid,iid,iid, ..."
-		cfg.add_section("sort")
-		cfg.set("sort", "item", general.list_to_str(self.sort.item))
-		cfg.set("sort", "warehouse", general.list_to_str(self.sort.warehouse))
-		#"iid = id,count"
-		cfg.add_section("item")
-		for i in self.item:
-			cfg.set("item", str(i),
-				general.list_to_str((
-				self.item[i].item_id,
-				self.item[i].count)))
-		#"iid = id,count,warehouse"
-		cfg.add_section("warehouse")
-		for i in self.warehouse:
-			cfg.set("warehouse", str(i),
-				general.list_to_str((
-				self.warehouse[i].item_id,
-				self.warehouse[i].count,
-				self.warehouse[i].warehouse)))
-		#"name = value"
-		cfg.add_section("var")
-		for key, value in self.var.iteritems():
-			try:
-				dump = dumpobj.dumps(value)
-			except:
-				general.log_error("[ pc  ] dump var error", self, key, value)
-				general.log_error(traceback.format_exc())
-				dump = str(value)
-			cfg.set("var", str(key), dump)
-		#"skill_id,skill_id,skill_id, ..."
-		cfg.add_section("skill")
-		cfg.set("skill", "list", general.list_to_str(self.skill_list))
-		#
-		cfg.write(open(self.path, "wb", base=env.USER_DIR))
 	
 	def map_send(self, *args):
 		if not self.user.map_client:
