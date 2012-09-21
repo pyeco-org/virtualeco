@@ -22,7 +22,7 @@ if USE_NULL_KEY:
 	PUBLIC_KEY_BYTES = "\x00"*0x100
 else:
 	#get key info (server private key / public key)
-	GENERATOR = 2
+	GENERATOR = 3
 	PRIME = general.get_prime()
 	PRIVATE_KEY = general.get_private_key()
 	PUBLIC_KEY = general.get_public_key(GENERATOR, PRIVATE_KEY, PRIME)

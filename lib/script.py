@@ -387,7 +387,7 @@ def ex(pc, ex_id):
 def wing(pc, wing_id):
 	general.assert_value_range("wing_id", wing_id, general.RANGE_BYTE)
 	with pc.lock:
-		pc.ex = wing_id
+		pc.wing = wing_id
 	update(pc)
 
 def wingcolor(pc, wingcolor_id):

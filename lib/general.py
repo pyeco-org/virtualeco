@@ -503,8 +503,8 @@ def int_to_bytes(i, length=0x100):
 		hex_code = hex_code[2:]
 	if hex_code.endswith("L"):
 		hex_code = hex_code[:-1]
-	#return "0"*(length-len(hex_code))+hex_code
-	return hex_code+"0"*(length-len(hex_code))
+	return "0"*(length-len(hex_code))+hex_code
+	#return hex_code+"0"*(length-len(hex_code))
 def bytes_to_int(bytes):
 	return int(bytes, 16)
 def get_prime():
@@ -526,7 +526,7 @@ def get_prime():
 	return 175012832246148469004952309893923119007504294868274830650101802243580016468616226644476369579140157420542034349400995694097261371077961674039236035533383172308367706779425637041402045013194820474112524204508905916696893254410707373670063475235242589213472899328698912258375583335003993274863729669402122894589
 def get_private_key():
 	#server private key
-	return int(hashlib.sha1(str(time.time())).hexdigest(), 16)
+	return int(hashlib.sha512(str(time.time())).hexdigest(), 16)
 def get_public_key(generator, private_key, prime):
 	#server public key
 	return pow(generator, private_key, prime)
