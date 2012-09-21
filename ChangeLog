@@ -5,6 +5,7 @@
 	add lib.env.USERDATA_FORMAT_VERSION
 	add lib.obj.pc_data_lib to load mutil-version pc data
 	add lib.users.upgrade_user_data
+	support set and save pet_pict_id and pet_weapon_id
 
 2012-09-17
 	limited support dem parts and form change

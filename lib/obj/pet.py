@@ -3,6 +3,9 @@
 import sys
 import threading
 from lib import db
+from lib import general
+from lib.data import item as data_item
+from lib.obj import pc as obj_pc
 
 class Pet:
 	def __init__ (self, d):
@@ -15,7 +18,7 @@ class Pet:
 	def __str__(self):
 		return "%s<%s, %s>"%(repr(self), self.pet_id, self.name)
 	
-	def reset(self):
+	def reset(self, item=None):
 		if self.map_obj:
 			with self.map_obj.lock:
 				self.map_obj.pet_list.remove(self)
@@ -33,8 +36,9 @@ class Pet:
 		self.speed = 310 #410
 		self.motion_id = 111
 		self.motion_loop = False
+		self.standby = False
 		self.lv_base = 1
-		#for packet.make_020e
+		#packet.make_020e
 		self.race = -1
 		self.form = -1
 		self.gender = -1
@@ -48,9 +52,20 @@ class Pet:
 		self.wingcolor = -1
 		self.wrprank = -1
 		self.size = 1000
-		self.standby = False
-		self.item = {1: Pet.Item(self.pict_id)}
-		self.equip = Pet.Equip()
+		#packet.make_09e9
+		if not item:
+			return
+		self.item = {1: data_item.Item({
+			"item_id": -1,
+			"pict_id": item.__dict__.get("pet_pict_id") or self.pict_id,
+			"type": "HELM",
+		})}
+		self.equip = obj_pc.PC.Equip()
+		self.equip.head = 1
+		i = item.__dict__.get("pet_weapon_id")
+		if i:
+			self.item[7] = general.get_item(i)
+			self.equip.right = 7
 	
 	def set_map(self, *args):
 		with self.lock:
@@ -130,24 +145,3 @@ class Pet:
 		with self.lock:
 			self.rawdir = rawdir
 			self.dir = int(round(rawdir/45.0, 0))
-	
-	class Item:
-		def __init__(self, i):
-			self.item_id = i
-			self.pict_id = 0
-			self.type = "HELM"
-		def get_pict_id(self, *args):
-			return self.item_id
-	class Equip:
-		def __init__(self):
-			self.head = 1
-			self.face = 0
-			self.chestacce = 0
-			self.tops = 0
-			self.bottoms = 0
-			self.backpack = 0
-			self.right = 0
-			self.left = 0
-			self.shoes = 0
-			self.socks = 0
-			self.pet = 0

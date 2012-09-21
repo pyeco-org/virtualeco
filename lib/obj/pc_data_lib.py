@@ -14,15 +14,18 @@ from lib import script
 from lib import dumpobj
 ITEM_DUMP_ATTR_LIST = (
 	"item_id",
-	"pict_id",
 	"count",
 	"warehouse",
+	"pet_pict_id",
+	"pet_weapon_id",
 )
 
 def item_dumps(i):
 	l = {}
 	for attr in ITEM_DUMP_ATTR_LIST:
-		l[attr] = getattr(i, attr)
+		j = i.__dict__.get(attr)
+		if j:
+			l[attr] = j
 	return dumpobj.dumps(l)
 
 def item_loads(s):

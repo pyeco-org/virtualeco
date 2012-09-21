@@ -26,7 +26,7 @@ def set_pet(pc):
 		if not pet:
 			#general.log("[ pet ] set_pet failed: pet not exist")
 			return False
-		pet.reset()
+		pet.reset(item)
 		with pet_list_lock:
 			pet_id = general.make_id(pet_id_list, PET_ID_START_FROM)
 			if pet_id >= MAX_PET_ID:

@@ -72,6 +72,7 @@ RIGHT_TYPE_LIST = (
 	"PARTS_SLASH", #dem
 	"PARTS_STAB", #dem
 	"PARTS_LONGRANGE", #dem
+	"UNION_WEAPON", #pet
 )
 LEFT_TYPE_LIST = (
 	"BOW",
