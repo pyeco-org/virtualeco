@@ -1,3 +1,12 @@
+2012-09-23
+	let pet motion refer master (sit and stand)
+	replace thread.start_new_thread to threading.Thread
+
+2012-09-21
+	support set and save pet_pict_id and pet_weapon_id
+	fix script.wing set wrong attribute problem
+	modify some enc parameter
+
 2012-09-20
 	update db to 346
 	make pet heart visible
@@ -5,9 +14,6 @@
 	add lib.env.USERDATA_FORMAT_VERSION
 	add lib.obj.pc_data_lib to load mutil-version pc data
 	add lib.users.upgrade_user_data
-	support set and save pet_pict_id and pet_weapon_id
-	fix script.wing set wrong attribute problem
-	modify some enc parameter
 
 2012-09-17
 	limited support dem parts and form change

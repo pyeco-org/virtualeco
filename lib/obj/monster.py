@@ -4,7 +4,7 @@ import sys
 import os
 import threading
 import traceback
-import thread
+#import thread
 from lib import general
 from lib import db
 from lib import script
@@ -75,7 +75,7 @@ class Monster:
 			if self.status.hp <= 0:
 				self.status.hp = 0
 				state01 = 0x200 #行動不能
-				thread.start_new_thread(monsters.delete_monster_thread, (self,))
+				general.start_thread(monsters.delete_monster_thread, (self,))
 		script.send_map_obj(self.map_obj, (), "021c", self) #現在のHP/MP/SP/EP
 		script.send_map_obj(self.map_obj, (), "157c", self, state01) #キャラの状態
 		return self.status.hp

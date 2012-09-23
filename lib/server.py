@@ -3,7 +3,7 @@
 import sys
 import os
 import socket
-import thread
+#import thread
 import threading
 import traceback
 import struct
@@ -37,7 +37,7 @@ PACKET_KEY_EXCHANGE = "".join((
 	general.pack_int(1)+str(GENERATOR), #generator
 	general.pack_int(0x100)+PRIME_BYTES, #prime
 	general.pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
-	))
+))
 PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
 PACKET_INIT_LENGTH = len(PACKET_INIT)
 PACKET_NULL_KEY = "\x00\x00\x00\x01\x30"

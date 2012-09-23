@@ -3,7 +3,7 @@
 import sys
 import os
 import time
-import thread
+#import thread
 import threading
 import hashlib
 import traceback
@@ -292,7 +292,7 @@ def backup_user_data_every_day():
 	global backup_user_data_every_day_thread_running
 	if not backup_user_data_every_day_thread_running:
 		backup_user_data_every_day_thread_running = True
-		thread.start_new_thread(backup_user_data_every_day_thread, ())
+		general.start_thread(backup_user_data_every_day_thread, ())
 
 def save_user_data():
 	try:
@@ -312,7 +312,7 @@ def save_user_data_every_min():
 	global save_user_data_every_min_thread_running
 	if not save_user_data_every_min_thread_running:
 		save_user_data_every_min_thread_running = True
-		thread.start_new_thread(save_user_data_every_min_thread, ())
+		general.start_thread(save_user_data_every_min_thread, ())
 def save_user_data_atexit():
 	for p in get_online_pc_list():
 		try:

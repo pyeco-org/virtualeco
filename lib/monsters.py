@@ -4,7 +4,7 @@ import sys
 import os
 import time
 import threading
-import thread
+#import thread
 import traceback
 from lib.packet import packet
 from lib import general

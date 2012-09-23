@@ -4,7 +4,7 @@ import sys
 import os
 import time
 import traceback
-import thread
+import threading
 from lib import general
 from lib import monsters
 
@@ -12,7 +12,7 @@ def use(pc, target_id, x, y, skill_id, skill_lv):
 	mod = name_map.get(str(skill_id))
 	if mod is None:
 		return None
-	thread.start_new_thread(use_thread, (mod, pc, target_id, x, y, skill_id, skill_lv))
+	general.start_thread(use_thread, (mod, pc, target_id, x, y, skill_id, skill_lv))
 	return True
 
 def use_thread(mod, pc, target_id, x, y, skill_id, skill_lv):

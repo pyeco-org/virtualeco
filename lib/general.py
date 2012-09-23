@@ -7,7 +7,7 @@ import struct
 import marshal
 import traceback
 import zipfile
-import thread
+#import thread
 import hashlib
 import random
 import copy as py_copy
@@ -639,4 +639,12 @@ def make_id(id_list_exist, min_id=0):
 			i = j
 	i += 1
 	log("[gener] make_id", sorted_list, min_id, i)
+	return i
+
+def start_thread(method, args):
+	#use threading.Thread replace thread.start_new_thread
+	#will list the active thread in threading.enumerate
+	i = threading.Thread(None, method, None, args)
+	i.setDaemon(True)
+	i.start()
 	return i

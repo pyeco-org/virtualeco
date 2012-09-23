@@ -3,6 +3,8 @@
 import sys
 import os
 import threading
+import traceback
+import time
 from lib import general
 PET_ID_START_FROM = 20000
 MAX_PET_ID = 30000

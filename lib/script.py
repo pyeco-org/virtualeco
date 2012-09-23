@@ -3,7 +3,7 @@
 import sys
 import os
 import time
-import thread
+#import thread
 import threading
 import traceback
 from lib import env
@@ -78,10 +78,13 @@ def run_script(pc, event_id):
 			pc.map_send("05dd") #イベント終了の通知
 
 def run(pc, event_id):
+	#vulnerability:
+	#* send a lot of event or skill request can make thread number
+	#* reached the system limits
 	#if pc.event_id:
 	#	general.log_error("script.run error: event duplicate", pc, pc.event_id)
 	#	return
-	thread.start_new_thread(run_script, (pc, event_id))
+	general.start_thread(run_script, (pc, event_id))
 
 def send_map(map_id, *args):
 	map_obj = general.get_map(map_id)
