@@ -338,9 +338,9 @@ class MapDataHandler:
 				#pet_x = self.pc.pet.x+(new_x-old_x)
 				#pet_y = self.pc.pet.y+(new_y-old_y)
 				#self.pc.pet.set_coord(pet_x, pet_y)
-				self.pc.pet.set_coord_from_master()
+				#self.pc.pet.set_coord_from_master()
 				self.pc.pet.set_raw_dir(rawdir)
-				self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
+				#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
 	def do_020d(self, data_io):
 		#キャラクタ情報要求

@@ -95,6 +95,11 @@ def get_monster_from_id(i):
 			if monster.id == i:
 				return monster
 
+def init():
+	global obj_monster
+	from lib.obj import monster as obj_monster
+	obj_monster.init()
+
 #color
 #0x01 hp damage
 #0x02 mp damage

@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys
+import os
 import threading
+import traceback
+import time
 from lib import db
 from lib import general
-from lib.data import item as data_item
-from lib.obj import pc as obj_pc
 
 class Pet:
 	def __init__ (self, d):
@@ -19,9 +20,6 @@ class Pet:
 		return "%s<%s, %s>"%(repr(self), self.pet_id, self.name)
 	
 	def reset(self, item=None):
-		if self.map_obj:
-			with self.map_obj.lock:
-				self.map_obj.pet_list.remove(self)
 		self.id = 0
 		self.lock = threading.RLock()
 		self.master = None # PC()
@@ -97,6 +95,7 @@ class Pet:
 		) #モーション通知
 	
 	def set_coord_from_master(self):
+		#instead by _run_near_master, only use in pets.set_pet
 		with self.lock and self.master.lock:
 			if self.master.dir == 0:
 				self.set_coord(self.master.x, self.master.y-0.5)
@@ -145,3 +144,79 @@ class Pet:
 		with self.lock:
 			self.rawdir = rawdir
 			self.dir = int(round(rawdir/45.0, 0))
+
+class PetObject(threading.Thread, Pet):
+	def __init__(self, data):
+		self.__dict__.update(data.__dict__)
+		threading.Thread.__init__(self)
+		self.name = data.name #set thread name to pet name
+		self.wait_motion = None
+		self.wait_motion_loop = None
+		self.wait_motion_time = None
+		self.wait_move_time = None
+		self.setDaemon(True)
+		self.running = True
+	
+	def __str__(self):
+		if self.master:
+			return "%s<%s, %s>"%(repr(self), self.pet_id, self.master.id)
+		else:
+			return "%s<%s, %s>"%(repr(self), self.pet_id, -1)
+	
+	def stop(self):
+		#will block 0 ~ sleep sec in join()
+		self.running = False
+		self.join()
+		if self.map_obj:
+			with self.map_obj.lock:
+				self.map_obj.pet_list.remove(self)
+		general.log("[ pet ] %s stop"%self)
+	
+	def _run_near_master(self):
+		if time.time() - self.wait_move_time < 0.5:
+			return
+		self.wait_move_time = time.time()
+		i = self.master.x - self.x
+		j = self.master.y - self.y
+		n = abs(i)
+		m = abs(j)
+		if n<=1 and m<=1:
+			return
+		if n > m:
+			x = self.x if (n<=1) else ((self.x+1) if (i>0) else (self.x-1))
+			y = self.y if (m<=1) else ((self.y+m/n) if (j>0) else (self.y-m/n))
+		else:
+			x = self.x if (n<=1) else ((self.x+n/m) if (i>0) else (self.x-n/m))
+			y = self.y if (m<=1) else ((self.y+1) if (j>0) else (self.y-1))
+		self.set_coord(x, y)
+		self.master.map_send_map("11f9", self, 0x06) #キャラ移動アナウンス #歩き
+	
+	def _run_set_motion(self):
+		if not self.wait_motion_time:
+			return
+		if time.time()<self.wait_motion_time:
+			return
+		self.set_motion(self.wait_motion, self.wait_motion_loop)
+		self.wait_motion = None
+		self.wait_motion_loop = None
+		self.wait_motion_time = None
+	
+	def _run(self):
+		self._run_near_master()
+		self._run_set_motion()
+	
+	def run(self):
+		try:
+			general.log("[ pet ] %s start"%self)
+			self.wait_move_time = time.time()+1
+			while self.running:
+				self._run()
+				time.sleep(0.1)
+		except:
+			general.log_error(traceback.format_exc())
+			general.log_error(self, self.master)
+
+def init():
+	global data_item, obj_pc
+	from lib.data import item as data_item
+	from lib.obj import pc as obj_pc

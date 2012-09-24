@@ -12,6 +12,7 @@ from lib import db
 from lib import server
 from lib import users
 from lib import pets
+from lib import monsters
 from lib import script
 from lib import web
 from lib import general
@@ -48,6 +49,8 @@ def init():
 	if env.USE_LOGFILE:
 		general.use_log()
 	server.init()
+	monsters.init()
+	pets.init()
 
 def load():
 	env.LOAD_STARTUP_TIME = time.time()

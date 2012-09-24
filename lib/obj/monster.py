@@ -116,3 +116,6 @@ class Monster:
 			self.maxsp = 1
 			self.ep = 0
 			self.maxep = 0
+
+def init():
+	pass

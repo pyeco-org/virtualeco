@@ -153,27 +153,16 @@ class PC:
 			self.motion_loop = True if motion_loop else False
 		self.map_send_map("121c", self) #モーション通知
 		#let pet motion refer master
-		if self.pet:
-			self.set_pet_motion_delay(motion_id, motion_loop, 0.5)
-	
-	def _set_pet_motion_delay(self, motion_id, loop, delay):
-		try:
-			with self.lock:
-				if not self.pet:
-					return
-				if motion_id == 135 and loop: pass
-				elif self.pet.motion_id == 135: #座る
-					motion_id = 111 #立つ
-				else: return
-			time.sleep(delay)
-			with self.lock:
-				if not self.pet:
-					return
-				self.pet.set_motion(motion_id, loop) #座る
-		except:
-			general.log_error(traceback.format_exc())
-	def set_pet_motion_delay(self, *args):
-		general.start_thread(self._set_pet_motion_delay, args)
+		if not self.pet:
+			return
+		if motion_id == 135 and motion_loop:
+			self.pet.wait_motion = 135 #座る
+			self.pet.wait_motion_loop = True
+			self.pet.wait_motion_time = time.time()+0.5
+		elif self.pet.motion_id == 135:
+			self.pet.wait_motion = 111 #立つ
+			self.pet.wait_motion_loop = True
+			self.pet.wait_motion_time = time.time()+0.5
 	
 	def set_coord(self, x, y):
 		with self.lock:

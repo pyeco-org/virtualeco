@@ -331,7 +331,7 @@ def get_pet(pet_id):
 	pet = db.pet_obj.get(pet_id)
 	if not pet:
 		return
-	return copy(pet)
+	return pet
 def get_monster(monster_id):
 	monster = db.monster_obj.get(monster_id)
 	if not monster:

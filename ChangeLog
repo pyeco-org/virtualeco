@@ -1,3 +1,6 @@
+2012-09-24
+	add pet thread
+
 2012-09-23
 	let pet motion refer master (sit and stand)
 	replace thread.start_new_thread to threading.Thread

@@ -28,6 +28,7 @@ def set_pet(pc):
 		if not pet:
 			#general.log("[ pet ] set_pet failed: pet not exist")
 			return False
+		pet = obj_pet.PetObject(pet)
 		pet.reset(item)
 		with pet_list_lock:
 			pet_id = general.make_id(pet_id_list, PET_ID_START_FROM)
@@ -43,6 +44,7 @@ def set_pet(pc):
 			pet.set_map(pc.map_id)
 			pet.set_coord_from_master()
 			pet.set_dir(pc.dir)
+			pet.start()
 			pc.map_send_map("122f", pet) #pet info
 			general.log("[ pet ] set pet id %s"%(pc.pet.id))
 	return True
@@ -57,11 +59,11 @@ def unset_pet(pc, logout):
 				pc.map_send_map_without_self("1234", pc.pet) ##hide pet
 			else:
 				pc.map_send_map("1234", pc.pet) ##hide pet
+			pc.pet.stop()
 			with pet_list_lock:
 				pet_list.remove(pc.pet)
 				pet_id_list.remove(pc.pet.id)
 			general.log("[ pet ] del pet id %s"%(pc.pet.id))
-			pc.pet.reset()
 			pc.pet = None
 	return True
 
@@ -77,3 +79,8 @@ def get_pet_from_id(i):
 		with pet.lock:
 			if pet.id == i:
 				return pet
+
+def init():
+	global obj_pet
+	from obj import pet as obj_pet
+	obj_pet.init()
