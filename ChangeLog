@@ -1,3 +1,6 @@
+2012-09-25
+	remove unnecessary lock from lib.server
+
 2012-09-24
 	add pet thread
 

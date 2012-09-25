@@ -22,12 +22,13 @@ import SocketServer
 import BaseHTTPServer
 import SimpleHTTPServer
 import ConfigParser
+import Queue
 import __builtin__
 try: import cStringIO
 except: import StringIO
 
 if __name__ == "__main__":
-	basedir = os.path.dirname(os.path.abspath(sys.argv[0])) 
+	basedir = os.path.dirname(os.path.abspath(sys.argv[0]))
 	os.chdir(basedir)
 	sys.path.append(basedir)
 	exec open("virtualeco.py", "rb").read().replace("\r\n", "\n")+"\n"

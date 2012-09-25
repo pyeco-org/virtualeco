@@ -7,6 +7,7 @@ import socket
 import threading
 import traceback
 import struct
+#import Queue
 from lib import env
 from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
@@ -49,24 +50,24 @@ class StandardServer(threading.Thread):
 		self.setDaemon(True)
 		self.bind_addr = addr
 		self.client_list = []
-		self.lock = threading.RLock()
+		self.client_list_lock = threading.RLock()
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.socket.bind(addr)
 		self.socket.listen(10)
 		self.start()
 	def ip_count_check(self, src):
-		with self.lock:
-			ip = src[0]
-			ip_count = 1
+		ip = src[0]
+		ip_count = 1
+		with self.client_list_lock:
 			for client in self.client_list:
 				if ip == client.src_address[0]:
 					ip_count += 1
-			general.log("[ srv ] src: %s ip_count: %s"%(src, ip_count))
-			if ip_count > env.MAX_CONNECTION_FROM_ONE_IP:
-				return False
-			else:
-				return True
+		general.log("[ srv ] src: %s ip_count: %s"%(src, ip_count))
+		if ip_count > env.MAX_CONNECTION_FROM_ONE_IP:
+			return False
+		else:
+			return True
 	def run(self):
 		while True:
 			try:
@@ -74,7 +75,7 @@ class StandardServer(threading.Thread):
 				if not self.ip_count_check(src):
 					s.close()
 					continue
-				with self.lock:
+				with self.client_list_lock:
 					self.handle_client(s, src)
 			except:
 				general.log_error(traceback.format_exc())
@@ -82,7 +83,6 @@ class StandardClient(threading.Thread):
 	def __init__(self, master, s, src):
 		threading.Thread.__init__(self)
 		self.setDaemon(True)
-		self.lock = threading.RLock()
 		self.master = master
 		self.socket = s
 		self.src_address = src
@@ -92,6 +92,7 @@ class StandardClient(threading.Thread):
 		self.recv_key = False
 		self.rijndael_key = None
 		self.rijndael_obj = None
+		self.send_lock = threading.RLock()
 		self.start()
 	def __str__(self):
 		return "%s<%s:%s>"%(repr(self), self.src_address[0], self.src_address[1])
@@ -129,8 +130,8 @@ class StandardClient(threading.Thread):
 				self.stop()
 		general.log("[ srv ] quit", self)
 	def send_packet(self, packet):
-		with self.lock:
-			#general.log("[ srv ] send", packet.encode("hex"))
+		#general.log("[ srv ] send", packet.encode("hex"))
+		with self.send_lock:
 			self.socket.sendall(packet)
 	def handle_packet(self):
 		if not self.recv_init:
@@ -165,19 +166,17 @@ class StandardClient(threading.Thread):
 			general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
 		else:
 			packet = self.recv_enc_packet()
-			with self.lock:
-				try:
-					self.handle_data(general.decode(packet, self.rijndael_obj))
-				except:
-					general.log_error(traceback.format_exc())
+			try:
+				self.handle_data(general.decode(packet, self.rijndael_obj))
+			except:
+				general.log_error(traceback.format_exc())
 	def _stop(self):
 		if not self.running:
 			return
-		with self.lock:
-			self.socket.close()
-			self.running = False
-			with self.master.lock:
-				self.master.client_list.remove(self)
+		self.socket.close()
+		self.running = False
+		with self.master.client_list_lock:
+			self.master.client_list.remove(self)
 
 class LoginServer(StandardServer):
 	def handle_client(self, s, src):
