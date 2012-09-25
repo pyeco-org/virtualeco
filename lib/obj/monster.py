@@ -8,7 +8,6 @@ import traceback
 from lib import general
 from lib import db
 from lib import script
-from lib import monsters
 
 class Monster:
 	def __str__(self):
@@ -118,4 +117,5 @@ class Monster:
 			self.maxep = 0
 
 def init():
-	pass
+	global monsters
+	from lib import monsters

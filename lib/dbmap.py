@@ -31,6 +31,7 @@ DATABASE_ROW_MAP_RAW = {
 		"#ItemID": (dbint, "item_id"),
 		"PictID": (dbint, "pict_id"),
 		"IconID": NULL,
+		"Item名称": (dbstr, "name"),
 		"種別ID": (dbstr, "type"),
 		"値段": (dbint, "price"),
 		"重量": (dbint, "weight"), #payl
@@ -350,7 +351,7 @@ DATABASE_ROW_MAP_RAW = {
 
 DATABASE_ROW_MAP_EXT = {
 	"item": {
-		3: (dbstr, "name"),
+		#3: (dbstr, "name"),
 	},
 	"job": {},
 	"map": {},
