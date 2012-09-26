@@ -336,6 +336,9 @@ class PC:
 		return filter(None, item_list)
 	
 	def item_append(self, item, place=0x02):
+		if len(self.item) >= env.MAX_ITEM_STOCK:
+			script.msg(self, "item_append error: stock limit")
+			return item
 		#0x02: body
 		with self.lock:
 			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
@@ -361,6 +364,9 @@ class PC:
 		return item
 	
 	def warehouse_append(self, item):
+		if len(self.warehouse) >= env.MAX_WAREHOURSE_STOCK:
+			script.msg(self, "warehouse_append error: stock limit")
+			return item
 		with self.lock:
 			item_iid = general.make_id(self.sort.item+self.sort.warehouse)
 			self.warehouse[item_iid] = item
@@ -504,10 +510,26 @@ class PC:
 		if not self.check_trade_list():
 			self.cancel_trade()
 			return
+		if not self.trade:
+			return
 		self.trade_state = 1 #トレード完了してる状態
 		p = self.get_trade_target()
 		if p:
 			with p.lock and p.user.lock:
+				if not p.trade:
+					return
+				if len(self.item)+len(p.trade_list) > env.MAX_ITEM_STOCK:
+					script.msg(self, "trade error: self stock limit")
+					script.msg(p, "trade error: target stock limit")
+					self.cancel_trade()
+					p.cancel_trade()
+					return
+				if len(p.item)+len(self.trade_list) > env.MAX_ITEM_STOCK:
+					script.msg(self, "trade error: target stock limit")
+					script.msg(p, "trade error: self stock limit")
+					self.cancel_trade()
+					p.cancel_trade()
+					return
 				if p.trade_state == 1: #exchange item and gold
 					if not p.check_trade_list():
 						self.cancel_trade()

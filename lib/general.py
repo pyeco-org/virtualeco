@@ -20,6 +20,7 @@ try: from cStringIO import StringIO
 except: from StringIO import StringIO
 from lib import env
 from lib import db
+from lib import security
 from lib.site_packages import rijndael
 RANGE_INT = (-2147483648, 2147483647)
 RANGE_UNSIGNED_INT = (0, 4294967295)
@@ -136,177 +137,101 @@ EQUIP_ATTR_LIST = (
 	"pet",
 )
 
-# make server more safe from remote attack by special user input
-# don't work if code or script writeable
-def log_io(msg):
-	STDERR.write(msg)
-def within_base(path, base):
-	return os.path.abspath(path).startswith(os.path.abspath(base))
-def secure_open(name, mode="r", buffering=True, base=env.DEFAULT_BASE):
-	#don't check symbolic links at this moment
-	name = str(name)
-	mode = str(mode)
-	buffering = bool(buffering)
-	base = str(base)
-	#log_io("secure_open [%s] (%s) within [%s]\n"%(name, mode, base))
-	if not within_base(name, base):
-		raise IOError("cannot open [%s] (%s) outside of [%s]"%(name, mode, base))
-	return __open(name, mode, buffering)
-def secure_listdir(path, base=env.DEFAULT_BASE):
-	path = str(path)
-	base = str(base)
-	#log_io("secure_listdir [%s] within [%s]\n"%(path, base))
-	if not within_base(path, base):
-		raise IOError("cannot list [%s] outside of [%s]"%(path, base))
-	return __listdir(path)
-def secure_remove(path, base=env.DEFAULT_BASE):
-	path = str(path)
-	base = str(base)
-	#log_io("secure_remove [%s] within [%s]\n"%(path, base))
-	if not within_base(path, base):
-		raise IOError("cannot remove [%s] outside of [%s]"%(path, base))
-	return __remove(path)
-def secure_rmdir(path, base=env.DEFAULT_BASE):
-	path = str(path)
-	base = str(base)
-	#log_io("secure_rmdir [%s] within [%s]\n"%(path, base))
-	if not within_base(path, base):
-		raise IOError("cannot remove dir [%s] outside of [%s]"%(path, base))
-	return __rmdir(path)
-def secure_mkdir(path, mode=0777, base=env.DEFAULT_BASE):
-	path = str(path)
-	mode = int(mode)
-	base = str(base)
-	#log_io("secure_mkdir [%s] (%s) within [%s]\n"%(path, mode, base))
-	if not within_base(path, base):
-		raise IOError("cannot create dir [%s] (%s) outside of [%s]"%(path, mode, base))
-	return __mkdir(path)
-def secure_rename(old, new, src_base=env.DEFAULT_BASE, dst_base=env.DEFAULT_BASE):
-	old = str(old)
-	new = str(new)
-	src_base = str(src_base)
-	dst_base = str(dst_base)
-	#log_io("secure_rename from [%s] within [%s]\n"%(old, src_base))
-	#log_io("secure_rename to [%s] within [%s]\n"%(new, dst_base))
-	if not within_base(old, src_base):
-		raise IOError("cannot rename from [%s] outside of [%s]"%(old, src_base))
-	if not within_base(new, src_base):
-		raise IOError("cannot rename to [%s] outside of [%s]"%(new, dst_base))
-	return __rename(old, new)
-def secure_chdir():
-	return __chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
-import __builtin__
-__open = __builtin__.open
-__listdir = os.listdir
-__remove = os.remove
-__rmdir = os.rmdir
-__mkdir = os.mkdir
-__rename = os.rename
-__chdir = os.chdir
-__builtin__.open = secure_open
-__builtin__.file = secure_open
-os.listdir = secure_listdir
-os.remove = secure_remove
-os.unlink = secure_remove
-os.rmdir = secure_rmdir
-os.mkdir = secure_mkdir
-os.rename = secure_rename
-def __raise(e): raise e
-os.link = lambda *args: __raise(IOError("cannot create hard link everywhere"))
-os.symlink = lambda *args: __raise(IOError("cannot create symbolic link everywhere"))
-os.chdir = lambda *args: __raise(IOError("cannot chdir everywhere"))
-if os.name == "posix":
-	def secure_chmod(path, mode, base=env.DEFAULT_BASE):
-		path = str(path)
-		mode = int(mode)
-		#log_io("secure_chmod [%s] (%s) within [%s]\n"%(path, mode, base))
-		if not within_base(path, base):
-			raise IOError(
-				"cannot chmod [%s] (%s) outside of [%s]"%(path, mode, base)
-			)
-		return __chmod(path, mode)
-	def secure_chown(path, uid, gid, base=env.DEFAULT_BASE):
-		path = str(path)
-		uid = int(uid)
-		gid = int(gid)
-		#log_io("secure_chown [%s] (%s, %s) within [%s]\n"%(path, uid, gid, base))
-		if not within_base(path, mode, base):
-			raise IOError(
-				"cannot chown [%s] (%s, %s) outside of [%s]"%(path, uid, gid, base)
-			)
-		return __chown(path, uid, gid)
-	__chmod = os.chmod
-	__chown = os.chown
-	os.chmod = secure_chmod
-	os.chown = secure_chown
-	os.chroot = lambda *args: __raise(IOError("cannot chroot everywhere"))
-	os.mkfifo = lambda *args: __raise(IOError("cannot mkfifo everywhere"))
-
 class NullClass: pass
 
 class Log:
-	def __init__(self, handle, base_path):
-		self.handle = handle
-		self.today = get_today()
-		self.base_path = base_path
-		self.logfile = open(base_path%self.today, "ab", base=env.LOG_DIR)
-		self.logtime = True
+	def __init__(self, i, log_path):
+		self.i = i
+		self.log_path = log_path
+		self.log_name = get_today()
+		self.log_file = open(log_path%get_today(), "ab", base=env.LOG_DIR)
+		self.log_time = True
 	def write(self, s):
-		try: self._write(s)
-		except: self.handle.write("Log.write error: %s"%traceback.format_exc())
-	def _write(self, s):
-		self.handle.write(s)
-		self.handle.flush()
-		if self.logtime:
-			if self.today != get_today():
-				self.today = get_today()
-				self.logfile.close()
-				self.logfile = open(
-					self.base_path%self.today, "ab", base=env.LOG_DIR
-				)
-			self.logfile.write(time.strftime("[%H:%M:%S]", time.localtime()))
-			self.logfile.write(" ")
-		self.logfile.write(s.replace("\r\n", "\n").replace("\n", "\r\n"))
-		self.logtime = False
-		if s.endswith("\n"):
-			self.flush()
-			self.logtime = True
+		try:
+			self.i.write(get_str_log(s))
+			self.i.flush()
+			if self.log_time:
+				if self.log_name != get_today():
+					self.log_file.flush()
+					self.log_file.close()
+					self.log_name = get_today()
+					self.log_file = open(
+						self.log_path%self.log_name, "ab", base=env.LOG_DIR
+					)
+				self.log_file.write(time.strftime("[%H:%M:%S] ", time.localtime()))
+			self.log_file.write(s.replace("\r\n", "\n").replace("\n", "\r\n"))
+			self.log_time = False
+			if s.endswith("\n"):
+				self.flush()
+				self.log_time = True
+		except:
+			env.STDERR.write("Log.write error: %s"%traceback.format_exc())
 	def flush(self):
-		try: self._flush()
-		except: self.handle.write("Log.flush error: %s"%traceback.format_exc())
-	def _flush(self):
-		self.handle.flush()
-		self.logfile.flush()
+		try:
+			self.i.flush()
+			self.log_file.flush()
+		except:
+			env.STDERR.write("Log.flush error: %s"%traceback.format_exc())
 	def close(self):
-		try: self._close()
-		except: self.handle.write("Log.close error: %s"%traceback.format_exc())
-	def _close(self):
-		self.logfile.close()
+		try:
+			self.i.close()
+			self.log_file.close()
+		except:
+			env.STDERR.write("Log.close error: %s"%traceback.format_exc())
 
-def use_log():
-	if not os.path.exists(env.LOG_DIR):
-		os.mkdir(env.LOG_DIR)
-	sys.stdout = Log(env.STDOUT, env.STDOUT_LOG)
-	sys.stderr = Log(env.STDERR, env.STDERR_LOG)
+class LogConsole:
+	def __init__(self, i):
+		self.i = i
+	def write(self, s):
+		try:
+			self.i.write(get_str_log(s))
+		except:
+			env.STDERR.write(traceback.format_exc())
+	def flush(self):
+		try:
+			self.i.flush()
+		except:
+			env.STDERR.write(traceback.format_exc())
+	def close(self):
+		try:
+			self.i.close()
+		except:
+			env.STDERR.write(traceback.format_exc())
+
+def init():
+	security.init(env.DEFAULT_BASE)
+	security.secure_chdir()
+	if env.USE_LOGFILE:
+		if not os.path.exists(env.LOG_DIR):
+			os.mkdir(env.LOG_DIR)
+		sys.stdout = Log(env.STDOUT, env.STDOUT_LOG)
+		sys.stderr = Log(env.STDERR, env.STDERR_LOG)
+	else:
+		sys.stdout = LogConsole(env.STDOUT)
+		sys.stderr = LogConsole(env.STDERR)
+	#ignore KeyboardInterrupt
+	#break with EOFError or IOError [Errno 4]
+	import signal
+	signal.signal(signal.SIGINT, lambda *args: None)
 
 def get_str(s):
-	return s.encode("utf-8") if type(s) == unicode else str(s)
+	return str(s) if type(s) != unicode else s.encode("utf-8")
 def get_unicode(s):
 	try:
-		return s if type(s) == unicode else str(s).decode("utf-8")
+		return str(s).decode("utf-8") if type(s) != unicode else s
 	except UnicodeDecodeError: #0x80+ bomb
 		return unicode(s, "latin-1")
 def get_str_log(s):
 	return get_unicode(s).encode(env.SYSTEM_ENCODING)
 
 def log(*args):
-	sys.stdout.write(" ".join(map(get_str_log, args))+"\n")
+	sys.stdout.write(" ".join(map(get_str, args))+"\n")
 def log_line(*args):
-	sys.stdout.write(" ".join(map(get_str_log, args)))
+	sys.stdout.write(" ".join(map(get_str, args)))
 def log_error(*args):
-	sys.stderr.write(" ".join(map(get_str_log, args))+"\n")
+	sys.stderr.write(" ".join(map(get_str, args))+"\n")
 def log_error_line(*args):
-	sys.stderr.write(" ".join(map(get_str_log, args)))
+	sys.stderr.write(" ".join(map(get_str, args)))
 
 def list_to_str(l):
 	return ",".join(map(str, l))
@@ -343,19 +268,19 @@ def get_map(map_id):
 		return
 	return map_obj #not need copy
 
-def get_config_io(path, base=env.DEFAULT_BASE):
+def get_config_io(path, base=None):
 	with open(path, "rb", base=base) as r:
 		config = r.read()
 	if config.startswith("\xef\xbb\xbf"):
 		config = config[3:]
 	return StringIO(config.replace("\r\n", "\n"))
-def get_config(path=None, base=env.DEFAULT_BASE):
+def get_config(path=None, base=None):
 	cfg = ConfigParser.SafeConfigParser()
 	if path:
 		cfg.readfp(get_config_io(path, base))
 	return cfg
 
-def load_dump(path, base=env.DEFAULT_BASE):
+def load_dump(path, base=None):
 	#simplejson and cPickle compatible all version of python but cannot dump script
 	dump_path = str(path)+".dump"
 	if not os.path.exists(dump_path):
@@ -374,7 +299,7 @@ def load_dump(path, base=env.DEFAULT_BASE):
 				return marshal.loads(dump.read())
 		except:
 			log_error("dump file %s broken."%dump_path, traceback.format_exc())
-def save_dump(path, obj, base=env.DEFAULT_BASE):
+def save_dump(path, obj, base=None):
 	dump_path = str(path)+".dump"
 	magic_number = imp.get_magic()
 	modify_time = struct.pack("<I", int(os.stat(path).st_mtime))
@@ -386,28 +311,8 @@ def save_dump(path, obj, base=env.DEFAULT_BASE):
 		else:
 			dump.write(marshal.dumps(obj))
 
-def secure_save_zip(path_src, path_zip,
-	src_base=env.DEFAULT_BASE, zip_base=env.DEFAULT_BASE):
-	path_src = str(path_src)
-	path_zip = str(path_zip)
-	src_base = str(src_base)
-	zip_base = str(zip_base)
-	#log_io("secure_save_zip from [%s] within [%s]\n"%(path_src, src_base))
-	#log_io("secure_save_zip to [%s] within [%s]\n"%(path_zip, zip_base))
-	if not within_base(path_src, src_base):
-		raise IOError("cannot save zip from [%s] outside of [%s]"%(path_src, src_base))
-	if not within_base(path_zip, zip_base):
-		raise IOError("cannot save zip to [%s] outside of [%s]"%(path_src, zip_base))
-	zip_obj = zipfile.ZipFile(path_zip, "w", getattr(zipfile, env.ZIP_MODE))
-	for root, dirs, files in os.walk(path_src):
-		for dir_name in dirs:
-			zip_obj.write(os.path.join(root, dir_name),
-				os.path.join(root, dir_name).replace(path_src, ""))
-		for file_name in files:
-			zip_obj.write(os.path.join(root, file_name),
-				os.path.join(root, file_name).replace(path_src, ""))
-	zip_obj.close()
-save_zip = secure_save_zip
+def save_zip(*args):
+	security.secure_save_zip(*args, compress=env.ZIP_COMPRESS)
 
 def get_name_map(namespace, head):
 	name_map = {}

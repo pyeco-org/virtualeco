@@ -23,18 +23,17 @@ def debugger():
 	while True:
 		try:
 			input_debug = raw_input()
+		except (SystemExit, EOFError, IOError, KeyboardInterrupt):
+			break
+		except:
+			general.log_error("[debug]", traceback.format_exc())
+		try:
 			general.log(eval(input_debug))
 		except SyntaxError:
 			try:
 				exec input_debug
 			except:
 				general.log_error("[debug]", traceback.format_exc())
-		except KeyboardInterrupt:
-			break
-		except SystemExit:
-			break
-		except EOFError:
-			break
 		except:
 			general.log_error("[debug]", traceback.format_exc())
 
@@ -44,10 +43,8 @@ def atexit():
 	users.save_user_data_atexit()
 
 def init():
-	general.secure_chdir()
+	general.init()
 	general.log("-"*30+"\n", env.NAME, env.LAST_UPDATE, "\n"+"-"*30)
-	if env.USE_LOGFILE:
-		general.use_log()
 	server.init()
 	monsters.init()
 	pets.init()
@@ -59,16 +56,15 @@ def load():
 	users.load()
 	server.load()
 	web.load()
-	if env.BACKUP_USER_DATA_EVERY_DAY:
-		users.backup_user_data_every_day()
-	users.save_user_data_every_min()
 
 def block():
 	if env.USE_DEBUGER:
 		debugger()
 		return
-	while True:
-		time.sleep(1)
+	try:
+		while time.sleep(1) or 1: pass
+	except:
+		return
 
 if __name__ == "__main__":
 	init()

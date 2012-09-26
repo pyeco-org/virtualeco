@@ -412,6 +412,9 @@ def item(pc, item_id, item_count=1):
 def _item(pc, item_id, item_count):
 	general.assert_value_range("item_count", item_count, general.RANGE_UNSIGNED_SHORT)
 	general.assert_value_range("item_id", item_id, general.RANGE_UNSIGNED_INT)
+	if len(pc.item) >= env.MAX_ITEM_STOCK:
+		msg(pc, "script.item error: stock limit")
+		return False
 	while item_count:
 		item = general.get_item(item_id)
 		item_stock_exist = False
@@ -446,6 +449,7 @@ def _item(pc, item_id, item_count):
 			item_count = 0
 		pc.item_append(item)
 	pc.update_item_status()
+	return True
 
 def printitem(pc):
 	with pc.lock:

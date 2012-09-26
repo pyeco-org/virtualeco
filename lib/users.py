@@ -343,3 +343,6 @@ def load():
 	#	general.log(user)
 	#for p in get_pc_list():
 	#	general.log(p)
+	if env.BACKUP_USER_DATA_EVERY_DAY:
+		backup_user_data_every_day()
+	save_user_data_every_min()

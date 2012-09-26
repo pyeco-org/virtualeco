@@ -428,6 +428,10 @@ class MapDataHandler:
 	
 	def do_09fb(self, data_io):
 		#倉庫から取り出す
+		if len(self.pc.item) >= env.MAX_ITEM_STOCK:
+			#倉庫から取り出した時の結果 #キャラのアイテム数が100個を超えてしまうためキャンセルされました
+			self.send("09fc", -5)
+			return
 		item_iid = general.io_unpack_int(data_io)
 		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] take item from warehouse", item_iid, item_count)
@@ -467,6 +471,10 @@ class MapDataHandler:
 		item_count = general.io_unpack_short(data_io)
 		general.log("[ map ] store item to warehouse", item_iid, item_count)
 		with self.pc.lock:
+			if len(self.pc.warehouse) >= env.MAX_WAREHOURSE_STOCK:
+				#倉庫に預けた時の結果 倉庫のアイテム数が上限を超えてしまうためキャンセルされました
+				self.send("09fe", -4)
+				return
 			if self.pc.warehouse_open is None:
 				#倉庫に預けた時の結果 #倉庫を開けていません
 				self.send("09fe", -1)
@@ -547,6 +555,9 @@ class MapDataHandler:
 			item_count_list.append(general.io_unpack_int(data_io))
 		item_buy_list = zip(item_id_list, item_count_list)
 		general.log("[ map ] item_buy_list", item_buy_list)
+		if len(self.pc.item)+len(item_buy_list) > env.MAX_ITEM_STOCK:
+			script.msg(self.pc, "npcshop buy error: stock limit")
+			return
 		for item_id, item_count in item_buy_list:
 			if not item_count:
 				general.log_error("do_0614: not item_count", item_count)
@@ -760,6 +771,9 @@ class MapDataHandler:
 		#pick up item request
 		mapitem_id = general.io_unpack_int(data_io)
 		general.log("[ map ] pick up item: mapitem_id", mapitem_id)
+		if len(self.pc.item) >= env.MAX_ITEM_STOCK:
+			script.msg(self.pc, "pick up item error: stock limit")
+			return
 		with self.pc.lock:
 			if self.pc.trade:
 				#pick up item error, トレード中はアイテムを拾うことが出来ません
