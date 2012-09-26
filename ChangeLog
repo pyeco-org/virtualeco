@@ -1,3 +1,9 @@
+2012-09-26:
+	add script/site_packages
+	import warp point script from yutori server
+	move lib.env to lib._env (_env store default values)
+	allow user replace their own lib/env.py each update
+
 2012-09-25
 	remove unnecessary lock from lib.server
 
