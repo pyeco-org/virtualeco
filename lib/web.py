@@ -12,7 +12,7 @@ from lib import general
 from lib import server
 from lib import users
 def web_open(name, mode="r", buffering=True, base=env.WEB_DIR):
-	return general.secure_open(name, mode, buffering, base)
+	return open(name, mode, buffering, base)
 SocketServer.open = web_open
 SocketServer.file = web_open
 BaseHTTPServer.open = web_open
