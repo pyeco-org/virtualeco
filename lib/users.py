@@ -165,7 +165,7 @@ def make_new_pc(user, num, name, race, gender, hair, hair_color, face):
 	cfg.add_section("main")
 	cfg.set("main", "id", str(pc_id))
 	cfg.set("main", "name", str(name))
-	cfg.set("main", "gmlevel", str(server.config.defaultgmlevel))
+	cfg.set("main", "gmlevel", str(env.DEFAULT_GMLEVEL))
 	cfg.set("main", "race", str(race))
 	cfg.set("main", "form", "0")
 	cfg.set("main", "gender", str(gender))

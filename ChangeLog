@@ -3,6 +3,11 @@
 	import warp point script from yutori server
 	move lib.env to lib._env (_env store default values)
 	allow user replace their own lib/env.py each update
+	move settings from server.ini to lib.env
+	remove lib/obj/serverconfig.py, lib.server.config
+	add script/loginevent.py (send after login if set env.SEND_LOGIN_EVENT)
+	add npctrade id
+	fix skill use error when x or y > 127
 
 2012-09-25
 	remove unnecessary lock from lib.server
@@ -211,7 +216,7 @@
 	pet.set_coord_from_master
 	pc.x pc.y pet.x pet.y now be float
 	fix bug (set_raw_dir)
-	move pet.py to obj/
+	move pet.py to obj
 
 2012-01-02
 	pet, script.select, item event, kanban, fix bug (warehouse id, warp with hide pc, command with gmlevel)

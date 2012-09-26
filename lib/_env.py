@@ -27,6 +27,71 @@ MAX_CONNECTION_FROM_ONE_IP = 3
 DUMP_WITH_ZLIB = False
 ZIP_MODE = "ZIP_STORED" #ZIP_DEFLATED, ZIP_STORED
 
+#server config
+LOGIN_SERVER_PORT = 13000
+MAP_SERVER_PORT = 13001
+WEB_SERVER_PORT = 13100
+SERVER_BIND_ADDR = "0.0.0.0"
+SERVER_BROADCAST_ADDR = "localhost"
+DEFAULT_GMLEVEL = 150
+LOGIN_EVENT_ID = 30
+SEND_LOGIN_EVENT = True
+GMLEVEL_MAP = {
+	"run": 100,
+	"help": 0,
+	"reloadscript": 255,
+	"reloadsinglescript": 255,
+	"user": 0,
+	"say": 0,
+	"msg": 0,
+	"servermsg": 150,
+	"where": 0,
+	"warp": 100,
+	"warpraw": 100,
+	"update": 0,
+	"hair": 50,
+	"haircolor": 50,
+	"face": 50,
+	"wig": 50,
+	"ex": 50,
+	"wing": 50,
+	"wingcolor": 50,
+	"motion": 0,
+	"motion_loop": 0,
+	"item": 150,
+	"printitem": 0,
+	"takeitem": 150,
+	"dustbox": 0,
+	"warehouse": 100,
+	"playbgm": 0,
+	"playse": 0,
+	"playjin": 0,
+	"effect": 0,
+	"speed": 100,
+	"setgold": 150,
+	"takegold": 150,
+	"gold": 150,
+	"npcmotion": 100,
+	"npcmotion_loop": 100,
+	"npcshop": 100,
+	"npcsell": 100,
+	"spawn": 150,
+	"killall": 150,
+	"emotion": 0,
+	"emotion_ex": 0,
+	"shownpc": 0,
+	"hidenpc": 0,
+	"blackout": 0,
+	"whiteout": 0,
+	"size": 0,
+	"petstandby_on": 0,
+	"petstandby_off": 0,
+	"petmotion": 0,
+	"petmotion_loop": 0,
+	"unsetallequip": 0,
+	"printallequip": 0
+}
+
 #path config
 DEFAULT_BASE = "."
 LOG_DIR = "./log"

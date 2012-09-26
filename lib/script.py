@@ -241,9 +241,9 @@ def handle_cmd(pc, cmd):
 	if types is None:
 		return
 	try:
-		request_gmlevel = server.config.gmlevel.get(name)
+		request_gmlevel = env.GMLEVEL_MAP.get(name)
 		if request_gmlevel is None:
-			raise Exception("server.config.gmlevel[%s] not exist"%name)
+			raise Exception("env.GMLEVEL_MAP[%s] not exist"%name)
 		if pc.gmlevel < request_gmlevel:
 			raise Exception("pc.gmlevel < request_gmlevel")
 		try:

@@ -196,24 +196,21 @@ class MapClient(StandardClient, MapDataHandler):
 		StandardClient.__init__(self, *args)
 
 def init():
-	from lib.obj import serverconfig
-	global config
-	config = serverconfig.ServerConfig(env.SERVER_CONFIG_PATH)
 	if os.name == "nt":
 		assert_address_not_used()
 
 def assert_address_not_used():
 	general.log_line("[ srv ] server.assert_address_not_used ... ")
-	general.assert_address_not_used((config.serverpublicip, config.loginserverport))
-	general.assert_address_not_used((config.serverpublicip, config.mapserverport))
-	general.assert_address_not_used((config.serverpublicip, config.webserverport))
+	general.assert_address_not_used((env.SERVER_BROADCAST_ADDR, env.LOGIN_SERVER_PORT))
+	general.assert_address_not_used((env.SERVER_BROADCAST_ADDR, env.MAP_SERVER_PORT))
+	general.assert_address_not_used((env.SERVER_BROADCAST_ADDR, env.WEB_SERVER_PORT))
 	general.log("done.")
 
 def load():
 	global loginserver
 	global mapserver
-	loginserver_bind_addr = (config.serverbindip, config.loginserverport)
-	mapserver_bind_addr = (config.serverbindip, config.mapserverport)
+	loginserver_bind_addr = (env.SERVER_BIND_ADDR, env.LOGIN_SERVER_PORT)
+	mapserver_bind_addr = (env.SERVER_BIND_ADDR, env.MAP_SERVER_PORT)
 	general.log("[ srv ] start login server with\t%s:%d"%loginserver_bind_addr)
 	loginserver = LoginServer(loginserver_bind_addr)
 	general.log("[ srv ] start map server with\t%s:%d"%mapserver_bind_addr)

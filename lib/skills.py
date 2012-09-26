@@ -29,8 +29,8 @@ def do_3054(pc, target_id, x, y, skill_id, skill_lv):
 	#スキル使用通知
 	pc.map_send_map("1389", pc, target_id, x, y, skill_id, skill_lv, 0, cast)
 	time.sleep(cast/1000.0)
-	#スキル使用結果通知（対象：単体）, HP回復
-	pc.map_send_map("1392", pc, (target_id,), skill_id, skill_lv, (-100,), (17,))
+	#スキル使用結果通知（対象：単体）, HP回復 #motion wrong, reason not found
+	pc.map_send_map("1392", pc, (target_id,), skill_id, skill_lv, (-100,), (0x11,))
 	pc.set_battlestatus(1)
 
 def do_3029(pc, target_id, x, y, skill_id, skill_lv):

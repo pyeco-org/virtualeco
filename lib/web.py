@@ -185,6 +185,6 @@ class ThreadingWebServer(SocketServer.ThreadingMixIn,
 
 def load():
 	global webserver
-	webserver_bind_addr = (server.config.serverbindip, server.config.webserverport)
+	webserver_bind_addr = (env.SERVER_BIND_ADDR, env.WEB_SERVER_PORT)
 	general.log("[ web ] start web server with\t%s:%d"%webserver_bind_addr)
 	webserver = ThreadingWebServer(webserver_bind_addr, WebHandle)

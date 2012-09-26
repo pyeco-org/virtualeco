@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from lib import env
 from lib import general
 from lib import db
 
@@ -151,10 +152,9 @@ def make_0033(reply_ping=False):
 	if reply_ping:
 		result = ""
 	else:
-		from lib import server
 		result = "\x01"
-		result += general.pack_str(server.config.serverpublicip)
-		result += general.pack_int(server.config.mapserverport)
+		result += general.pack_str(env.SERVER_BROADCAST_ADDR)
+		result += general.pack_int(env.MAP_SERVER_PORT)
 	return result
 
 def make_09e9(pc):
@@ -1337,8 +1337,8 @@ def make_1389(pc, target_id, x, y, skill_id, skill_lv, error=0, cast=0):
 	result += general.pack_int(pc.id) #スキル使用者のサーバキャラID
 	result += general.pack_int(cast) #詠唱時間っぽ（ミリ秒単位）。失敗時は-1
 	result += general.pack_int(target_id) #スキル対象者のサーバキャラID。失敗時は-1
-	result += general.pack_byte(x)
-	result += general.pack_byte(y)
+	result += general.pack_unsigned_byte(x if (x!=-1) else 255)
+	result += general.pack_unsigned_byte(y if (y!=-1) else 255)
 	result += general.pack_byte(skill_lv) #スキルLv
 	result += general.pack_byte(0) #H.E.ARTを使ったときの白い玉の数
 	return result
@@ -1367,8 +1367,8 @@ def make_1392(pc, target_list, skill_id, skill_lv, damage_list=None, color_list=
 	result += general.pack_unsigned_byte(i) 
 	result += "".join(map(general.pack_int, target_list))
 	#xy
-	result += general.pack_byte(pc.x)
-	result += general.pack_byte(pc.y)
+	result += general.pack_unsigned_byte(pc.x)
+	result += general.pack_unsigned_byte(pc.y)
 	#HPダメージ数
 	result += general.pack_unsigned_byte(i)
 	if damage_list is not None:

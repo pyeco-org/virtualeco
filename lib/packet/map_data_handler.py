@@ -6,6 +6,7 @@ import hashlib
 import random
 import contextlib
 import traceback
+from lib import env
 from lib import general
 from lib.packet import packet
 from lib import users
@@ -38,6 +39,7 @@ class MapDataHandler:
 		self.word_back = general.pack_unsigned_int(
 			general.randint(0, general.RANGE_INT[1])
 		)
+		self.send_login_event = env.SEND_LOGIN_EVENT
 	
 	def send(self, *args):
 		self.send_packet(general.encode(packet.make(*args), self.rijndael_obj))
@@ -275,6 +277,10 @@ class MapDataHandler:
 		self.sync_map()
 		self.pc.unset_pet()
 		self.pc.set_pet()
+		
+		if self.send_login_event:
+			self.send_login_event = False
+			script.run(self.pc, env.LOGIN_EVENT_ID)
 	
 	def do_0fa5(self, data_io):
 		#戦闘状態変更通知
