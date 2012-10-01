@@ -15,7 +15,7 @@ __chdir = os.chdir
 __base = None
 
 def within_base(path, base):
-	return os.path.abspath(path).startswith(os.path.abspath(base or __base))
+	return os.path.realpath(path).startswith(os.path.realpath(base or __base))
 
 def secure_open(name, mode="r", buffering=True, base=None):
 	#don't check symbolic links at this moment
@@ -58,7 +58,7 @@ def secure_rename(old, new, src_base=None, dst_base=None):
 	return __rename(old, new)
 
 def secure_chdir():
-	return __chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+	return __chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
 
 def secure_save_zip(path_src, path_zip, src_base=None, zip_base=None, compress=False):
 	#sys.stderr.write("secure_save_zip from [%s] within [%s]\n"%(path_src, src_base))
