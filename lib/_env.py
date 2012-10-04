@@ -5,8 +5,8 @@ import os
 import time
 #static
 NAME = "virtualeco"
-LAST_UPDATE = "2012-09-27"
-DATABASE_FORMAT_VERSION = "1.1.0"
+LAST_UPDATE = "2012-10-04"
+DATABASE_FORMAT_VERSION = "1.1.1"
 USERDATA_FORMAT_VERSION = "1.1.0"
 
 #runtime

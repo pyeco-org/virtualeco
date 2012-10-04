@@ -56,10 +56,11 @@ def load_single(path):
 		else:
 			script_list[script_id] = namespace
 
-def run_script(pc, event_id):
+def run_script(pc, event_id, item_event_id=0):
 	#general.log("run script id", event_id)
 	with pc.lock and pc.user.lock:
 		pc.event_id = event_id
+		pc.item_event_id = item_event_id
 		pc.map_send("05dc") #イベント開始の通知
 		pc.map_send("05e8", event_id) #EventID通知 Event送信に対する応答
 	with script_list_lock:
@@ -74,17 +75,18 @@ def run_script(pc, event_id):
 		general.log_error("run_script", event_id, traceback.format_exc())
 	with pc.lock and pc.user.lock:
 		pc.event_id = 0
+		pc.item_event_id = item_event_id
 		if pc.online:
 			pc.map_send("05dd") #イベント終了の通知
 
-def run(pc, event_id):
+def run(pc, event_id, item_event_id=0):
 	#vulnerability:
 	#* send a lot of event or skill request can make thread number
 	#* reached the system limits
-	#if pc.event_id:
+	#if pc.event_id or pc.item_event_id:
 	#	general.log_error("script.run error: event duplicate", pc, pc.event_id)
 	#	return
-	general.start_thread(run_script, (pc, event_id))
+	general.start_thread(run_script, (pc, event_id, item_event_id))
 
 def send_map(map_id, *args):
 	map_obj = general.get_map(map_id)
@@ -356,6 +358,10 @@ def warpraw(pc, rawx, rawy):
 def update(pc):
 	with pc.lock and pc.user.lock:
 		pc.map_send_map("020e", pc) #キャラ情報
+
+def update_pet(pc):
+	with pc.lock and pc.user.lock:
+		pc.map_send_map("122f", pc.pet) #pet info
 
 def hair(pc, hair_id):
 	general.assert_value_range("hair_id", hair_id, general.RANGE_SHORT)

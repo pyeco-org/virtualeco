@@ -24,7 +24,7 @@ def set_pet(pc):
 		if not item:
 			#general.log("[ pet ] set_pet failed: item not exist")
 			return False
-		pet = general.get_pet(item.petid)
+		pet = general.get_pet(item.pet_id)
 		if not pet:
 			#general.log("[ pet ] set_pet failed: pet not exist")
 			return False

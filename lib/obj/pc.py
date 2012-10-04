@@ -607,6 +607,7 @@ class PC:
 			self.battlestatus = 0
 			self.wrprank = 0
 			self.event_id = 0
+			self.item_event_id = 0
 			#self.loginevent = False
 			self.logout = False
 			self.pet = None #Pet()

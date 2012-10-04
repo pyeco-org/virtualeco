@@ -509,12 +509,13 @@ class MapDataHandler:
 			item = self.pc.item.get(item_iid)
 			if not item:
 				return
-			event_id = item.eventid
+			event_id = item.event_id
+			item_event_id = item.item_id
 		p = users.get_pc_from_id(target_id)
 		with p.lock:
 			if not p.online:
 				return
-			script.run(p, event_id)
+			script.run(p, event_id, item_event_id)
 	
 	def do_0605(self, data_io):
 		#NPCメッセージ(選択肢)の返信

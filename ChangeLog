@@ -1,3 +1,9 @@
+2012-10-04
+	add nekomata heart switch script
+	add pc.item_event_id
+	DATABASE_FORMAT_VERSION 1.1.1:
+	petid->pet_id, eventid->event_id
+
 2012-09-27
 	add item, warehouse stock limit
 	log file use utf-8 not system encoding
