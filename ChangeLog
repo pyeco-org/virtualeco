@@ -1,3 +1,7 @@
+2012-10-05
+	add common pet pict switch script
+	skip load file under script/ filename startswith __
+
 2012-10-04
 	add nekomata heart switch script
 	add pc.item_event_id

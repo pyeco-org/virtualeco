@@ -28,6 +28,8 @@ def load():
 				path = os.path.join(root, name)
 				if not path.endswith(".py"):
 					continue
+				if path.startswith("__"):
+					continue
 				#general.log("load script", path)
 				try:
 					load_single(path)
