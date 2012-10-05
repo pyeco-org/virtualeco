@@ -542,10 +542,15 @@ class MapDataHandler:
 			if self.pc.shop_open is None:
 				general.log_error("do_0614: shop_open is None")
 				return
-			shop = db.shop.get(self.pc.shop_open)
-			if not shop:
-				general.log_error("do_0614: shop_id not exist", self.pc.shop_open)
-				return
+			if hasattr(self.pc.shop_open, "__iter__"):
+				shop_item_list = self.pc.shop_open
+			else:
+				shop = db.shop.get(self.pc.shop_open)
+				if not shop:
+					general.log_error(
+						"do_0614 error: shop_id not exist", self.pc.shop_open)
+					return
+				shop_item_list = shop.item
 		item_id_list = []
 		item_id_count = general.io_unpack_byte(data_io)
 		for i in xrange(item_id_count):
@@ -561,15 +566,15 @@ class MapDataHandler:
 			return
 		for item_id, item_count in item_buy_list:
 			if not item_count:
-				general.log_error("do_0614: not item_count", item_count)
+				general.log_error("do_0614 error: item_count is 0", item_count)
 				continue
-			if item_id not in shop.item:
-				general.log_error(
-					"do_0614: item_id not in shop.item", item_id, shop.item)
+			if item_id not in shop_item_list:
+				general.log_error("do_0614 error: item_id not in shop_item_list", 
+					item_id, shop_item_list)
 				continue
 			item = db.item.get(item_id)
 			if not item:
-				general.log_error("do_0614: not item", item_id)
+				general.log_error("do_0614 error: item_id not exist", item_id)
 				continue
 			if script.takegold(self.pc, (int(item.price/10.0) or 1)*item_count):
 				script.item(self.pc, item_id, item_count)

@@ -25,11 +25,11 @@ def load():
 		script_list.clear()
 		for root, dirs, files in os.walk(env.SCRIPT_DIR):
 			for name in files:
+				if not name.endswith(".py"):
+					continue
+				if name.startswith("__"):
+					continue
 				path = os.path.join(root, name)
-				if not path.endswith(".py"):
-					continue
-				if path.startswith("__"):
-					continue
 				#general.log("load script", path)
 				try:
 					load_single(path)
@@ -585,13 +585,13 @@ def warehouse(pc, warehouse_id):
 		pc.warehouse_open = warehouse_id
 		pc.map_send("09fa") #倉庫インベントリーフッタ
 
-def select(pc, option_list, title=""): #not for command
+def select(pc, option_list, title="", show_cancel=0): #not for command
 	option_list = filter(None, option_list)
 	general.assert_value_range("len(option_list)", len(option_list), (0, 65))
 	with pc.lock and pc.user.lock:
 		pc.select_result = None
 		#NPCのメッセージのうち、選択肢から選ぶもの
-		pc.map_send("0604", option_list, title)
+		pc.map_send("0604", option_list, title, show_cancel)
 	while True:
 		with pc.lock:
 			if not pc.online:
@@ -684,6 +684,12 @@ def npcshop(pc, shop_id):
 	with pc.lock and pc.user.lock:
 		pc.shop_open = shop_id
 		pc.map_send("0613", pc, shop.item) #NPCのショップウィンドウ
+
+def npcshop_list(pc, shop_item_list):
+	with pc.lock and pc.user.lock:
+		shop_item_list = tuple(shop_item_list)
+		pc.shop_open = shop_item_list
+		pc.map_send("0613", pc, shop_item_list) #NPCのショップウィンドウ
 
 def npcsell(pc):
 	with pc.lock and pc.user.lock:

@@ -989,7 +989,7 @@ def make_0a08(result_id):
 	#-4 倉庫のアイテム数が上限を超えてしまうためキャンセルされました
 	return general.pack_int(result_id)
 
-def make_0604(option_list, title):
+def make_0604(option_list, title, show_cancel=0):
 	"""NPCのメッセージのうち、選択肢から選ぶもの
 	選択結果はs0605で通知する"""
 	result = general.pack_str(title) #ウィンドウタイトル
@@ -997,7 +997,7 @@ def make_0604(option_list, title):
 	for option in option_list:
 		result += general.pack_str(option)
 	result += general.pack_str("") #選んだときに確認するメッセージのタイトル
-	result += general.pack_byte(0) #キャンセルできるかどうか
+	result += general.pack_byte(show_cancel) #キャンセルできるかどうか
 	result += general.pack_int(0) #timeout秒に選ばないとキャンセルしたことになる。0の場合制限無し
 	return result
 

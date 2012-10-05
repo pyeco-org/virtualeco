@@ -614,7 +614,7 @@ class PC:
 			self.kanban = ""
 			self.map_obj = None
 			self.warehouse_open = None #warehouse_id
-			self.shop_open = None #shop_id
+			self.shop_open = None #shop_id or shop_item_list
 			self.select_result = None
 			self.reset_trade()
 	
