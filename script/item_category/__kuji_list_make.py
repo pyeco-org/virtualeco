@@ -3,7 +3,7 @@ import sys
 import os
 
 item = {}
-for line in open("/media/truecrypt3/server/pyecotools/item.csv"):
+for line in open("item.csv"):
 	if line.startswith("#"):
 		continue
 	row = line.split(",", 5)

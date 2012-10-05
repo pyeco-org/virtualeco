@@ -82,29 +82,18 @@ def load_database(name, obj):
 	return db_dict
 
 def load():
-	global general
-	global NULL
-	global dbmap
+	global general, NULL, dbmap
 	from lib import general
 	from lib.general import NULL
-	import dbmap
+	from lib import dbmap
+	from lib import obj, data
 	
-	import data
-	from lib import obj
-	
-	global item
+	global item, job, map_obj, monster_obj, npc, pet_obj, shop, skill
 	item = load_database("item", data.item.Item)
-	global job
 	job = load_database("job", data.job.Job)
-	global map_obj
 	map_obj = load_database("map", obj.map.Map)
-	global monster_obj
 	monster_obj = load_database("monster", obj.monster.Monster)
-	global npc
 	npc = load_database("npc", data.npc.Npc)
-	global pet_obj
 	pet_obj = load_database("pet", obj.pet.Pet)
-	global shop
 	shop = load_database("shop", data.shop.Shop)
-	global skill
 	skill = load_database("skill", data.skill.Skill)

@@ -171,7 +171,7 @@ def make_09e9(pc):
 	item_left = pc.item.get(pc.equip.left)
 	item_shoes = pc.item.get(pc.equip.shoes)
 	item_socks = pc.item.get(pc.equip.socks)
-	item_pet = pc.item.get(pc.equip.pet)
+	#item_pet = pc.item.get(pc.equip.pet)
 	#左手モーション 片手
 	l_s_motion = pack_item_unsigned_byte_attr(
 		item_left, "s_motion", general.LEFT_TYPE_LIST
@@ -216,7 +216,8 @@ def make_09e9(pc):
 	#靴下
 	result += pack_pict_id(item_socks, general.SOCKS_TYPE_LIST)
 	#ペット
-	result += pack_pict_id(item_pet, general.PET_TYPE_LIST)
+	#result += pack_pict_id(item_pet, general.PET_TYPE_LIST)
+	result += general.pack_int(0)
 	#左手モーションタイプ size=3 (片手, 両手, 攻撃)
 	result += "\x03"+l_s_motion+l_d_motion+"\x00"
 	#右手モーションタイプ size=3 #chr_act_tbl.csvを参照する

@@ -82,5 +82,5 @@ def get_pet_from_id(i):
 
 def init():
 	global obj_pet
-	from obj import pet as obj_pet
+	from lib.obj import pet as obj_pet
 	obj_pet.init()

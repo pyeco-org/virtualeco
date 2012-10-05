@@ -1,7 +1,9 @@
 2012-10-05
 	add kuji category script
+	add script.npcshop_list(pc, shop_item_list)
 	add common pet pict switch script
 	skip load file under script/ filename startswith __
+	fix packet 09e9 send wrong pict id
 
 2012-10-04
 	add nekomata heart switch script
