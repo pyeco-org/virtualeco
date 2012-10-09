@@ -3,6 +3,7 @@
 from lib import env
 from lib import general
 from lib import db
+from lib import usermaps
 
 def make(data_type, *args):
 	if args and hasattr(args[0], "lock"):
@@ -1277,8 +1278,8 @@ def make_07d5(mapitem_obj):
 	#0～通常ドロップ（マップごとに割り振り, 1000000000～憑依アイテム
 	result = general.pack_int(mapitem_obj.id) #落ちているアイテムに振られたID
 	result += general.pack_unsigned_int(mapitem_obj.item.item_id) #アイテムのID
-	result += general.pack_unsigned_byte(mapitem_obj.x)
-	result += general.pack_unsigned_byte(mapitem_obj.y)
+	result += general.pack_unsigned_byte(int(mapitem_obj.x))
+	result += general.pack_unsigned_byte(int(mapitem_obj.y))
 	result += general.pack_unsigned_short(mapitem_obj.item.count)
 	#アイテムを落としたキャラのサーバキャラID。憑依アイテムは0固定
 	result += general.pack_int(mapitem_obj.id_from)
@@ -1350,10 +1351,15 @@ def make_138a(pc, error=0):
 	result += general.pack_byte(error) #エラー値
 	return result
 
-def make_1392(pc, target_list, skill_id, skill_lv, damage_list=None, color_list=None):
+def make_1392(pc, target_list, skill_id, skill_lv, damage_list, color_list):
 	"""スキル使用結果通知（対象：単体）"""
-	if damage_list is not None:
+	if not target_list:
+		target_list = ()
+		damage_list = ()
+		color_list = ()
+	else:
 		assert len(target_list) == len(damage_list)
+		assert len(damage_list) == len(color_list)
 	i = len(target_list)
 	#スキルID
 	result = general.pack_short(skill_id)
@@ -1368,14 +1374,11 @@ def make_1392(pc, target_list, skill_id, skill_lv, damage_list=None, color_list=
 	result += general.pack_unsigned_byte(i) 
 	result += "".join(map(general.pack_int, target_list))
 	#xy
-	result += general.pack_unsigned_byte(pc.x)
-	result += general.pack_unsigned_byte(pc.y)
+	result += general.pack_unsigned_byte(int(pc.x))
+	result += general.pack_unsigned_byte(int(pc.y))
 	#HPダメージ数
 	result += general.pack_unsigned_byte(i)
-	if damage_list is not None:
-		result += "".join(map(general.pack_int, damage_list))
-	else:
-		result += general.pack_int(0)*i
+	result += "".join(map(general.pack_int, damage_list))
 	#MPダメージ数
 	result += general.pack_unsigned_byte(i)
 	result += general.pack_int(0)*i
@@ -1384,12 +1387,180 @@ def make_1392(pc, target_list, skill_id, skill_lv, damage_list=None, color_list=
 	result += general.pack_int(0)*i
 	#数字の色の数
 	result += general.pack_unsigned_byte(i)
-	if color_list is not None:
-		result += "".join(map(general.pack_int, color_list))
-	else:
-		result += general.pack_int(0)*i
+	result += "".join(map(general.pack_int, color_list))
 	#スキルLv
 	result += general.pack_byte(skill_lv)
 	return result
+
+def make_138d(pc, target_list, x, y, skill_id, skill_lv, damage_list, color_list):
+	"""スキル使用結果通知（対象：地面）"""
+	if not target_list:
+		target_list = ()
+		damage_list = ()
+		color_list = ()
+	else:
+		assert len(target_list) == len(damage_list)
+		assert len(damage_list) == len(color_list)
+	i = len(target_list)
+	#スキルID
+	result = general.pack_short(skill_id)
+	#不明の数
+	result += general.pack_unsigned_byte(i) 
+	result += general.pack_byte(0)*i
+	#使用キャラのサーバキャラID
+	result += general.pack_int(pc.id)
+	#対象のサーバキャラID #エフェクトが出る対象
+	#result += general.pack_int(target_list[0] if target_list else 0)
+	#対象キャラ数
+	result += general.pack_unsigned_byte(i) 
+	result += "".join(map(general.pack_int, target_list))
+	#xy
+	result += general.pack_unsigned_byte(int(x))
+	result += general.pack_unsigned_byte(int(y))
+	#HPダメージ数
+	result += general.pack_unsigned_byte(i)
+	result += "".join(map(general.pack_int, damage_list))
+	#MPダメージ数
+	result += general.pack_unsigned_byte(i)
+	result += general.pack_int(0)*i
+	#SPダメージ数
+	result += general.pack_unsigned_byte(i)
+	result += general.pack_int(0)*i
+	#数字の色の数
+	result += general.pack_unsigned_byte(i)
+	result += "".join(map(general.pack_int, color_list))
+	#スキルLv
+	result += general.pack_byte(skill_lv)
+	return result
+
+def make_05dc():
+	"""移動ロック開始(イベント開始)"""
+	return ""
+
+def make_05dd():
+	"""移動ロック終了(イベント終了)"""
+	return ""
+
+def make_09c5(pc, item_id, target_id, x, y, skill_id=0, skill_lv=0, error=0):
+	"""アイテム使用結果"""
+	result = general.pack_unsigned_int(item_id) #アイテムID （0xFFFFFFFFの場合もある)
+	result += general.pack_short(error) #0なら成功 それ以外なら失敗
+	result += general.pack_int(pc.id) #アイテム使用者のサーバキャラID
+	result += general.pack_int(500) #キャスト時間 ミリ秒単位
+	result += general.pack_int(target_id) #アイテム対象者のサーバキャラID
+	result += general.pack_unsigned_byte(int(x)) #x
+	result += general.pack_unsigned_byte(int(y)) #y
+	result += general.pack_short(skill_id)
+	result += general.pack_byte(skill_lv)
+	return result
+	#-1 ターゲットがいません
+	#-2 指定した座標へは使用できません
+	#-3 使用できない状態です
+	#-4 スキル中の為使用できませんでした
+	#-5 遠距離攻撃中の為使用できませんでした
+	#-6 視線が通っていません
+	#-7 イベント中の為使用できませんでした
+	#-8 アイテムを使用する事が出来ないターゲットです
+	#-9 行動不能状態の為使用できませんでした
+	#-10 ゴーレムショップに出品中です
+	#-11 ゴーレムは既に起動しています
+	#-12 未鑑定品の為使用できませんでした
+	#-13 スキルが使えませんでした
+	#-14 
+	#-15 宿主はマリオネットにのりうつれません
+	#-16 条件が合わない為マリオネットにのりうつれません
+	#-17 このマリオネットは未実装です
+	#-18 再度マリオネットにのりうつるには時間を置いてください
+	#-19 アイテム使用中の為使用できませんでした
+	#-20 攻撃中の為使用できませんでした
+	#-21 使用できませんでした
+	#-22 この餌は対象ペットへは与えられません
+	#-23 指定した対象へはこのアイテムは使用できません
+	#-24 「メタモーバトル」のみ使用可能です
+	#-25 プルルに変身中でないと使用出来ません
+	#-26 このアイテムでは現在のマリオネットを解除できません
+	#-27 この場所ではマリオネットにのりうつることはできません
+	#-28 「メタモーバトル」中は使用できません
+	#-29 このマップでは使用できません
+	#-30 イベントが用意されていません
+	#-31 何らかの理由で作成できませんでした
+	#-32 ロボット騎乗中でないと使用できません
+	#-33 ＤＥＭキャラクターはマリオネットにのりうつることができません
+	#-34 ユニオンペットを装備していません
+	#-35 装備中のユニオンペットに使えません
+	#-36 対象のアクトキューブを既に覚えている
+	#-37 アクトキューブをこれ以上覚える事が出来ない
+	#-100 何らかの原因で使用できませんでした
+
+def make_09c6(pc, item_id, target_id, x, y):
+	"""アイテム使用効果 (対象：地面)"""
+	result = general.pack_unsigned_int(item_id) #アイテムID
+	result += general.pack_unsigned_byte(0) #unknow num
+	result += general.pack_int(pc.id) #アイテム使用者のサーバキャラID
+	result += general.pack_unsigned_byte(0) #target_id num
+	result += general.pack_unsigned_byte(int(x)) #x
+	result += general.pack_unsigned_byte(int(y)) #y
+	result += general.pack_unsigned_byte(0) #hp num
+	result += general.pack_unsigned_byte(0) #mp num
+	result += general.pack_unsigned_byte(0) #sp num
+	result += general.pack_unsigned_byte(0) #color_flag num
+	return result
+
+def make_09c7(pc, item_id, target_id, x, y):
+	"""アイテム使用効果 (対象：単体)"""
+	result = general.pack_unsigned_int(item_id) #アイテムID
+	result += general.pack_unsigned_byte(1) #unknow num
+	result += general.pack_unsigned_byte(0) #unknow
+	result += general.pack_int(pc.id) #アイテム使用者のサーバキャラID
+	result += general.pack_unsigned_byte(1) #target_id num
+	result += general.pack_int(target_id) #target_id
+	result += general.pack_unsigned_byte(int(x)) #x
+	result += general.pack_unsigned_byte(int(y)) #y
+	result += general.pack_unsigned_byte(1) #hp num
+	result += general.pack_short(0) #hp
+	result += general.pack_unsigned_byte(1) #mp num
+	result += general.pack_short(0) #mp
+	result += general.pack_unsigned_byte(1) #sp num
+	result += general.pack_short(0) #sp
+	result += general.pack_unsigned_byte(1) #color_flag num
+	result += general.pack_int(0) #color_flag
+	return result
+
+def make_09c8(pc, item_id):
+	"""アイテム使用効果 (対象：自分)"""
+	result = general.pack_unsigned_int(item_id) #アイテムID
+	result += general.pack_unsigned_byte(1) #unknow num
+	result += general.pack_unsigned_byte(0) #unknow
+	result += general.pack_int(pc.id) #アイテム使用者のサーバキャラID
+	result += general.pack_unsigned_byte(1) #target_id num
+	result += general.pack_int(pc.id) #target_id
+	result += general.pack_unsigned_byte(int(pc.x)) #x
+	result += general.pack_unsigned_byte(int(pc.y)) #y
+	result += general.pack_unsigned_byte(1) #hp num
+	result += general.pack_short(0) #hp
+	result += general.pack_unsigned_byte(1) #mp num
+	result += general.pack_short(0) #mp
+	result += general.pack_unsigned_byte(1) #sp num
+	result += general.pack_short(0) #sp
+	result += general.pack_unsigned_byte(1) #color_flag num
+	result += general.pack_int(0) #color_flag
+	return result
+
+def make_0bb8(pc):
+	"""飛空庭のひも・テント表示"""
+	if pc.usermap_obj.usermap_type == usermaps.USERMAP_TYPE_FLYGARDEN:
+		result = general.pack_int(pc.usermap_obj.id) #サーバキャラ
+		result += general.pack_str("fg_rope_01") #attrファイル名 33_tent01 fg_rope_01
+		result += general.pack_unsigned_byte(int(pc.usermap_obj.entrance_x))
+		result += general.pack_unsigned_byte(int(pc.usermap_obj.entrance_y))
+		result += general.pack_unsigned_byte(0x06) #04:tent 06:rope
+		result += general.pack_int(pc.usermap_obj.entrance_event_id)
+		result += general.pack_str(pc.usermap_obj.entrance_title)
+		result += general.pack_int(pc.id) #呼び出したキャラの固有ID
+		return result
+
+def make_0bb9(pc):
+	"""飛空庭のひも・テント消去"""
+	return general.pack_int(pc.usermap_obj.id) #サーバキャラ
 
 name_map = general.get_name_map(globals(), "make_")

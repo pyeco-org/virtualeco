@@ -13,6 +13,7 @@ from lib import server
 from lib import users
 from lib import pets
 from lib import monsters
+from lib import usermaps
 from lib import script
 from lib import web
 from lib import general
@@ -46,8 +47,9 @@ def init():
 	general.init()
 	general.log("-"*30+"\n", env.NAME, env.LAST_UPDATE, "\n"+"-"*30)
 	server.init()
-	monsters.init()
 	pets.init()
+	monsters.init()
+	usermaps.init()
 
 def load():
 	env.LOAD_STARTUP_TIME = time.time()

@@ -28,7 +28,7 @@ try: import cStringIO
 except: import StringIO
 
 if __name__ == "__main__":
-	basedir = os.path.dirname(os.path.abspath(sys.argv[0]))
+	basedir = os.path.dirname(os.path.realpath(sys.argv[0]))
 	os.chdir(basedir)
-	sys.path.append(basedir)
+	sys.path.insert(0, basedir)
 	exec open("virtualeco.py", "rb").read().replace("\r\n", "\n")+"\n"

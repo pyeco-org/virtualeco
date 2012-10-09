@@ -7,11 +7,24 @@ import traceback
 import threading
 from lib import general
 from lib import monsters
+from lib import db
+from lib import script
+from lib import usermaps
 
 def use(pc, target_id, x, y, skill_id, skill_lv):
+	general.log("[skill] use skill (%s, %s) -> (%s, %s, %s)"%(
+		skill_id, skill_lv, target_id, x, y,
+	))
 	mod = name_map.get(str(skill_id))
 	if mod is None:
-		return None
+		skill_obj = db.skill.get(skill_id)
+		skill_name = skill_obj.name if skill_obj else "unknow"
+		script.msg(pc, "skill %s %s not define"%(skill_id, skill_name))
+		#スキル使用 #スキルを使用できません
+		pc.map_send("1389", pc, -1, x, y, skill_id, skill_lv, 13, -1)
+		#スキル使用通知 #スキルを使用できません
+		pc.map_send("138a", pc, 13)
+		return
 	general.start_thread(use_thread, (mod, pc, target_id, x, y, skill_id, skill_lv))
 	return True
 
@@ -24,7 +37,7 @@ def use_thread(mod, pc, target_id, x, y, skill_id, skill_lv):
 		general.log_error(traceback.format_exc())
 
 def do_3054(pc, target_id, x, y, skill_id, skill_lv):
-	#ヒーリング 対象のHPを回復する
+	"""ヒーリング 対象のHPを回復する"""
 	cast = 500
 	#スキル使用通知
 	pc.map_send_map("1389", pc, target_id, x, y, skill_id, skill_lv, 0, cast)
@@ -34,7 +47,7 @@ def do_3054(pc, target_id, x, y, skill_id, skill_lv):
 	pc.set_battlestatus(1)
 
 def do_3029(pc, target_id, x, y, skill_id, skill_lv):
-	#アイスアロー 敵に水の力を持つ魔法攻撃を行う
+	"""アイスアロー 敵に水の力を持つ魔法攻撃を行う"""
 	monster = monsters.get_monster_from_id(target_id)
 	if monster is None:
 		#スキル使用 #ターゲットが見つかりません
@@ -49,6 +62,12 @@ def do_3029(pc, target_id, x, y, skill_id, skill_lv):
 	time.sleep(cast/1000.0)
 	pc.set_battlestatus(1)
 	monsters.magic_attack_monster(pc, monster, damage, skill_id, skill_lv)
+
+def do_3250(pc, target_id, x, y, skill_id, skill_lv):
+	"""飛空庭のひも"""
+	usermaps.set_usermap(pc, usermaps.USERMAP_TYPE_FLYGARDEN, x, y)
+	#スキル使用結果通知（対象：地面）
+	pc.map_send_map("138d", pc, (), x, y, skill_id, skill_lv, (), ())
 
 name_map = general.get_name_map(globals(), "do_")
 

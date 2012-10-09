@@ -1,3 +1,10 @@
+2012-10-09
+	fix freeze in use skill call from item
+	add lib.usermaps, lib.obj.usermap, pc.usermap_obj
+	add script.lock_move, script.unlock_move
+	limited support set/unset flygarden rope (only rope)
+	DATABASE_FORMAT_VERSION 1.1.2: set item.skill_id, item.skill_id_add
+
 2012-10-05
 	add kuji category script
 	add script.npcshop_list(pc, shop_item_list)

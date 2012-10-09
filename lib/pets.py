@@ -6,7 +6,7 @@ import threading
 import traceback
 import time
 from lib import general
-PET_ID_START_FROM = 20000
+MIN_PET_ID = 20000
 MAX_PET_ID = 30000
 pet_id_list = []
 pet_list = []
@@ -31,7 +31,7 @@ def set_pet(pc):
 		pet = obj_pet.PetObject(pet)
 		pet.reset(item)
 		with pet_list_lock:
-			pet_id = general.make_id(pet_id_list, PET_ID_START_FROM)
+			pet_id = general.make_id(pet_id_list, MIN_PET_ID)
 			if pet_id >= MAX_PET_ID:
 				general.log_error("[ pet ] ERROR: pet_id [%s] >= MAX_PET_ID"%pet_id)
 				return False

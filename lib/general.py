@@ -122,7 +122,6 @@ PARTS_SET_TYPE_LIST = (
 	"SETPARTS_STAB",
 	"SETPARTS_SLASH",
 )
-
 EQUIP_ATTR_LIST = (
 	"head",
 	"face",

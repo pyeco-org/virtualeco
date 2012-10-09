@@ -13,6 +13,8 @@ from lib import pets
 from lib import users
 from lib import script
 from lib import dumpobj
+from lib import skills
+from lib import usermaps
 from lib.obj import pc_data_lib
 
 class PC:
@@ -124,7 +126,11 @@ class PC:
 	def _set_map(self, map_id=None):
 		if not map_id:
 			map_id = self.map_id
-		map_obj = db.map_obj.get(map_id)
+		if usermaps.id_in_range_rope(map_id):
+			with usermaps.usermap_list_lock:
+				map_obj = usermaps.usermap_list.get(map_id)
+		else:
+			map_obj = db.map_obj.get(map_id)
 		if not map_obj:
 			return False
 		#general.log(self, "set_map", map_obj)
@@ -592,6 +598,7 @@ class PC:
 			if self.map_obj:
 				if self.online:
 					self.unset_pet(True)
+					self.unset_usermap(True)
 					#PC消去
 					script.send_map_obj(self.map_obj, (self,), "1211", self)
 				with self.map_obj.lock:
@@ -613,6 +620,7 @@ class PC:
 			self.pet = None #Pet()
 			self.kanban = ""
 			self.map_obj = None
+			self.usermap_obj = None
 			self.warehouse_open = None #warehouse_id
 			self.shop_open = None #shop_id or shop_item_list
 			self.select_result = None
@@ -623,6 +631,9 @@ class PC:
 	
 	def unset_pet(self, logout=False):
 		return pets.unset_pet(self, logout)
+	
+	def unset_usermap(self, logout=False):
+		return usermaps.unset_usermap(self, logout)
 	
 	def set_battlestatus(self, i):
 		self.battlestatus = int(i)

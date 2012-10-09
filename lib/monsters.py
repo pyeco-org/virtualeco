@@ -10,9 +10,9 @@ from lib.packet import packet
 from lib import general
 from lib import script
 from lib import db
-MONSTER_ID_START_FROM = 10000
-MONSTER_DEL_DELAY = 5000
+MIN_MONSTER_ID = 10000
 MAX_MONSTER_ID = 20000
+MONSTER_DEL_DELAY = 5000
 monster_id_list = []
 monster_list = []
 monster_list_lock = threading.RLock()
@@ -31,7 +31,7 @@ def spawn(monster_id, map_id, x, y):
 		return error
 	monster.reset()
 	with monster_list_lock and monster.lock:
-		monster_id = general.make_id(monster_id_list, MONSTER_ID_START_FROM)
+		monster_id = general.make_id(monster_id_list, MIN_MONSTER_ID)
 		if monster_id >= MAX_MONSTER_ID:
 			error = "[monster] ERROR: monster_id [%s] >= MAX_MONSTER_ID"%monster_id
 			general.log_error(error)

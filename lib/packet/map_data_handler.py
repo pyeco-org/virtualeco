@@ -15,6 +15,7 @@ from lib import pets
 from lib import monsters
 from lib import db
 from lib import skills
+from lib import usermaps
 DATA_TYPE_NOT_PRINT = (
 	"11f8", #自キャラの移動
 	"0032", #接続確認(マップサーバとのみ) 20秒一回
@@ -135,9 +136,15 @@ class MapDataHandler:
 					self.send("1220", monster) #モンスター情報
 				for mi in self.pc.map_obj.mapitem_list:
 					self.send("07d5", mi) #drop item info
+			with usermaps.usermap_list_lock:
+				i = self.pc.map_obj.map_id
+				for key, value in usermaps.usermap_list.iteritems():
+					if value.entrance_map_id != i:
+						continue
+					self.send("0bb8", value.master) #飛空庭のひも・テント表示
 	
 	def send_object_detail(self, i):
-		if i >= pets.PET_ID_START_FROM:
+		if i >= pets.MIN_PET_ID:
 			pet = pets.get_pet_from_id(i)
 			if not pet:
 				return
@@ -505,17 +512,30 @@ class MapDataHandler:
 		#アイテム使用
 		item_iid = general.io_unpack_int(data_io)
 		target_id = general.io_unpack_int(data_io)
+		x = general.io_unpack_unsigned_byte(data_io)
+		y = general.io_unpack_unsigned_byte(data_io)
 		with self.pc.lock:
 			item = self.pc.item.get(item_iid)
 			if not item:
 				return
 			event_id = item.event_id
 			item_event_id = item.item_id
-		p = users.get_pc_from_id(target_id)
-		with p.lock:
-			if not p.online:
+			item_skill_id = item.skill_id
+			p = self.pc
+		if target_id == -1: #対象：地面
+			pass
+		elif target_id != self.pc.id: #対象：単体
+			p = users.get_pc_from_id(target_id)
+			if not (p and p.online):
 				return
+		if event_id:
 			script.run(p, event_id, item_event_id)
+		else:
+			#アイテム使用結果 #success
+			self.send("09c5", self.pc, item_event_id, target_id, x, y)
+			#アイテム使用効果 (対象：地面)
+			self.send("09c6", self.pc, item_event_id, target_id, x, y)
+			skills.use(self.pc, target_id, x, y, item_skill_id, 1)
 	
 	def do_0605(self, data_io):
 		#NPCメッセージ(選択肢)の返信
@@ -829,17 +849,6 @@ class MapDataHandler:
 		x = general.io_unpack_byte(data_io)
 		y = general.io_unpack_byte(data_io)
 		skill_lv = general.io_unpack_byte(data_io)
-		general.log("[ map ] use skill", skill_id, target_id, x, y, skill_lv)
-		r = skills.use(self.pc, target_id, x, y, skill_id, skill_lv)
-		if r:
-			return
-		elif r is None:
-			skill_obj = db.skill.get(skill_id)
-			skill_name = skill_obj.name if skill_obj else "unknow"
-			script.msg(self.pc, "skill %s %s not define"%(skill_id, skill_name))
-		#スキル使用 #スキルを使用できません
-		self.send("1389", self.pc , -1, x, y, skill_id, skill_lv, 13, -1)
-		#スキル使用通知 #スキルを使用できません
-		self.send("138a", self.pc, 13)
+		skills.use(self.pc, target_id, x, y, skill_id, skill_lv)
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

@@ -10,6 +10,7 @@ from lib import env
 from lib import db
 from lib import users
 from lib import general
+from lib import usermaps
 server = None
 monsters = None
 script_list = {}
@@ -65,8 +66,12 @@ def run_script(pc, event_id, item_event_id=0):
 		pc.item_event_id = item_event_id
 		pc.map_send("05dc") #イベント開始の通知
 		pc.map_send("05e8", event_id) #EventID通知 Event送信に対する応答
+	if usermaps.id_in_range_rope(event_id):
+		script_id = usermaps.MIN_USERMAP_ROPE_ID
+	else:
+		script_id = event_id
 	with script_list_lock:
-		event = script_list.get(event_id)
+		event = script_list.get(script_id)
 	try:
 		if event:
 			event["main"](pc)
@@ -77,7 +82,7 @@ def run_script(pc, event_id, item_event_id=0):
 		general.log_error("run_script", event_id, traceback.format_exc())
 	with pc.lock and pc.user.lock:
 		pc.event_id = 0
-		pc.item_event_id = item_event_id
+		pc.item_event_id = 0
 		if pc.online:
 			pc.map_send("05dd") #イベント終了の通知
 
@@ -85,9 +90,12 @@ def run(pc, event_id, item_event_id=0):
 	#vulnerability:
 	#* send a lot of event or skill request can make thread number
 	#* reached the system limits
-	#if pc.event_id or pc.item_event_id:
+	#if pc.event_id is not None or pc.item_event_id is not None:
 	#	general.log_error("script.run error: event duplicate", pc, pc.event_id)
 	#	return
+	if not event_id:
+		general.log_error("[event] event_id null", pc, event_id)
+		return
 	general.start_thread(run_script, (pc, event_id, item_event_id))
 
 def send_map(map_id, *args):
@@ -783,5 +791,13 @@ def unsetallequip(pc):
 def printallequip(pc):
 	for attr in general.EQUIP_ATTR_LIST:
 		msg(pc, "%s %s"%(attr, pc.item.get(getattr(pc.equip, attr))))
+
+def lock_move(pc):
+	with pc.lock and pc.user.lock:
+		pc.map_send("05dc") #移動ロック開始(イベント開始)
+
+def unlock_move(pc):
+	with pc.lock and pc.user.lock:
+		pc.map_send("05dd") #移動ロック終了(イベント終了)
 
 name_map = general.get_name_map(globals(), "")

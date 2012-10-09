@@ -51,7 +51,7 @@ class WebHandle(SimpleHTTPServer.SimpleHTTPRequestHandler):
 		if path.find("..") != -1:
 			return ""
 		path = env.WEB_DIR+"/"+path
-		if not os.path.abspath(path).startswith(os.path.abspath(env.WEB_DIR)):
+		if not os.path.realpath(path).startswith(os.path.realpath(env.WEB_DIR)):
 			return ""
 		return path
 	
