@@ -6,7 +6,6 @@ import threading
 import traceback
 from lib import env
 from lib import general
-from lib import script
 MIN_USERMAP_ROPE_ID = 70000000
 MAX_USERMAP_ROPE_ID = 71000000
 USERMAP_TYPE_NONE = 0
@@ -70,6 +69,7 @@ def unset_usermap(pc, logout=False):
 			pc.usermap_obj = None
 
 def init():
-	global obj_usermap
+	global obj_usermap, script
 	from lib.obj import usermap as obj_usermap
+	from lib import script
 	obj_usermap.init()
