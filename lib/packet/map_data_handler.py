@@ -6,6 +6,7 @@ import hashlib
 import random
 import contextlib
 import traceback
+import time
 from lib import env
 from lib import general
 from lib.packet import packet
@@ -222,6 +223,9 @@ class MapDataHandler:
 		self.pc.set_motion(111, False)
 		self.pc.set_map()
 		self.pc.set_coord(self.pc.x, self.pc.y) #on login
+		if not self.pc.map_obj:
+			self.pc.set_map(10023100) #アップタウン東可動橋
+			self.pc.set_coord(random.randint(252, 253), random.randint(126, 129))
 		self.send("1239", self.pc, 10) #キャラ速度通知・変更 #マップ読み込み中は10
 		self.send("1a5f") #右クリ設定
 		self.send_item_list() #インベントリ情報
@@ -329,13 +333,15 @@ class MapDataHandler:
 		#general.log("[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
 		#	rawx, rawy, rawdir, move_type))
 		with self.pc.lock:
+			if not self.pc.visible:
+				#fix warp coord error when 11f8(move) came after 05e6(event)
+				general.log("[ map ] 11f8 ignore")
+				return
 			old_x, old_y = self.pc.x, self.pc.y
-		self.pc.set_raw_coord(rawx, rawy)
-		self.pc.set_raw_dir(rawdir)
-		with self.pc.lock:
+			self.pc.set_raw_coord(rawx, rawy)
+			self.pc.set_raw_dir(rawdir)
 			new_x, new_y = self.pc.x, self.pc.y
-		self.send_map_without_self("11f9", self.pc, move_type) #キャラ移動アナウンス
-		with self.pc.lock:
+			self.send_map_without_self("11f9", self.pc, move_type) #キャラ移動アナウンス
 			if old_x == new_x and old_y == new_y:
 				return
 			if self.pc.logout:
@@ -404,7 +410,7 @@ class MapDataHandler:
 		#トレードのOK状態
 		general.log("[ map ] trade: send ok")
 		self.pc.set_trade_ok()
-
+	
 	def do_0a15(self, data_io):
 		#トレードのTradeを押した際に送信
 		general.log("[ map ]","trade: send trade")

@@ -6,6 +6,7 @@ import threading
 import traceback
 from lib import env
 from lib import general
+from lib import script
 MIN_USERMAP_ROPE_ID = 70000000
 MAX_USERMAP_ROPE_ID = 71000000
 USERMAP_TYPE_NONE = 0
@@ -53,17 +54,32 @@ def unset_usermap(pc, logout=False):
 			return
 		i = pc.usermap_obj.id
 		general.log("[umaps] del usermap id", i)
-		map_obj = general.get_map(pc.usermap_obj.entrance_map_id)
+		usermap_obj = pc.usermap_obj
+		map_obj = general.get_map(usermap_obj.entrance_map_id)
 		if not map_obj:
 			general.log_error(
 				"[umaps] unset_usermap error: entrance_map_id not exist",
-				pc.usermap_obj.entrance_map_id,
+				usermap_obj.entrance_map_id,
 			)
 			return
 		if logout:
 			script.send_map_obj(map_obj, (pc,), "0bb9", pc) #飛空庭のひも・テント消去
 		else:
 			script.send_map_obj(map_obj, (), "0bb9", pc) #飛空庭のひも・テント消去
+		for p in general.copy(usermap_obj.pc_list):
+			if logout and p == pc:
+				pc.set_map(usermap_obj.entrance_map_id)
+				pc.set_coord(usermap_obj.entrance_x, usermap_obj.entrance_y)
+				continue
+			try:
+				script.warp(
+					p,
+					usermap_obj.entrance_map_id,
+					usermap_obj.entrance_x,
+					usermap_obj.entrance_y,
+				)
+			except:
+				general.log_error(traceback.format_exc())
 		with usermap_list_lock:
 			del usermap_list[i]
 			pc.usermap_obj = None

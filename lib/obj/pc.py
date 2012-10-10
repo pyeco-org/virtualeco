@@ -151,7 +151,8 @@ class PC:
 	
 	def set_visible(self, visible):
 		with self.lock:
-			self.visible = True if visible else False
+			self.visible = bool(visible)
+			general.log("[ pc  ] set visible", bool(visible))
 	
 	def set_motion(self, motion_id, motion_loop):
 		with self.lock:

@@ -88,8 +88,8 @@ class StandardClient(threading.Thread):
 		self.src_address = src
 		self.buf = ""
 		self.running = True
-		self.recv_init = False
-		self.recv_key = False
+		#self.recv_init = False
+		#self.recv_key = False
 		self.rijndael_key = None
 		self.rijndael_obj = None
 		self.send_lock = threading.RLock()
@@ -120,6 +120,14 @@ class StandardClient(threading.Thread):
 		return self.recv_packet_force(
 			general.unpack_int(self.recv_packet_force(4))+4)
 	def run(self):
+		try:
+			self.recv_init()
+			self.recv_key()
+		except EOFError:
+			self.stop()
+		except:
+			general.log_error(traceback.format_exc())
+			self.stop()
 		while self.running:
 			try:
 				self.handle_packet()
@@ -133,43 +141,41 @@ class StandardClient(threading.Thread):
 		#general.log("[ srv ] send", packet.encode("hex"))
 		with self.send_lock:
 			self.socket.sendall(packet)
-	def handle_packet(self):
-		if not self.recv_init:
-			packet = self.recv_packet_force(PACKET_INIT_LENGTH)
-			if packet != PACKET_INIT:
-				raise ValueError("packet != PACKET_INIT")
-			self.recv_init = True
-			self.send_packet(PACKET_KEY_EXCHANGE)
-		elif not self.recv_key:
-			#get client public key
-			client_public_key_bytes = self.recv_key_packet()
-			client_public_key = general.bytes_to_int(client_public_key_bytes)
-			#general.log("[ srv ] client key:", client_public_key_bytes)
-			#general.log("[ srv ] length:", len(client_public_key_bytes))
-			self.recv_key = True
-			if USE_NULL_KEY:
-				if client_public_key != VALUE_NULL_KEY:
-					raise ValueError("client_public_key != VALUE_NULL_KEY")
-				self.rijndael_key = "\x00"*0x10
-			else:
-				#get share key
-				share_key_bytes = general.get_share_key_bytes(
-					client_public_key, PRIVATE_KEY, PRIME)
-				general.log("[ srv ] share key:", share_key_bytes)
-				#general.log("[ srv ] length:", len(share_key_bytes))
-				#get rijndael key (str)
-				self.rijndael_key = general.get_rijndael_key(share_key_bytes)
-				self.rijndael_obj = rijndael.rijndael(
-					self.rijndael_key, block_size=16
-				)
-				self.rijndael_obj.lock = threading.RLock()
-			general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
+	def recv_init(self):
+		packet = self.recv_packet_force(PACKET_INIT_LENGTH)
+		if packet != PACKET_INIT:
+			raise ValueError("packet != PACKET_INIT")
+		self.send_packet(PACKET_KEY_EXCHANGE)
+	def recv_key(self):
+		#get client public key
+		client_public_key_bytes = self.recv_key_packet()
+		client_public_key = general.bytes_to_int(client_public_key_bytes)
+		#general.log("[ srv ] client key:", client_public_key_bytes)
+		#general.log("[ srv ] length:", len(client_public_key_bytes))
+		self.recv_key = True
+		if USE_NULL_KEY:
+			if client_public_key != VALUE_NULL_KEY:
+				raise ValueError("client_public_key != VALUE_NULL_KEY")
+			self.rijndael_key = "\x00"*0x10
 		else:
-			packet = self.recv_enc_packet()
-			try:
-				self.handle_data(general.decode(packet, self.rijndael_obj))
-			except:
-				general.log_error(traceback.format_exc())
+			#get share key
+			share_key_bytes = general.get_share_key_bytes(
+				client_public_key, PRIVATE_KEY, PRIME)
+			general.log("[ srv ] share key:", share_key_bytes)
+			#general.log("[ srv ] length:", len(share_key_bytes))
+			#get rijndael key (str)
+			self.rijndael_key = general.get_rijndael_key(share_key_bytes)
+			self.rijndael_obj = rijndael.rijndael(
+				self.rijndael_key, block_size=16
+			)
+			self.rijndael_obj.lock = threading.RLock()
+		general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
+	def handle_packet(self):
+		packet = self.recv_enc_packet()
+		try:
+			self.handle_data(general.decode(packet, self.rijndael_obj))
+		except:
+			general.log_error(traceback.format_exc())
 	def _stop(self):
 		if not self.running:
 			return

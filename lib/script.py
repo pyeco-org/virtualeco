@@ -62,6 +62,7 @@ def load_single(path):
 def run_script(pc, event_id, item_event_id=0):
 	#general.log("run script id", event_id)
 	with pc.lock and pc.user.lock:
+		lock_move(pc)
 		pc.event_id = event_id
 		pc.item_event_id = item_event_id
 		pc.map_send("05dc") #イベント開始の通知
@@ -85,6 +86,7 @@ def run_script(pc, event_id, item_event_id=0):
 		pc.item_event_id = 0
 		if pc.online:
 			pc.map_send("05dd") #イベント終了の通知
+			unlock_move(pc)
 
 def run(pc, event_id, item_event_id=0):
 	#vulnerability:
@@ -342,16 +344,21 @@ def warp(pc, map_id, x=None, y=None):
 		general.assert_value_range("y", y, general.RANGE_UNSIGNED_BYTE)
 	with pc.lock and pc.user.lock:
 		if map_id != pc.map_obj.map_id:
+			pc.set_visible(False) #set visible false before 11fd
 			if not pc.set_map(map_id):
 				raise ValueError("map_id %d not found."%map_id)
-			if x != None and y != None: pc.set_coord(x, y)
-			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
+			if x is not None and y is not None:
+				pc.set_coord(x, y)
+			else:
+				pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
 			pc.set_dir(0)
 			pc.map_send("11fd", pc) #マップ変更通知
 			pc.map_send("122a") #モンスターID通知
 		else:
-			if x != None and y != None: pc.set_coord(x, y)
-			else: pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
+			if x is not None and y is not None:
+				pc.set_coord(x, y)
+			else:
+				pc.set_coord(pc.map_obj.centerx, pc.map_obj.centery)
 			pc.unset_pet()
 			pc.map_send_map("11f9", pc, 14) #キャラ移動アナウンス #ワープ
 			pc.set_pet()

@@ -1,3 +1,7 @@
+2012-10-10
+	fix warp coord error when 11f8(move) came after 05e6(event)
+	pop pc on usermap when master logout
+
 2012-10-09
 	fix freeze in use skill call from item
 	add lib.usermaps, lib.obj.usermap, pc.usermap_obj
