@@ -6,9 +6,11 @@ import threading
 import traceback
 from lib import env
 from lib import general
-from lib import script
-MIN_USERMAP_ROPE_ID = 70000000
-MAX_USERMAP_ROPE_ID = 71000000
+#in this time, only support flygarden
+MIN_USERMAP_ID = 60000
+MAX_USERMAP_ID = 70000
+MIN_FLYGARDEN_ID = 70000000
+MAX_FLYGARDEN_ID = 70010000
 USERMAP_TYPE_NONE = 0
 USERMAP_TYPE_TENT = 1
 USERMAP_TYPE_FLYGARDEN = 2
@@ -25,23 +27,35 @@ USERMAP_DEFAULT_ATTR = {
 usermap_list = {}
 usermap_list_lock = threading.RLock()
 
-def id_in_range_rope(i):
-	return (MIN_USERMAP_ROPE_ID < i < MAX_USERMAP_ROPE_ID)
+def map_id_in_range_flygarden(i):
+	return (MIN_FLYGARDEN_ID < i < MAX_FLYGARDEN_ID)
+
+def get_usermap_from_id(i):
+	with usermap_list_lock:
+		return usermap_list.get(i)
+
+def get_usermap_from_map_id(i):
+	with usermap_list_lock:
+		if map_id_in_range_flygarden(i):
+			return usermap_list.get(i-MIN_FLYGARDEN_ID+MIN_USERMAP_ID)
+		else:
+			general.log_error("[umaps] get_usermap_from_map_id error:", i)
 
 def set_usermap(pc, usermap_type, x, y):
 	unset_usermap(pc)
 	with pc.lock:
 		with usermap_list_lock:
-			i = general.make_id(usermap_list, MIN_USERMAP_ROPE_ID)
+			i = general.make_id(usermap_list, MIN_USERMAP_ID)
 			usermap_obj = obj_usermap.UserMap(usermap_type)
 			usermap_obj.id = i
 			usermap_obj.master = pc
-			usermap_obj.map_id = i
+			usermap_obj.map_id = MIN_FLYGARDEN_ID+i-MIN_USERMAP_ID
 			usermap_obj.entrance_map_id = pc.map_obj.map_id
 			usermap_obj.entrance_x = x
 			usermap_obj.entrance_y = y
-			usermap_obj.entrance_event_id = i
+			usermap_obj.entrance_event_id = usermap_obj.map_id
 			usermap_obj.entrance_title = "%sさんの飛空庭"%pc.name
+			usermap_obj.set_flygarden()
 			pc.usermap_obj = usermap_obj
 			usermap_list[i] = usermap_obj
 		general.log("[umaps] set usermap id", i)

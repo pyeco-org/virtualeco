@@ -292,6 +292,18 @@ class MapDataHandler:
 		if self.send_login_event:
 			self.send_login_event = False
 			script.run(self.pc, env.LOGIN_EVENT_ID)
+		
+		if usermaps.map_id_in_range_flygarden(self.pc.map_obj.map_id):
+			#bad packet, i dont known the structure of 1be4
+			#self.send("1be4", self.pc) #飛空庭ログイン
+			#1bf9 only for reply 1bf8, plz remove when 1be4 work
+			for i, attr in enumerate(general.FLYGARDEN_ATTR_LIST):
+				#飛空庭に装飾品を装着・解除するの結果
+				self.send("1bf9", getattr(self.pc.map_obj.flygarden, attr), i)
+			self.send("13bc", 2) #飛空庭の天候
+			self.send("13bd", 4) #飛空庭の天体
+			self.send("1bee", self.pc) #飛空庭の天候
+			self.send("1bf0", self.pc) #飛空庭の天候
 	
 	def do_0fa5(self, data_io):
 		#戦闘状態変更通知

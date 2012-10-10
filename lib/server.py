@@ -123,19 +123,13 @@ class StandardClient(threading.Thread):
 		try:
 			self.recv_init()
 			self.recv_key()
+			while self.running:
+				self.handle_packet()
 		except EOFError:
 			self.stop()
 		except:
 			general.log_error(traceback.format_exc())
 			self.stop()
-		while self.running:
-			try:
-				self.handle_packet()
-			except EOFError:
-				self.stop()
-			except:
-				general.log_error(traceback.format_exc())
-				self.stop()
 		general.log("[ srv ] quit", self)
 	def send_packet(self, packet):
 		#general.log("[ srv ] send", packet.encode("hex"))

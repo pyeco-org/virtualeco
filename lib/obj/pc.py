@@ -126,9 +126,8 @@ class PC:
 	def _set_map(self, map_id=None):
 		if not map_id:
 			map_id = self.map_id
-		if usermaps.id_in_range_rope(map_id):
-			with usermaps.usermap_list_lock:
-				map_obj = usermaps.usermap_list.get(map_id)
+		if usermaps.map_id_in_range_flygarden(map_id):
+			map_obj = usermaps.get_usermap_from_map_id(map_id)
 		else:
 			map_obj = db.map_obj.get(map_id)
 		if not map_obj:

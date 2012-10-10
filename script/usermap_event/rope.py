@@ -4,7 +4,7 @@ import random
 from lib import script
 from lib import general
 from lib import usermaps
-ID = usermaps.MIN_USERMAP_ROPE_ID
+ID = usermaps.MIN_FLYGARDEN_ID
 
 def master_event(pc):
 	r = script.select(pc, ("enter", "close", "cancel"), "master rope")
@@ -20,7 +20,7 @@ def guest_event(pc):
 
 def main(pc):
 	with usermaps.usermap_list_lock:
-		usermap_obj = usermaps.usermap_list.get(pc.event_id)
+		usermap_obj = usermaps.get_usermap_from_map_id(pc.event_id)
 	if not usermap_obj:
 		script.msg(pc, "rope error: usermap id %s not exist"%pc.event_id)
 		return

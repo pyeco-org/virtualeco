@@ -135,6 +135,19 @@ EQUIP_ATTR_LIST = (
 	"socks",
 	"pet",
 )
+FLYGARDEN_ATTR_LIST = (
+	"flying_base",
+	"flying_sail",
+	"garden_floor",
+	"garden_modelhouse",
+	"house_outside_wall",
+	"house_roof",
+	"room_floor",
+	"room_wall",
+	#"unknow01",
+	#"unknow02",
+	#"unknow03",
+)
 
 class NullClass: pass
 

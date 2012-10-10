@@ -67,8 +67,8 @@ def run_script(pc, event_id, item_event_id=0):
 		pc.item_event_id = item_event_id
 		pc.map_send("05dc") #イベント開始の通知
 		pc.map_send("05e8", event_id) #EventID通知 Event送信に対する応答
-	if usermaps.id_in_range_rope(event_id):
-		script_id = usermaps.MIN_USERMAP_ROPE_ID
+	if usermaps.map_id_in_range_flygarden(event_id):
+		script_id = usermaps.MIN_FLYGARDEN_ID
 	else:
 		script_id = event_id
 	with script_list_lock:

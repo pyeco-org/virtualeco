@@ -1563,4 +1563,61 @@ def make_0bb9(pc):
 	"""飛空庭のひも・テント消去"""
 	return general.pack_int(pc.usermap_obj.id) #サーバキャラ
 
+def make_1be4(pc):
+	"""飛空庭ログイン"""
+	i = len(general.FLYGARDEN_ATTR_LIST)
+	usermap_obj = pc.map_obj
+	result = general.pack_int(usermap_obj.map_id)
+	result += general.pack_unsigned_byte(int(pc.x)) #x
+	result += general.pack_unsigned_byte(int(pc.y)) #y
+	result += general.pack_unsigned_byte(int(pc.dir)) #dir
+	result += general.pack_unsigned_byte(i) #item_id num
+	for attr in general.FLYGARDEN_ATTR_LIST: #item_id
+		result += general.pack_int(getattr(usermap_obj.flygarden, attr))
+	result += general.pack_unsigned_byte(i) #color num
+	for attr in general.FLYGARDEN_ATTR_LIST: #color
+		result += general.pack_byte(0)
+	result += general.pack_byte(0) #土台色？
+	general.log(result.encode("hex"))
+	return result
+
+def make_13bc(weather):
+	"""飛空庭の天候"""
+	return general.pack_byte(weather) #0なし1雨2雪
+ 
+def make_13bd(sky):
+	"""飛空庭の天体"""
+	return general.pack_byte(sky) #0デフォ1夕2夜3宇宙 #0~14
+
+def make_1bee(pc):
+	"""家具情報ヘッダ"""
+	return general.pack_int(pc.map_obj.map_id)
+
+def make_1bf0(pc):
+	"""家具情報フッタ"""
+	return general.pack_int(pc.map_obj.map_id)
+
+def make_1bef(pc):
+	"""家具情報データ"""
+	usermap_obj = pc.map_obj
+	result = general.pack_int(usermap_obj.id)
+	result += general.pack_int(0) #家具のID
+	result += general.pack_int(0) #フィギュアの場合 モンスターIDが入ってる
+	result += general.pack_short(rawx)
+	result += general.pack_short(rawy) #高さ？
+	result += general.pack_short(rawz) #奥行き
+	result += general.pack_short(rawdir) #傾き？
+	result += general.pack_short(motion) #モーション
+	result += general.pack_short(y_rotate) #y軸回転？
+	result += general.pack_short(z_rotate) #z軸回転？ 
+	result += general.pack_short(name) #名前
+	return result
+
+def make_1bf9(item_id, place):
+	"""飛空庭に装飾品を装着・解除するの結果"""
+	result = general.pack_int(item_id)
+	result += general.pack_int(place)
+	result += general.pack_byte(0)
+	return result
+
 name_map = general.get_name_map(globals(), "make_")

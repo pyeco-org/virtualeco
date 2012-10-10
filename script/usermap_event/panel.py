@@ -27,8 +27,7 @@ def guest_event(pc, usermap_obj):
 		)
 
 def main(pc):
-	with usermaps.usermap_list_lock:
-		usermap_obj = usermaps.usermap_list.get(pc.map_obj.map_id)
+	usermap_obj = usermaps.get_usermap_from_map_id(pc.map_obj.map_id)
 	if not usermap_obj:
 		script.msg(pc, "rope error: usermap id %s not exist"%pc.map_obj.map_id)
 		return
