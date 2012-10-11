@@ -254,7 +254,7 @@ def str_to_list(string):
 def stringio(string):
 	return StringIO(string)
 def copy(obj):
-	return py_copy.copy(obj)
+	return py_copy.deepcopy(obj)
 def get_today():
 	return time.strftime("%Y-%m-%d", time.localtime())
 def randint(*args):
@@ -487,6 +487,10 @@ def make_id(id_list_exist, min_id=0):
 	i += 1
 	log("[gener] make_id", sorted_list, min_id, i)
 	return i
+
+def coord_in_range(x, y, xsrc, ysrc, xyr):
+	xrad, yrad = (xyr[0]-1)/2, (xyr[1]-1)/2
+	return ((abs(abs(x)-abs(xsrc)) <= xrad) and (abs(abs(y)-abs(ysrc)) <= yrad))
 
 def start_thread(method, args):
 	#use threading.Thread replace thread.start_new_thread

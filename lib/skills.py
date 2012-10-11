@@ -36,18 +36,7 @@ def use_thread(mod, pc, target_id, x, y, skill_id, skill_lv):
 		general.log_error("[skill] error", pc, target_id, x, y, skill_id, skill_lv)
 		general.log_error(traceback.format_exc())
 
-def do_3054(pc, target_id, x, y, skill_id, skill_lv):
-	"""ヒーリング 対象のHPを回復する"""
-	cast = 500
-	#スキル使用通知
-	pc.map_send_map("1389", pc, target_id, x, y, skill_id, skill_lv, 0, cast)
-	time.sleep(cast/1000.0)
-	#スキル使用結果通知（対象：単体）, HP回復 #motion wrong, reason not found
-	pc.map_send_map("1392", pc, (target_id,), skill_id, skill_lv, (-100,), (0x11,))
-	pc.set_battlestatus(1)
-
-def do_3029(pc, target_id, x, y, skill_id, skill_lv):
-	"""アイスアロー 敵に水の力を持つ魔法攻撃を行う"""
+def get_monster(pc, target_id, x, y, skill_id, skill_lv):
 	monster = monsters.get_monster_from_id(target_id)
 	if monster is None:
 		#スキル使用 #ターゲットが見つかりません
@@ -55,13 +44,56 @@ def do_3029(pc, target_id, x, y, skill_id, skill_lv):
 		#スキル使用通知 #ターゲットが見つかりません
 		pc.map_send("138a", pc, 4)
 		return
-	cast = 500
-	damage = 75
+	return monster
+
+def start_cast(pc, target_id, x, y, skill_id, skill_lv, cast):
 	#スキル使用通知
 	pc.map_send_map("1389", pc, target_id, x, y, skill_id, skill_lv, 0, cast)
 	time.sleep(cast/1000.0)
+
+def do_3054(pc, target_id, x, y, skill_id, skill_lv):
+	"""ヒーリング 対象のHPを回復する"""
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
+	#スキル使用結果通知（対象：単体）, HP回復 #motion wrong, reason not found
+	pc.map_send_map("1392", pc, (target_id,), skill_id, skill_lv, (-100,), (0x11,))
 	pc.set_battlestatus(1)
-	monsters.magic_attack_monster(pc, monster, damage, skill_id, skill_lv)
+
+def do_3029(pc, target_id, x, y, skill_id, skill_lv):
+	"""アイスアロー 敵に水の力を持つ魔法攻撃を行う"""
+	monster = get_monster(pc, target_id, x, y, skill_id, skill_lv)
+	if monster is None:
+		return
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
+	monsters.magic_attack_monster(pc, monster, 75, skill_id, skill_lv)
+	pc.set_battlestatus(1)
+
+def do_3416(pc, target_id, x, y, skill_id, skill_lv):
+	"""ウィンドエクスプロージョン 風属性の範囲攻撃魔法"""
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 1000)
+	monsters.magic_attack_coord(pc, x, y, (7, 7), 85, skill_id, skill_lv)
+	pc.set_battlestatus(1)
+
+def do_3432(pc, target_id, x, y, skill_id, skill_lv):
+	"""エレメンタルレイン 指定対象周囲に４属性全ての力を持つ星の雨を発生させダメージを与える"""
+	monster = get_monster(pc, target_id, x, y, skill_id, skill_lv)
+	if monster is None:
+		return
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 1000)
+	#effect not show, wrong packet(1392) or effect id?
+	#script.effect(pc, 4387, target_id)
+	monsters.magic_attack_monster_range(pc, monster, (7, 7), 99, skill_id, skill_lv)
+	pc.set_battlestatus(1)
+
+def do_3009(pc, target_id, x, y, skill_id, skill_lv):
+	"""ファイアブラスト 対象の範囲に火焔攻撃を行う"""
+	monster = get_monster(pc, target_id, x, y, skill_id, skill_lv)
+	if monster is None:
+		return
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
+	#effect not show, wrong packet(1392) or effect id?
+	#script.effect(pc, 4387, target_id)
+	monsters.magic_attack_monster_range(pc, monster, (3, 3), 50, skill_id, skill_lv)
+	pc.set_battlestatus(1)
 
 def do_3250(pc, target_id, x, y, skill_id, skill_lv):
 	"""飛空庭のひも"""

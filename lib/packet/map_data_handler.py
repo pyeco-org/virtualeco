@@ -841,10 +841,10 @@ class MapDataHandler:
 	
 	def do_1387(self, data_io):
 		#スキル使用
-		skill_id = io_unpack_short(data_io)
+		skill_id = io_unpack_unsigned_short(data_io)
 		target_id = io_unpack_int(data_io)
-		x = io_unpack_byte(data_io)
-		y = io_unpack_byte(data_io)
+		x = io_unpack_unsigned_byte(data_io)
+		y = io_unpack_unsigned_byte(data_io)
 		skill_lv = io_unpack_byte(data_io)
 		skills.use(self.pc, target_id, x, y, skill_id, skill_lv)
 

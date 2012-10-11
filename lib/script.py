@@ -646,10 +646,14 @@ def playjin(pc, sound_id, loop=0, volume=100, balance=50):
 
 def effect(pc, effect_id, id=None, x=None, y=None, dir=None):
 	general.assert_value_range("effect_id", effect_id, general.RANGE_UNSIGNED_INT)
-	general.assert_value_range("id", id, general.RANGE_INT)
-	general.assert_value_range("x", x, general.RANGE_UNSIGNED_BYTE)
-	general.assert_value_range("y", y, general.RANGE_UNSIGNED_BYTE)
-	general.assert_value_range("dir", dir, general.RANGE_BYTE)
+	if id is not None:
+		general.assert_value_range("id", id, general.RANGE_INT)
+	if x is not None:
+		general.assert_value_range("x", x, general.RANGE_UNSIGNED_BYTE)
+	if y is not None:
+		general.assert_value_range("y", y, general.RANGE_UNSIGNED_BYTE)
+	if dir is not None:
+		general.assert_value_range("dir", dir, general.RANGE_BYTE)
 	with pc.lock and pc.user.lock:
 		#エフェクト受信
 		pc.map_send_map("060e", pc, effect_id, id, x, y, dir)
@@ -719,7 +723,7 @@ def spawn(pc, monster_id):
 def killall(pc):
 	with pc.lock and pc.map_obj.lock:
 		while pc.map_obj.monster_list:
-			monsters.delete(pc.map_obj.monster_list.pop())
+			monsters.delete(pc.map_obj.monster_list[0])
 
 def emotion(pc, emotion_id):
 	general.assert_value_range("emotion_id", emotion_id, general.RANGE_UNSIGNED_SHORT)

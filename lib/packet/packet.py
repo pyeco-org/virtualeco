@@ -493,14 +493,19 @@ def make_0244(pc):
 
 def make_0226(pc, job):
 	"""スキル一覧"""
+	def get_lv(i):
+		s = db.skill.get(i)
+		if s is None:
+			return 1
+		return s.maxlv
 	result = ""
 	i = 0
 	if job == 0:
 		i = len(pc.skill_list)
 		#スキルID
 		result += pack_array(pack_short, pc.skill_list)
-		#習得Lv #db.skill[skill_id].maxlv
-		result += pack_array(pack_unsigned_byte, (1,)*i)
+		#習得Lv
+		result += pack_array(pack_unsigned_byte, (get_lv(i) for i in pc.skill_list))
 		#不明
 		result += pack_array(pack_unsigned_byte, (0,)*i)
 		#習得可能Lv
@@ -1329,8 +1334,8 @@ def make_1392(pc, target_list, skill_id, skill_lv, damage_list, color_list):
 	#対象のサーバキャラID #エフェクトが出る対象
 	result += pack_int(target_list[0] if target_list else 0)
 	result += pack_array(pack_int, target_list) #対象キャラ
-	result += pack_unsigned_byte(int(pc.x))
-	result += pack_unsigned_byte(int(pc.y))
+	result += pack_unsigned_byte(int(255))
+	result += pack_unsigned_byte(int(255))
 	result += pack_array(pack_int, damage_list) #HPダメージ
 	result += pack_array(pack_int, (0,)*i) #MPダメージ
 	result += pack_array(pack_int, (0,)*i) #SPダメージ数
@@ -1354,8 +1359,8 @@ def make_138d(pc, target_list, x, y, skill_id, skill_lv, damage_list, color_list
 	#対象のサーバキャラID #エフェクトが出る対象
 	#result += pack_int(target_list[0] if target_list else 0)
 	result += pack_array(pack_int, target_list) #対象キャラ
-	result += pack_unsigned_byte(int(pc.x))
-	result += pack_unsigned_byte(int(pc.y))
+	result += pack_unsigned_byte(int(x))
+	result += pack_unsigned_byte(int(y))
 	result += pack_array(pack_int, damage_list) #HPダメージ
 	result += pack_array(pack_int, (0,)*i) #MPダメージ
 	result += pack_array(pack_int, (0,)*i) #SPダメージ数
