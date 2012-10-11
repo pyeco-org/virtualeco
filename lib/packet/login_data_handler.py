@@ -7,6 +7,7 @@ from lib import env
 from lib import general
 from lib.packet import packet
 from lib import users
+from lib.packet.packet_struct import *
 DATA_TYPE_NOT_PRINT = (
 	"000a", #接続確認
 )
@@ -15,10 +16,10 @@ class LoginDataHandler:
 	def __init__(self):
 		self.user = None
 		self.pc = None
-		self.word_front = general.pack_unsigned_int(
+		self.word_front = pack_unsigned_int(
 			general.randint(0, general.RANGE_INT[1])
 		)
-		self.word_back = general.pack_unsigned_int(
+		self.word_back = pack_unsigned_int(
 			general.randint(0, general.RANGE_INT[1])
 		)
 	
@@ -35,7 +36,7 @@ class LoginDataHandler:
 		#000a 0001 000003f91e07e221
 		data_decode_io = general.stringio(data_decode)
 		while True:
-			data = general.io_unpack_short_raw(data_decode_io)
+			data = io_unpack_short_raw(data_decode_io)
 			if not data:
 				break
 			data_io = general.stringio(data)
@@ -57,7 +58,7 @@ class LoginDataHandler:
 	def do_0001(self, data_io):
 		#接続・接続確認
 		data = data_io.read()
-		general.log("[login] eco version", general.unpack_int(data[:4]))
+		general.log("[login] eco version", unpack_unsigned_int(data[:4]))
 		self.send("0002", data) #認証接続確認(s0001)の応答
 		self.send("001e", self.word_front+self.word_back) #PASS鍵
 		general.log("[login] send word",
@@ -66,17 +67,17 @@ class LoginDataHandler:
 	
 	def do_001f(self, data_io):
 		#認証情報
-		username = general.io_unpack_str(data_io)
-		password_sha1 = general.io_unpack_raw(data_io)[:40]
+		username = io_unpack_str(data_io)
+		password_sha1 = io_unpack_raw(data_io)[:40]
 		general.log("[login]", "login", username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
 				if user.name != username:
 					continue
 				user_password_sha1 = hashlib.sha1(
-					"".join((str(general.unpack_unsigned_int(self.word_front)),
+					"".join((str(unpack_unsigned_int(self.word_front)),
 							user.password,
-							str(general.unpack_unsigned_int(self.word_back)),
+							str(unpack_unsigned_int(self.word_back)),
 							))).hexdigest()
 				if user_password_sha1 != password_sha1:
 					self.send("0020", user, "loginfaild") #アカウント認証結果
@@ -102,13 +103,13 @@ class LoginDataHandler:
 	def do_00a0(self, data_io):
 		#キャラクター作成
 		#02 03313100 00 00 0000 32 0000
-		num = general.io_unpack_byte(data_io)
-		name = general.io_unpack_str(data_io)
-		race = general.io_unpack_byte(data_io)
-		gender = general.io_unpack_byte(data_io)
-		hair = general.io_unpack_short(data_io)
-		hair_color = general.io_unpack_byte(data_io)
-		face = general.io_unpack_short(data_io)
+		num = io_unpack_byte(data_io)
+		name = io_unpack_str(data_io)
+		race = io_unpack_byte(data_io)
+		gender = io_unpack_byte(data_io)
+		hair = io_unpack_short(data_io)
+		hair_color = io_unpack_byte(data_io)
+		face = io_unpack_short(data_io)
 		general.log("[login] create character:", "num", num, "name", name,
 			"race", race, "gender", gender, "hair", hair,
 			"haircolor", hair_color, "face", face)
@@ -139,8 +140,8 @@ class LoginDataHandler:
 	
 	def do_00a5(self, data_io):
 		#キャラクター削除 #num + delpassword
-		num = general.io_unpack_byte(data_io)
-		delpassword_md5 = general.io_unpack_raw(data_io)[:32]
+		num = io_unpack_byte(data_io)
+		delpassword_md5 = io_unpack_raw(data_io)[:32]
 		general.log("[login] remove character", "num", num,
 			"delpassword", delpassword_md5)
 		try:
@@ -162,7 +163,7 @@ class LoginDataHandler:
 	
 	def do_00a7(self, data_io):
 		#キャラクター選択
-		num = general.io_unpack_byte(data_io)
+		num = io_unpack_byte(data_io)
 		general.log("[login] select character", num)
 		with self.user.lock:
 			self.pc = self.user.pc_list[num]
@@ -170,7 +171,7 @@ class LoginDataHandler:
 	
 	def do_0032(self, data_io):
 		#接続先通知要求
-		map_id = general.io_unpack_int(data_io)
+		map_id = io_unpack_int(data_io)
 		self.send("0033") #接続先通知要求(ログインサーバ/0032)の応答
 	
 	def do_002a(self, data_io):
@@ -181,8 +182,8 @@ class LoginDataHandler:
 	
 	def do_00c9(self, data_io):
 		#whisper send
-		name = general.io_unpack_str(data_io)
-		message = general.io_unpack_str(data_io)
+		name = io_unpack_str(data_io)
+		message = io_unpack_str(data_io)
 		p = users.get_pc_from_name(name)
 		if p and p.online:
 			#whisper message

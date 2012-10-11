@@ -77,7 +77,7 @@ def run_script(pc, event_id, item_event_id=0):
 		if event:
 			event["main"](pc)
 		else:
-			say(pc, "Script id %s not exist."%event_id, "")
+			say(pc, "Script id %s not exist."%script_id, "")
 			#raise ValueError("Script id not exist")
 	except:
 		general.log_error("run_script", event_id, traceback.format_exc())

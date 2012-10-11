@@ -17,6 +17,7 @@ from lib import monsters
 from lib import db
 from lib import skills
 from lib import usermaps
+from lib.packet.packet_struct import *
 DATA_TYPE_NOT_PRINT = (
 	"11f8", #自キャラの移動
 	"0032", #接続確認(マップサーバとのみ) 20秒一回
@@ -35,10 +36,10 @@ class MapDataHandler:
 	def __init__(self):
 		self.user = None
 		self.pc = None
-		self.word_front = general.pack_unsigned_int(
+		self.word_front = pack_unsigned_int(
 			general.randint(0, general.RANGE_INT[1])
 		)
-		self.word_back = general.pack_unsigned_int(
+		self.word_back = pack_unsigned_int(
 			general.randint(0, general.RANGE_INT[1])
 		)
 		self.send_login_event = env.SEND_LOGIN_EVENT
@@ -73,7 +74,7 @@ class MapDataHandler:
 		#000a 0001 000003f91e07e221
 		data_decode_io = general.stringio(data_decode)
 		while True:
-			data = general.io_unpack_short_raw(data_decode_io)
+			data = io_unpack_short_raw(data_decode_io)
 			if not data:
 				break
 			data_io = general.stringio(data)
@@ -168,7 +169,7 @@ class MapDataHandler:
 	def do_000a(self, data_io):
 		#接続・接続確認
 		data = data_io.read()
-		general.log("[ map ] eco version", general.unpack_int(data[:4]))
+		general.log("[ map ] eco version", unpack_unsigned_int(data[:4]))
 		self.send("000b", data)
 		self.send("000f", self.word_front+self.word_back)
 		general.log("[ map ] send word",
@@ -181,17 +182,17 @@ class MapDataHandler:
 	
 	def do_0010(self, data_io):
 		#マップサーバーに認証情報の送信
-		username = general.io_unpack_str(data_io)
-		password_sha1 = general.io_unpack_raw(data_io)[:40]
+		username = io_unpack_str(data_io)
+		password_sha1 = io_unpack_raw(data_io)[:40]
 		general.log("[ map ]", "login", username, password_sha1)
 		for user in users.get_user_list():
 			with user.lock:
 				if user.name != username:
 					continue
 				user_password_sha1 = hashlib.sha1(
-					"".join((str(general.unpack_unsigned_int(self.word_front)),
+					"".join((str(unpack_unsigned_int(self.word_front)),
 							user.password,
-							str(general.unpack_unsigned_int(self.word_back)),
+							str(unpack_unsigned_int(self.word_back)),
 							))).hexdigest()
 				if user_password_sha1 != password_sha1:
 					self.stop()
@@ -206,9 +207,9 @@ class MapDataHandler:
 	
 	def do_01fd(self, data_io):
 		#選択したキャラ番号通知
-		unknow = general.io_unpack_int(data_io)
+		unknow = io_unpack_int(data_io)
 		if not self.pc:
-			num = general.io_unpack_byte(data_io)
+			num = io_unpack_byte(data_io)
 			with self.user.lock:
 				if not self.user.pc_list[num]:
 					self.stop()
@@ -307,12 +308,12 @@ class MapDataHandler:
 	
 	def do_0fa5(self, data_io):
 		#戦闘状態変更通知
-		self.pc.set_battlestatus(general.io_unpack_byte(data_io))
+		self.pc.set_battlestatus(io_unpack_byte(data_io))
 	
 	def do_121b(self, data_io):
 		#モーションセット＆ログアウト
-		motion_id = general.io_unpack_short(data_io)
-		loop = True if general.io_unpack_byte(data_io) else False
+		motion_id = io_unpack_short(data_io)
+		loop = True if io_unpack_byte(data_io) else False
 		general.log("[ map ] motion %d loop %s"%(motion_id, loop))
 		#self.pc.set_motion(motion_id, loop)
 		#self.send_map("121c", self.pc) #モーション通知
@@ -328,7 +329,7 @@ class MapDataHandler:
 	
 	def do_001f(self, data_io):
 		#ログアウト開始&ログアウト失敗
-		if general.io_unpack_byte(data_io) == 0:
+		if io_unpack_byte(data_io) == 0:
 			general.log("[ map ] logout success")
 		else:
 			general.log("[ map ] logout failed")
@@ -338,10 +339,10 @@ class MapDataHandler:
 		if self.pc.attack:
 			general.log("[ map ] stop attack")
 			self.pc.reset_attack()
-		rawx = general.io_unpack_short(data_io)
-		rawy = general.io_unpack_short(data_io)
-		rawdir = general.io_unpack_short(data_io)
-		move_type = general.io_unpack_short(data_io)
+		rawx = io_unpack_short(data_io)
+		rawy = io_unpack_short(data_io)
+		rawdir = io_unpack_short(data_io)
+		move_type = io_unpack_short(data_io)
 		#general.log("[ map ] move rawx %d rawy %d rawdir %d move_type %d"%(
 		#	rawx, rawy, rawdir, move_type))
 		with self.pc.lock:
@@ -375,7 +376,7 @@ class MapDataHandler:
 	
 	def do_020d(self, data_io):
 		#キャラクタ情報要求
-		obj_id = general.io_unpack_int(data_io)
+		obj_id = io_unpack_int(data_io)
 		general.log("[ map ] request object id", obj_id)
 		self.send_object_detail(obj_id)
 	
@@ -388,25 +389,25 @@ class MapDataHandler:
 	
 	def do_03e8(self, data_io):
 		#オープンチャット送信
-		message = general.io_unpack_str(data_io)
+		message = io_unpack_str(data_io)
 		if not script.handle_cmd(self.pc, message):
 			self.send_map("03e9", self.pc.id, message) #オープンチャット・システムメッセージ
 	
 	def do_05e6(self, data_io):
 		#イベント実行
-		event_id = general.io_unpack_int(data_io)
+		event_id = io_unpack_int(data_io)
 		script.run(self.pc, event_id)
 	
 	def do_09e2(self, data_io):
 		#インベントリ移動
-		iid = general.io_unpack_int(data_io)
-		part = general.io_unpack_byte(data_io)
-		count = general.io_unpack_short(data_io)
+		iid = io_unpack_int(data_io)
+		part = io_unpack_byte(data_io)
+		count = io_unpack_short(data_io)
 		self.pc.unset_equip(iid, part)
 	
 	def do_09e7(self, data_io):
 		#アイテム装備
-		iid = general.io_unpack_int(data_io)
+		iid = io_unpack_int(data_io)
 		if self.pc.dem_form_status():
 			general.log("[ map ] set equip failed", self.pc)
 			self.send("09e8", iid, -1, -2, 1) #アイテム装備
@@ -431,20 +432,10 @@ class MapDataHandler:
 	def do_0a1b(self, data_io):
 		#トレードウィンドウに置いたアイテム・金の情報を送信？
 		general.log("[ map ] trade send item list")
-		iid_list = []
-		count_list = []
-		iid_count = general.io_unpack_byte(data_io)
-		#general.log("iid_count", iid_count)
-		for i in xrange(iid_count):
-			iid_list.append(general.io_unpack_int(data_io))
-		count_count = general.io_unpack_byte(data_io)
-		#general.log("count_count", count_count)
-		for i in xrange(iid_count):
-			count_list.append(general.io_unpack_short(data_io))
-		self.pc.set_trade_list(
-			general.io_unpack_int(data_io),
-			zip(iid_list, count_list),
-		)
+		iid_list = io_unpack_array(io_unpack_int, data_io)
+		count_list = io_unpack_array(io_unpack_short, data_io)
+		gold = io_unpack_int(data_io)
+		self.pc.set_trade_list(gold, zip(iid_list, count_list))
 	
 	def do_09f7(self, data_io):
 		#倉庫を閉じる
@@ -457,8 +448,8 @@ class MapDataHandler:
 			#倉庫から取り出した時の結果 #キャラのアイテム数が100個を超えてしまうためキャンセルされました
 			self.send("09fc", -5)
 			return
-		item_iid = general.io_unpack_int(data_io)
-		item_count = general.io_unpack_short(data_io)
+		item_iid = io_unpack_int(data_io)
+		item_count = io_unpack_short(data_io)
 		general.log("[ map ] take item from warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if self.pc.warehouse_open is None:
@@ -492,8 +483,8 @@ class MapDataHandler:
 	
 	def do_09fd(self, data_io):
 		#倉庫に預ける
-		item_iid = general.io_unpack_int(data_io)
-		item_count = general.io_unpack_short(data_io)
+		item_iid = io_unpack_int(data_io)
+		item_count = io_unpack_short(data_io)
 		general.log("[ map ] store item to warehouse", item_iid, item_count)
 		with self.pc.lock:
 			if len(self.pc.warehouse) >= env.MAX_WAREHOURSE_STOCK:
@@ -528,10 +519,10 @@ class MapDataHandler:
 	
 	def do_09c4(self, data_io):
 		#アイテム使用
-		item_iid = general.io_unpack_int(data_io)
-		target_id = general.io_unpack_int(data_io)
-		x = general.io_unpack_unsigned_byte(data_io)
-		y = general.io_unpack_unsigned_byte(data_io)
+		item_iid = io_unpack_int(data_io)
+		target_id = io_unpack_int(data_io)
+		x = io_unpack_unsigned_byte(data_io)
+		y = io_unpack_unsigned_byte(data_io)
 		with self.pc.lock:
 			item = self.pc.item.get(item_iid)
 			if not item:
@@ -559,12 +550,12 @@ class MapDataHandler:
 		#NPCメッセージ(選択肢)の返信
 		self.send("0606") #s0605で選択結果が通知された場合の応答
 		with self.pc.lock:
-			self.pc.select_result = general.io_unpack_byte(data_io)
+			self.pc.select_result = io_unpack_byte(data_io)
 	
 	def do_041a(self, data_io):
 		#set kanban
 		with self.pc.lock:
-			self.pc.kanban = general.io_unpack_str(data_io)
+			self.pc.kanban = io_unpack_str(data_io)
 			self.send_map("041b", self.pc)
 	
 	def do_0617(self, data_io):
@@ -589,14 +580,8 @@ class MapDataHandler:
 						"do_0614 error: shop_id not exist", self.pc.shop_open)
 					return
 				shop_item_list = shop.item
-		item_id_list = []
-		item_id_count = general.io_unpack_byte(data_io)
-		for i in xrange(item_id_count):
-			item_id_list.append(general.io_unpack_int(data_io))
-		item_count_list = []
-		item_count_count = general.io_unpack_byte(data_io)
-		for i in xrange(item_count_count):
-			item_count_list.append(general.io_unpack_int(data_io))
+		item_id_list = io_unpack_array(io_unpack_int, data_io)
+		item_count_list = io_unpack_array(io_unpack_int, data_io)
 		item_buy_list = zip(item_id_list, item_count_list)
 		general.log("[ map ] item_buy_list", item_buy_list)
 		if len(self.pc.item)+len(item_buy_list) > env.MAX_ITEM_STOCK:
@@ -625,14 +610,8 @@ class MapDataHandler:
 			if self.pc.shop_open != 65535:
 				general.log_error("do_0616: shop_open != 65535", self.pc.shop_open)
 				return
-		item_iid_list = []
-		item_iid_count = general.io_unpack_byte(data_io)
-		for i in xrange(item_iid_count):
-			item_iid_list.append(general.io_unpack_int(data_io))
-		item_count_list = []
-		item_count_count = general.io_unpack_byte(data_io)
-		for i in xrange(item_count_count):
-			item_count_list.append(general.io_unpack_int(data_io))
+		item_iid_list = io_unpack_array(io_unpack_int, data_io)
+		item_count_list = io_unpack_array(io_unpack_int, data_io)
 		item_sell_list = zip(item_iid_list, item_count_list)
 		general.log("[ map ] item_sell_list", item_sell_list)
 		with self.pc.lock:
@@ -663,13 +642,13 @@ class MapDataHandler:
 	
 	def do_0258(self, data_io):
 		#自キャラステータス試算 補正は含まない
-		status_num = general.io_unpack_byte(data_io)
-		STR = general.io_unpack_short(data_io)
-		DEX = general.io_unpack_short(data_io)
-		INT = general.io_unpack_short(data_io)
-		VIT = general.io_unpack_short(data_io)
-		AGI = general.io_unpack_short(data_io)
-		MAG = general.io_unpack_short(data_io)
+		status_num = io_unpack_byte(data_io)
+		STR = io_unpack_short(data_io)
+		DEX = io_unpack_short(data_io)
+		INT = io_unpack_short(data_io)
+		VIT = io_unpack_short(data_io)
+		AGI = io_unpack_short(data_io)
+		MAG = io_unpack_short(data_io)
 		nullpc = general.NullClass()
 		self.send("0209", STR, DEX, INT, VIT, AGI, MAG) #ステータス上昇s0208の結果
 		with self.pc.lock:
@@ -685,7 +664,7 @@ class MapDataHandler:
 	
 	def do_0f9f(self, data_io):
 		#攻撃
-		monster_id = general.io_unpack_int(data_io)
+		monster_id = io_unpack_int(data_io)
 		monster = monsters.get_monster_from_id(monster_id)
 		if not monster:
 			general.log_error("[ map ] monster id %s not exist"%monster_id)
@@ -704,17 +683,17 @@ class MapDataHandler:
 	
 	def do_1216(self, data_io):
 		#emotion request
-		emotion_id = general.io_unpack_int(data_io)
+		emotion_id = io_unpack_int(data_io)
 		self.send_map("1217", self.pc, emotion_id) #emotion
 	
 	def do_1d0b(self, data_io):
 		#emotion_ex request
-		emotion_ex_id = general.io_unpack_byte(data_io)
+		emotion_ex_id = io_unpack_byte(data_io)
 		self.send_map("1d0c", self.pc, emotion_ex_id) #emotion_ex
 	
 	def do_1d4c(self, data_io):
 		#greeting
-		target_id = general.io_unpack_int(data_io)
+		target_id = io_unpack_int(data_io)
 		p = users.get_pc_from_id(target_id)
 		with self.pc.lock and p.lock:
 			rawdir = general.get_angle_from_coord(self.pc.x, self.pc.y, p.x, p.y)
@@ -733,7 +712,7 @@ class MapDataHandler:
 	
 	def do_0a0a(self, data_io):
 		#send trade ask
-		target_id = general.io_unpack_int(data_io)
+		target_id = io_unpack_int(data_io)
 		p = users.get_pc_from_id(target_id)
 		if not p:
 			general.log("[ map ] trade ask: target not exist", target_id)
@@ -768,7 +747,7 @@ class MapDataHandler:
 	
 	def do_0a0d(self, data_io):
 		#trade ask answer
-		answer = general.io_unpack_byte(data_io)
+		answer = io_unpack_byte(data_io)
 		if not self.pc.trade_target_id:
 			general.log("[ map ] trade answer: not self.pc.trade_target_id")
 			return
@@ -789,8 +768,8 @@ class MapDataHandler:
 	
 	def do_07d0(self, data_io):
 		#put item request
-		iid = general.io_unpack_int(data_io)
-		count = general.io_unpack_short(data_io)
+		iid = io_unpack_int(data_io)
+		count = io_unpack_short(data_io)
 		general.log("[ map ] put item: iid", iid, "count", count)
 		with self.pc.lock:
 			if self.pc.trade:
@@ -813,7 +792,7 @@ class MapDataHandler:
 	
 	def do_07e4(self, data_io):
 		#pick up item request
-		mapitem_id = general.io_unpack_int(data_io)
+		mapitem_id = io_unpack_int(data_io)
 		general.log("[ map ] pick up item: mapitem_id", mapitem_id)
 		if len(self.pc.item) >= env.MAX_ITEM_STOCK:
 			script.msg(self.pc, "pick up item error: stock limit")
@@ -844,7 +823,7 @@ class MapDataHandler:
 		#DEMのフォームチェンジ
 		#point pc.equip to pc.eqiup_dem or pc.equip_std before change
 		#if not stable, it will back to unset all equip before change
-		status = general.io_unpack_byte(data_io)
+		status = io_unpack_byte(data_io)
 		if self.pc.dem_form_change(status):
 			general.log("[ map ] dem form change success")
 		else:
@@ -853,7 +832,7 @@ class MapDataHandler:
 	def do_1e87(self, data_io):
 		#DEMパーツ装着
 		#warning: cannot unset parts on dem parts window
-		iid = general.io_unpack_int(data_io)
+		iid = io_unpack_int(data_io)
 		if self.pc.dem_form_status():
 			self.pc.set_equip(iid)
 		else:
@@ -862,11 +841,11 @@ class MapDataHandler:
 	
 	def do_1387(self, data_io):
 		#スキル使用
-		skill_id = general.io_unpack_short(data_io)
-		target_id = general.io_unpack_int(data_io)
-		x = general.io_unpack_byte(data_io)
-		y = general.io_unpack_byte(data_io)
-		skill_lv = general.io_unpack_byte(data_io)
+		skill_id = io_unpack_short(data_io)
+		target_id = io_unpack_int(data_io)
+		x = io_unpack_byte(data_io)
+		y = io_unpack_byte(data_io)
+		skill_lv = io_unpack_byte(data_io)
 		skills.use(self.pc, target_id, x, y, skill_id, skill_lv)
 
 MapDataHandler.name_map = general.get_name_map(MapDataHandler.__dict__, "do_")

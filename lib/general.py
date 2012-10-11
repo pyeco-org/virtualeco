@@ -22,6 +22,7 @@ from lib import env
 from lib import db
 from lib import security
 from lib.site_packages import rijndael
+from lib.packet.packet_struct import *
 RANGE_INT = (-2147483648, 2147483647)
 RANGE_UNSIGNED_INT = (0, 4294967295)
 RANGE_SHORT = (-32768, 32767)
@@ -337,83 +338,6 @@ def get_name_map(namespace, head):
 		name_map[key[head_length:]] = value
 	return name_map
 
-def pack_int(i):
-	return struct.pack(">i", i)
-def pack_short(i):
-	return struct.pack(">h", i)
-def pack_byte(i):
-	return struct.pack(">b", i)
-def unpack_int(s):
-	return struct.unpack(">i", s)[0]
-def unpack_short(s):
-	return struct.unpack(">h", s)[0]
-def unpack_byte(s):
-	return struct.unpack(">b", s)[0]
-def pack_unsigned_int(i):
-	return struct.pack(">I", i)
-def pack_unsigned_short(i):
-	return struct.pack(">H", i)
-def pack_unsigned_byte(i):
-	return struct.pack(">B", i)
-def unpack_unsigned_int(s):
-	return struct.unpack(">I", s)[0]
-def unpack_unsigned_short(s):
-	return struct.unpack(">H", s)[0]
-def unpack_unsigned_byte(s):
-	return struct.unpack(">B", s)[0]
-def pack_str(string):
-	#65636f -> 04 65636f00
-	if not string:
-		return "\x01\x00"
-	string += "\x00"
-	return struct.pack(">B", len(string))+string #unsigned byte + char*
-def unpack_str(code):
-	string, length = unpack_raw(code)
-	while string.endswith("\x00"):
-		string = string[:-1]
-	return string, length
-def unpack_raw(code):
-	length_data = code[:1]
-	if length_data == "": return ""
-	length = struct.unpack(">B", length_data)[0] #unsigned byte
-	string = code[1:length+1]
-	return string, length+1
-
-def io_unpack_int(io):
-	return struct.unpack(">i", io.read(4))[0]
-def io_unpack_short(io):
-	return struct.unpack(">h", io.read(2))[0]
-def io_unpack_byte(io):
-	return struct.unpack(">b", io.read(1))[0]
-def io_unpack_unsigned_int(io):
-	return struct.unpack(">I", io.read(4))[0]
-def io_unpack_unsigned_short(io):
-	return struct.unpack(">H", io.read(2))[0]
-def io_unpack_unsigned_byte(io):
-	return struct.unpack(">B", io.read(1))[0]
-def io_unpack_str(io):
-	string = io_unpack_raw(io)
-	while string.endswith("\x00"):
-		string = string[:-1]
-	return string
-def io_unpack_short_str(io):
-	string = io_unpack_short_raw(io)
-	while string.endswith("\x00"):
-		string = string[:-1]
-	return string
-def io_unpack_raw(io):
-	length_data = io.read(1)
-	if length_data == "": return ""
-	length = struct.unpack(">B", length_data)[0] #unsigned byte
-	string = io.read(length)
-	return string
-def io_unpack_short_raw(io):
-	length_data = io.read(2)
-	if length_data == "": return ""
-	length = struct.unpack(">H", length_data)[0] #unsigned short
-	string = io.read(length)
-	return string
-
 def int_to_bytes(i, length=0x100):
 	hex_code = hex(i)
 	if hex_code.startswith("0x"):
@@ -466,32 +390,38 @@ def get_rijndael_key(share_key_bytes):
 
 def encode(string, rijndael_obj):
 	if not string:
-		log_error("[error] encode error: not string", string)
+		log_error("[error] encode error: string empty", string)
 		return
-	#key = "\x00"*16
 	string_size = len(string)
 	string += "\x00"*(16-len(string)%16)
 	code = ""
+	io = StringIO(string)
 	with rijndael_obj.lock:
-		for i in xrange(len(string)/16):
-			code += rijndael_obj.encrypt(string[i*16:i*16+16])
+		while True:
+			s = io.read(16)
+			if not s:
+				break
+			code += rijndael_obj.encrypt(s)
 	code_size = len(code)
-	return pack_int(code_size)+pack_int(string_size)+code
+	return pack_unsigned_int(code_size)+pack_unsigned_int(string_size)+code
 
 def decode(code, rijndael_obj):
 	if not code:
-		log_error("[error] decode error: not code", code)
+		log_error("[error] decode error: code empty", code)
+		return
+	if (len(code)-4) % 16:
+		log_error("[error] decode error: length error", code.encode("hex"))
 		return
 	#0000000c 6677bcf44144b39e28281ae8777db574
-	string_size = unpack_int(code[:4])
-	if (len(code)-4) % 16:
-		log_error("[error] decode error: (len(code)-4) % 16 != 0", code.encode("hex"))
-		return
-	#key = "\x00"*16
+	io = StringIO(code)
+	string_size = io_unpack_int(io)
 	string = ""
 	with rijndael_obj.lock:
-		for i in xrange(len(code)/16):
-			string += rijndael_obj.decrypt(code[i*16+4:i*16+20])
+		while True:
+			s = io.read(16)
+			if not s:
+				break
+			string += rijndael_obj.decrypt(s)
 	return string[:string_size]
 
 def sin(angle): return math.sin(math.radians(angle))

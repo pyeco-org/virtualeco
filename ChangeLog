@@ -1,3 +1,7 @@
+2012-10-11
+	add pack/io_unpack array, pack/unpack/io_unpack long
+	move general.pack*/unpack*/io_unpack*, packet.pack* to packet_struct
+
 2012-10-10
 	fix warp coord error when 11f8(move) came after 05e6(event)
 	pop pc on usermap when master logout

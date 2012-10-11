@@ -5,7 +5,7 @@ import os
 import time
 #static
 NAME = "virtualeco"
-LAST_UPDATE = "2012-10-10"
+LAST_UPDATE = "2012-10-11"
 DATABASE_FORMAT_VERSION = "1.1.2"
 USERDATA_FORMAT_VERSION = "1.1.0"
 

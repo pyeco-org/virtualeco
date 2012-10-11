@@ -19,8 +19,7 @@ def guest_event(pc):
 		script.warp(pc, pc.event_id, random.randint(6, 7), random.randint(10, 11))
 
 def main(pc):
-	with usermaps.usermap_list_lock:
-		usermap_obj = usermaps.get_usermap_from_map_id(pc.event_id)
+	usermap_obj = usermaps.get_usermap_from_map_id(pc.event_id)
 	if not usermap_obj:
 		script.msg(pc, "rope error: usermap id %s not exist"%pc.event_id)
 		return

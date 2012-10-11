@@ -86,7 +86,8 @@ def load():
 	from lib import general
 	from lib.general import NULL
 	from lib import dbmap
-	from lib import obj, data
+	import data.item, data.job, data.npc, data.shop, data.skill
+	import obj.map, obj.monster, obj.pet
 	
 	global item, job, map_obj, monster_obj, npc, pet_obj, shop, skill
 	item = load_database("item", data.item.Item)

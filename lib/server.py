@@ -13,6 +13,7 @@ from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
 from lib.packet.map_data_handler import MapDataHandler
 from lib.site_packages import rijndael
+from lib.packet.packet_struct import *
 USE_NULL_KEY = False #emergency option
 if USE_NULL_KEY:
 	GENERATOR = 1
@@ -34,10 +35,10 @@ else:
 	#general.log("public key:", PUBLIC_KEY_BYTES, "\nlength:", len(PUBLIC_KEY_BYTES))
 	#get key exchange packet
 PACKET_KEY_EXCHANGE = "".join((
-	general.pack_int(0), #head
-	general.pack_int(1)+str(GENERATOR), #generator
-	general.pack_int(0x100)+PRIME_BYTES, #prime
-	general.pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
+	pack_int(0), #head
+	pack_int(1)+str(GENERATOR), #generator
+	pack_int(0x100)+PRIME_BYTES, #prime
+	pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
 ))
 PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
 PACKET_INIT_LENGTH = len(PACKET_INIT)
@@ -115,10 +116,10 @@ class StandardClient(threading.Thread):
 		return data
 	def recv_key_packet(self):
 		return self.recv_packet_force(
-			general.unpack_int(self.recv_packet_force(4)))
+			unpack_int(self.recv_packet_force(4)))
 	def recv_enc_packet(self):
 		return self.recv_packet_force(
-			general.unpack_int(self.recv_packet_force(4))+4)
+			unpack_int(self.recv_packet_force(4))+4)
 	def run(self):
 		try:
 			self.recv_init()
