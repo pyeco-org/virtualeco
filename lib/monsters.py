@@ -72,7 +72,7 @@ def attack_monster(pc, monster):
 		pc.exp_add(0, 0)
 	pc.map_send_map("0fa1", pc, monster, 0, damage, color) #攻撃結果
 
-def set_magic_attack_result(monster, damage, ml, dl, cl, el):
+def set_skill_attack_result(monster, damage, ml, dl, cl, el):
 	#monster list, damage list, color list, exp list
 	if monster.status.hp <= 0:
 		return
@@ -84,37 +84,37 @@ def set_magic_attack_result(monster, damage, ml, dl, cl, el):
 	else:
 		cl.append(1) #HPダメージ
 
-def magic_attack_monster(pc, monster, damage, skill_id, skill_lv):
+def skill_attack_monster(pc, monster, damage, skill_id, skill_lv):
 	ml, dl, cl, el = [], [], [], []
-	set_magic_attack_result(monster, damage, ml, dl, cl, el)
+	set_skill_attack_result(monster, damage, ml, dl, cl, el)
 	for i, j in el:
 		pc.exp_add(i, j)
 	#スキル使用結果通知（対象：単体）
 	pc.map_send_map("1392", pc, ml, skill_id, skill_lv, dl, cl)
 
-def magic_attack_coord(pc, x, y, xyr, damage, skill_id, skill_lv):
+def skill_attack_coord(pc, x, y, xyr, damage, skill_id, skill_lv):
 	ml, dl, cl, el = [], [], [], []
 	with pc.lock and pc.map_obj.lock:
 		for m in pc.map_obj.monster_list:
 			if not general.coord_in_range(m.x, m.y, x, y, xyr):
 				continue
-			set_magic_attack_result(m, damage, ml, dl, cl, el)
+			set_skill_attack_result(m, damage, ml, dl, cl, el)
 	for i, j in el:
 		pc.exp_add(i, j)
 	#スキル使用結果通知（対象：地面）
 	pc.map_send_map("138d", pc, ml, x, y, skill_id, skill_lv, dl, cl)
 
-def magic_attack_monster_range(pc, monster, xyr, damage, skill_id, skill_lv):
+def skill_attack_monster_range(pc, monster, xyr, damage, skill_id, skill_lv):
 	ml, dl, cl, el = [], [], [], []
 	x, y = monster.x, monster.y
 	with pc.lock and pc.map_obj.lock:
-		set_magic_attack_result(monster, damage, ml, dl, cl, el)
+		set_skill_attack_result(monster, damage, ml, dl, cl, el)
 		for m in pc.map_obj.monster_list:
 			if not general.coord_in_range(m.x, m.y, x, y, xyr):
 				continue
 			if m == monster:
 				continue
-			set_magic_attack_result(m, damage, ml, dl, cl, el)
+			set_skill_attack_result(m, damage, ml, dl, cl, el)
 	for i, j in el:
 		pc.exp_add(i, j)
 	#スキル使用結果通知（対象：単体）

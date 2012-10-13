@@ -31,4 +31,11 @@ if __name__ == "__main__":
 	basedir = os.path.dirname(os.path.realpath(sys.argv[0]))
 	os.chdir(basedir)
 	sys.path.insert(0, basedir)
-	exec open("virtualeco.py", "rb").read().replace("\r\n", "\n")+"\n"
+	try:
+		exec open("virtualeco.py", "rb").read().replace("\r\n", "\n")+"\n"
+	except:
+		sys.stderr.write(traceback.format_exc()+"\npress return key to exit...")
+		sys.stderr.flush()
+		sys.stdin.read(1)
+		os._exit(1)
+	os._exit(0)

@@ -1,3 +1,12 @@
+2012-10-13
+	add script.skill_add, skill_del, skill_clear
+	add command /skill_add skill_id, /skill_del skill_id, skill_clear
+	add script.printallskill, command /printallskill
+	modify DEFAULT_GMLEVEL to 255
+	require input to exit when except main script exception in launcher
+	replace monsters *magic* to *skill* (physical skill packet same as magic)
+	add test skill
+
 2012-10-11
 	add pack/io_unpack array, pack/unpack/io_unpack long
 	move general.pack*/unpack*/io_unpack*, packet.pack* to packet_struct

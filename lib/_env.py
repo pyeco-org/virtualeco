@@ -5,7 +5,7 @@ import os
 import time
 #static
 NAME = "virtualeco"
-LAST_UPDATE = "2012-10-11"
+LAST_UPDATE = "2012-10-13"
 DATABASE_FORMAT_VERSION = "1.1.2"
 USERDATA_FORMAT_VERSION = "1.1.0"
 
@@ -33,7 +33,7 @@ MAP_SERVER_PORT = 13001
 WEB_SERVER_PORT = 13100
 SERVER_BIND_ADDR = "0.0.0.0"
 SERVER_BROADCAST_ADDR = "localhost"
-DEFAULT_GMLEVEL = 150
+DEFAULT_GMLEVEL = 255
 LOGIN_EVENT_ID = 30
 SEND_LOGIN_EVENT = True
 MAX_ITEM_STOCK = 100
@@ -91,7 +91,11 @@ GMLEVEL_MAP = {
 	"petmotion": 0,
 	"petmotion_loop": 0,
 	"unsetallequip": 0,
-	"printallequip": 0
+	"printallequip": 0,
+	"printallskill": 0,
+	"skill_add": 50,
+	"skill_del": 50,
+	"skill_clear": 50,
 }
 
 #path config

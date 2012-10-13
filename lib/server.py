@@ -116,10 +116,10 @@ class StandardClient(threading.Thread):
 		return data
 	def recv_key_packet(self):
 		return self.recv_packet_force(
-			unpack_int(self.recv_packet_force(4)))
+			unpack_unsigned_int(self.recv_packet_force(4)))
 	def recv_enc_packet(self):
 		return self.recv_packet_force(
-			unpack_int(self.recv_packet_force(4))+4)
+			unpack_unsigned_int(self.recv_packet_force(4))+4)
 	def run(self):
 		try:
 			self.recv_init()

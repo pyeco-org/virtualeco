@@ -64,13 +64,13 @@ def do_3029(pc, target_id, x, y, skill_id, skill_lv):
 	if monster is None:
 		return
 	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
-	monsters.magic_attack_monster(pc, monster, 75, skill_id, skill_lv)
+	monsters.skill_attack_monster(pc, monster, 75, skill_id, skill_lv)
 	pc.set_battlestatus(1)
 
 def do_3416(pc, target_id, x, y, skill_id, skill_lv):
 	"""ウィンドエクスプロージョン 風属性の範囲攻撃魔法"""
 	start_cast(pc, target_id, x, y, skill_id, skill_lv, 1000)
-	monsters.magic_attack_coord(pc, x, y, (7, 7), 85, skill_id, skill_lv)
+	monsters.skill_attack_coord(pc, x, y, (7, 7), 85, skill_id, skill_lv)
 	pc.set_battlestatus(1)
 
 def do_3432(pc, target_id, x, y, skill_id, skill_lv):
@@ -81,7 +81,7 @@ def do_3432(pc, target_id, x, y, skill_id, skill_lv):
 	start_cast(pc, target_id, x, y, skill_id, skill_lv, 1000)
 	#effect not show, wrong packet(1392) or effect id?
 	#script.effect(pc, 4387, target_id)
-	monsters.magic_attack_monster_range(pc, monster, (7, 7), 99, skill_id, skill_lv)
+	monsters.skill_attack_monster_range(pc, monster, (7, 7), 99, skill_id, skill_lv)
 	pc.set_battlestatus(1)
 
 def do_3009(pc, target_id, x, y, skill_id, skill_lv):
@@ -90,9 +90,16 @@ def do_3009(pc, target_id, x, y, skill_id, skill_lv):
 	if monster is None:
 		return
 	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
-	#effect not show, wrong packet(1392) or effect id?
-	#script.effect(pc, 4387, target_id)
-	monsters.magic_attack_monster_range(pc, monster, (3, 3), 50, skill_id, skill_lv)
+	monsters.skill_attack_monster_range(pc, monster, (3, 3), 50, skill_id, skill_lv)
+	pc.set_battlestatus(1)
+
+def do_2110(pc, target_id, x, y, skill_id, skill_lv):
+	"""ブロウ 相手を武器で殴りつける"""
+	monster = get_monster(pc, target_id, x, y, skill_id, skill_lv)
+	if monster is None:
+		return
+	start_cast(pc, target_id, x, y, skill_id, skill_lv, 500)
+	monsters.skill_attack_monster(pc, monster, 40, skill_id, skill_lv)
 	pc.set_battlestatus(1)
 
 def do_3250(pc, target_id, x, y, skill_id, skill_lv):

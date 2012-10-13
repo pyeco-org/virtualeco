@@ -185,6 +185,10 @@ NAME_WITH_TYPE = {
 	"petmotion_loop": (int,), #motion_id
 	"unsetallequip": (),
 	"printallequip": (),
+	"printallskill": (),
+	"skill_add": (int,),
+	"skill_del": (int,),
+	"skill_clear": (),
 }
 
 def help(pc):
@@ -242,6 +246,10 @@ def help(pc):
 /petmotion_loop motion_id
 /unsetallequip
 /printallequip
+/printallskill
+/skill_add skill_id
+/skill_del skill_id
+/skill_clear
 """)
 
 def handle_cmd(pc, cmd):
@@ -810,5 +818,36 @@ def lock_move(pc):
 def unlock_move(pc):
 	with pc.lock and pc.user.lock:
 		pc.map_send("05dd") #移動ロック終了(イベント終了)
+
+def printallskill(pc):
+	with pc.lock and pc.user.lock:
+		for skill_id in pc.skill_list:
+			skill_obj = db.skill.get(skill_id)
+			skill_name = skill_obj.name if skill_obj else "unknow"
+			msg(pc, "ID: %s NAME: %s"%(skill_id, skill_name))
+
+def skill_add(pc, skill_id):
+	general.assert_value_range("skill_id", skill_id, general.RANGE_SHORT)
+	with pc.lock and pc.user.lock:
+		if skill_id in pc.skill_list:
+			msg(pc, "skill id %s already add"%skill_id)
+			return
+		pc.skill_list.append(skill_id)
+		pc.map_send("0226", pc, 0) #スキル一覧
+
+def skill_del(pc, skill_id):
+	general.assert_value_range("skill_id", skill_id, general.RANGE_SHORT)
+	with pc.lock and pc.user.lock:
+		if skill_id not in pc.skill_list:
+			msg(pc, "skill id %s didn't add"%skill_id)
+			return
+		pc.skill_list.remove(skill_id)
+		pc.map_send("0226", pc, 0) #スキル一覧
+
+def skill_clear(pc):
+	with pc.lock and pc.user.lock:
+		while pc.skill_list:
+			pc.skill_list.pop()
+		pc.map_send("0226", pc, 0) #スキル一覧
 
 name_map = general.get_name_map(globals(), "")

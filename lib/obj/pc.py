@@ -153,11 +153,12 @@ class PC:
 			self.visible = bool(visible)
 			general.log("[ pc  ] set visible", bool(visible))
 	
-	def set_motion(self, motion_id, motion_loop):
+	def set_motion(self, motion_id, motion_loop, announce=True):
 		with self.lock:
 			self.motion_id = motion_id
 			self.motion_loop = True if motion_loop else False
-		self.map_send_map("121c", self) #モーション通知
+		if announce:
+			self.map_send_map("121c", self) #モーション通知
 		#let pet motion refer master
 		if not self.pet:
 			return
