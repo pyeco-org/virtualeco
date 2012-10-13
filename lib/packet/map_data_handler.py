@@ -361,7 +361,8 @@ class MapDataHandler:
 				general.log("[ map ] logout cancel")
 				self.pc.logout = False
 				self.send("0020", self.pc, "logoutcancel")
-			self.pc.set_motion(111, True, False)
+			if self.pc.motion_id != 111:
+				self.pc.set_motion(111, True)
 			if not self.pc.pet:
 				return
 			with self.pc.pet.lock:
