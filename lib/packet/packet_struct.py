@@ -6,6 +6,8 @@ import time
 import struct
 import marshal
 import traceback
+try: from cStringIO import StringIO
+except: from StringIO import StringIO
 
 def pack_int(i):
 	return struct.pack(">i", i)
@@ -55,25 +57,20 @@ def unpack_unsigned_byte(s):
 def unpack_unsigned_long(s):
 	return struct.unpack(">Q", s)[0]
 
-def pack_str(string):
-	#65636f -> 04 65636f00
-	if not string:
-		return "\x01\x00"
-	string += "\x00"
-	return struct.pack(">B", len(string))+string #unsigned byte + char*
-
 def unpack_str(code):
-	string, length = unpack_raw(code)
-	while string.endswith("\x00"):
-		string = string[:-1]
-	return string, length
+	io = StringIO(code)
+	string = io_unpack_str(io)
+	return string, io.tell()
 
 def unpack_raw(code):
-	length_data = code[:1]
-	if length_data == "": return ""
-	length = struct.unpack(">B", length_data)[0] #unsigned byte
-	string = code[1:length+1]
-	return string, length+1
+	io = StringIO(code)
+	string = io_unpack_raw(io)
+	return string, io.tell()
+
+def unpack_array(code):
+	io = StringIO(code)
+	array = io_unpack_array(StringIO(code))
+	return array, io.tell()
 
 def io_unpack_int(io):
 	return struct.unpack(">i", io.read(4))[0]
@@ -99,11 +96,28 @@ def io_unpack_unsigned_byte(io):
 def io_unpack_unsigned_long(io):
 	return struct.unpack(">Q", io.read(8))[0]
 
+def pack_str(string):
+	#65636f -> 04 65636f00
+	if not string:
+		return "\x01\x00"
+	string += "\x00"
+	length = len(string)
+	if length >= 253:
+		return pack_unsigned_byte(253)+pack_unsigned_int(length)+string
+	else:
+		return pack_unsigned_byte(length)+string
+
 def io_unpack_str(io):
 	string = io_unpack_raw(io)
 	while string.endswith("\x00"):
 		string = string[:-1]
 	return string
+
+def io_unpack_raw(io):
+	length = io_unpack_unsigned_byte(io)
+	if length >= 253:
+		length = io_unpack_unsigned_int(io)
+	return io.read(length)
 
 def io_unpack_short_str(io):
 	string = io_unpack_short_raw(io)
@@ -111,19 +125,12 @@ def io_unpack_short_str(io):
 		string = string[:-1]
 	return string
 
-def io_unpack_raw(io):
-	length_data = io.read(1)
-	if length_data == "": return ""
-	length = struct.unpack(">B", length_data)[0] #unsigned byte
-	string = io.read(length)
-	return string
-
 def io_unpack_short_raw(io):
 	length_data = io.read(2)
-	if length_data == "": return ""
-	length = struct.unpack(">H", length_data)[0] #unsigned short
-	string = io.read(length)
-	return string
+	if length_data == "":
+		return ""
+	length = unpack_unsigned_short(length_data)
+	return io.read(length)
 
 def pack_array(mod, array):
 	if type(array) not in (list, tuple):
@@ -140,7 +147,7 @@ def pack_array(mod, array):
 def io_unpack_array(mod, io):
 	array = []
 	length = io_unpack_unsigned_byte(io)
-	if length == 253:
+	if length >= 253:
 		length = io_unpack_unsigned_int(io)
 	for i in xrange(length):
 		array.append(mod(io))
