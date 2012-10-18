@@ -1,3 +1,6 @@
+2012-10-18
+	update database to 348
+
 2012-10-13
 	add script.skill_add, skill_del, skill_clear
 	add command /skill_add skill_id, /skill_del skill_id, skill_clear

@@ -3,11 +3,9 @@
 import sys
 import os
 import socket
-#import thread
-import threading
 import traceback
+import threading
 import struct
-#import Queue
 from lib import env
 from lib import general
 from lib.packet.login_data_handler import LoginDataHandler
@@ -36,9 +34,9 @@ else:
 	#get key exchange packet
 PACKET_KEY_EXCHANGE = "".join((
 	pack_int(0), #head
-	pack_int(1)+str(GENERATOR), #generator
-	pack_int(0x100)+PRIME_BYTES, #prime
-	pack_int(0x100)+PUBLIC_KEY_BYTES #server public key
+	pack_int(len(str(GENERATOR)))+str(GENERATOR), #generator
+	pack_int(len(PRIME_BYTES))+PRIME_BYTES, #prime #std len: 0x100
+	pack_int(len(PUBLIC_KEY_BYTES))+PUBLIC_KEY_BYTES #server public key #std len: 0x100
 ))
 PACKET_INIT = "\x00\x00\x00\x00\x00\x00\x00\x10"
 PACKET_INIT_LENGTH = len(PACKET_INIT)
@@ -46,7 +44,7 @@ PACKET_NULL_KEY = "\x00\x00\x00\x01\x30"
 VALUE_NULL_KEY = 0
 
 class StandardServer(threading.Thread):
-	def __init__(self, addr):
+	def __init__(self, addr, client_class):
 		threading.Thread.__init__(self)
 		self.setDaemon(True)
 		self.bind_addr = addr
@@ -56,7 +54,9 @@ class StandardServer(threading.Thread):
 		self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.socket.bind(addr)
 		self.socket.listen(10)
+		self.client_class = client_class
 		self.start()
+	
 	def ip_count_check(self, src):
 		ip = src[0]
 		ip_count = 1
@@ -69,6 +69,7 @@ class StandardServer(threading.Thread):
 			return False
 		else:
 			return True
+	
 	def run(self):
 		while True:
 			try:
@@ -77,9 +78,10 @@ class StandardServer(threading.Thread):
 					s.close()
 					continue
 				with self.client_list_lock:
-					self.handle_client(s, src)
+					self.client_list.append(self.client_class(self, s, src))
 			except:
 				general.log_error(traceback.format_exc())
+
 class StandardClient(threading.Thread):
 	def __init__(self, master, s, src):
 		threading.Thread.__init__(self)
@@ -89,14 +91,14 @@ class StandardClient(threading.Thread):
 		self.src_address = src
 		self.buf = ""
 		self.running = True
-		#self.recv_init = False
-		#self.recv_key = False
 		self.rijndael_key = None
 		self.rijndael_obj = None
 		self.send_lock = threading.RLock()
 		self.start()
+	
 	def __str__(self):
 		return "%s<%s:%s>"%(repr(self), self.src_address[0], self.src_address[1])
+	
 	def recv_packet(self, length):
 		try:
 			data = self.socket.recv(length)
@@ -109,17 +111,23 @@ class StandardClient(threading.Thread):
 		if not data:
 			raise EOFError("not data")
 		return data
+	
 	def recv_packet_force(self, length):
 		data = ""
 		while len(data) < length:
 			data += self.recv_packet(length-len(data))
 		return data
+	
 	def recv_key_packet(self):
 		return self.recv_packet_force(
-			unpack_unsigned_int(self.recv_packet_force(4)))
+			unpack_unsigned_int(self.recv_packet_force(4))
+		)
+	
 	def recv_enc_packet(self):
 		return self.recv_packet_force(
-			unpack_unsigned_int(self.recv_packet_force(4))+4)
+			unpack_unsigned_int(self.recv_packet_force(4))+4
+		)
+	
 	def run(self):
 		try:
 			self.recv_init()
@@ -132,15 +140,18 @@ class StandardClient(threading.Thread):
 			general.log_error(traceback.format_exc())
 			self.stop()
 		general.log("[ srv ] quit", self)
+	
 	def send_packet(self, packet):
 		#general.log("[ srv ] send", packet.encode("hex"))
 		with self.send_lock:
 			self.socket.sendall(packet)
+	
 	def recv_init(self):
 		packet = self.recv_packet_force(PACKET_INIT_LENGTH)
 		if packet != PACKET_INIT:
 			raise ValueError("packet != PACKET_INIT")
 		self.send_packet(PACKET_KEY_EXCHANGE)
+	
 	def recv_key(self):
 		#get client public key
 		client_public_key_bytes = self.recv_key_packet()
@@ -165,12 +176,14 @@ class StandardClient(threading.Thread):
 			)
 			self.rijndael_obj.lock = threading.RLock()
 		general.log("[ srv ] rijndael key:", self.rijndael_key.encode("hex"))
+	
 	def handle_packet(self):
 		packet = self.recv_enc_packet()
 		try:
 			self.handle_data(general.decode(packet, self.rijndael_obj))
 		except:
 			general.log_error(traceback.format_exc())
+	
 	def _stop(self):
 		if not self.running:
 			return
@@ -179,22 +192,25 @@ class StandardClient(threading.Thread):
 		with self.master.client_list_lock:
 			self.master.client_list.remove(self)
 
-class LoginServer(StandardServer):
-	def handle_client(self, s, src):
-		self.client_list.append(LoginClient(self, s, src))
-class MapServer(StandardServer):
-	def handle_client(self, s, src):
-		self.client_list.append(MapClient(self, s, src))
 class LoginClient(StandardClient, LoginDataHandler):
 	def __init__(self, *args):
 		general.log("[ srv ] login client", args)
 		LoginDataHandler.__init__(self)
 		StandardClient.__init__(self, *args)
+
 class MapClient(StandardClient, MapDataHandler):
 	def __init__(self, *args):
 		general.log("[ srv ] map client", args)
 		MapDataHandler.__init__(self)
 		StandardClient.__init__(self, *args)
+
+class LoginServer(StandardServer):
+	def __init__(self, addr):
+		StandardServer.__init__(self, addr, LoginClient)
+
+class MapServer(StandardServer):
+	def __init__(self, addr):
+		StandardServer.__init__(self, addr, MapClient)
 
 def init():
 	if os.name == "nt":
