@@ -24,24 +24,29 @@ def debugger():
 	while True:
 		try:
 			input_debug = raw_input()
+			if input_debug in ("exit", "halt", "quit", "q"):
+				raise SystemExit()
 		except (SystemExit, EOFError, IOError, KeyboardInterrupt):
-			break
+			if raw_input("Are you sure to exit? [y/N]: ").strip().lower() == "y":
+				return
+			continue
 		except:
 			general.log_error("[debug]", traceback.format_exc())
 		try:
-			general.log(eval(input_debug))
-		except SyntaxError:
 			try:
+				general.log(eval(input_debug))
+			except SyntaxError:
 				exec input_debug
-			except:
-				general.log_error("[debug]", traceback.format_exc())
 		except:
 			general.log_error("[debug]", traceback.format_exc())
 
 def atexit():
+	server.mapserver._shutdown()
+	server.loginserver._shutdown()
 	if env.BACKUP_USER_DATA_EVERY_DAY:
 		users.backup_user_data()
 	users.save_user_data_atexit()
+	os._exit(0)
 
 def init():
 	general.init()

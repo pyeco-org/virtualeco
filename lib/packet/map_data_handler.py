@@ -220,9 +220,9 @@ class MapDataHandler:
 				self.pc.online = True
 				general.log("[ map ] set", self.pc)
 		self.pc.update_status()
+		self.pc.set_map()
 		self.pc.set_visible(False)
 		self.pc.set_motion(111, False)
-		self.pc.set_map()
 		self.pc.set_coord(self.pc.x, self.pc.y) #on login
 		if not self.pc.map_obj:
 			self.pc.set_map(10023100) #アップタウン東可動橋

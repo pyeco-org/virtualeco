@@ -5,7 +5,7 @@ import os
 import time
 #static
 NAME = "virtualeco"
-LAST_UPDATE = "2012-10-18"
+LAST_UPDATE = "2012-11-05"
 DATABASE_FORMAT_VERSION = "1.1.2"
 USERDATA_FORMAT_VERSION = "1.1.0"
 
@@ -38,14 +38,17 @@ LOGIN_EVENT_ID = 30
 SEND_LOGIN_EVENT = True
 MAX_ITEM_STOCK = 100
 MAX_WAREHOURSE_STOCK = 500
+SHUTDOWN_CONFIRM_WORD = "-y"
 GMLEVEL_MAP = {
 	"run": 100,
 	"help": 0,
 	"reloadscript": 255,
 	"reloadsinglescript": 255,
+	"shutdown_server": 255,
 	"user": 0,
 	"say": 0,
 	"msg": 0,
+	"warning": 0,
 	"servermsg": 150,
 	"where": 0,
 	"warp": 100,

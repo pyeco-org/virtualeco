@@ -136,9 +136,11 @@ NAME_WITH_TYPE = {
 	"help": (),
 	"reloadscript": (),
 	"reloadsinglescript": (str,),
+	"shutdown_server": (str,), #confirm_word
 	"user": (),
 	"say": (str, str, int, int), #message, npc_name, npc_motion_id, npc_id
 	"msg": (str,), #message
+	"warning": (str,), #message
 	"servermsg": (str,), #message
 	"where": (),
 	"warp": (int, float, float), #map_id, x, y
@@ -197,9 +199,11 @@ def help(pc):
 /help
 /reloadscript
 /reloadsinglescript path
+/shutdown_server confirm_word
 /user
 /say message npc_name npc_motion_id npc_id
 /msg message
+/warning message
 /servermsg message
 /where (~where)
 /warp map_id x y
@@ -300,6 +304,12 @@ def reloadsinglescript(pc, path):
 	else:
 		servermsg(pc, "reloadsinglescript success")
 
+def shutdown_server(pc, confirm_word=""):
+	if confirm_word != env.SHUTDOWN_CONFIRM_WORD:
+		warning(pc, "use /shutdown_server %s"%env.SHUTDOWN_CONFIRM_WORD)
+		return
+	general.start_thread(sys.modules["__main__"].atexit, ())
+
 def user(pc):
 	message = ""
 	online_count = 0
@@ -334,6 +344,11 @@ def msg(pc, message):
 	with pc.lock and pc.user.lock:
 		for line in message.replace("\r\n", "\n").split("\n"):
 			pc.map_send("03e9", -1, line)
+
+def warning(pc, message):
+	with pc.lock and pc.user.lock:
+		for line in message.replace("\r\n", "\n").split("\n"):
+			pc.map_send("03e9", 0, line)
 
 def servermsg(pc, message):
 	with pc.lock and pc.user.lock:

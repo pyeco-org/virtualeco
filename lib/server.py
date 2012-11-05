@@ -48,6 +48,7 @@ class StandardServer(threading.Thread):
 		threading.Thread.__init__(self)
 		self.setDaemon(True)
 		self.bind_addr = addr
+		self.running = True
 		self.client_list = []
 		self.client_list_lock = threading.RLock()
 		self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -56,6 +57,18 @@ class StandardServer(threading.Thread):
 		self.socket.listen(10)
 		self.client_class = client_class
 		self.start()
+	
+	def _shutdown(self):
+		if not self.running:
+			return
+		general.log("[ srv ] shutdown", self)
+		self.running = False
+		self.socket.close()
+		while self.client_list:
+			client = self.client_list[0]
+			general.log("[ srv ] shutdown", client)
+			client.stop() #remove in StandardClient._stop
+		#cannot join when socket blocking
 	
 	def ip_count_check(self, src):
 		ip = src[0]
@@ -71,7 +84,7 @@ class StandardServer(threading.Thread):
 			return True
 	
 	def run(self):
-		while True:
+		while self.running:
 			try:
 				s, src = self.socket.accept()
 				if not self.ip_count_check(src):
