@@ -375,6 +375,12 @@ class MapDataHandler:
 				self.pc.pet.set_raw_dir(rawdir)
 				#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
+	def do_020a(self, data_io):
+		#キャラクタ情報要求 (ver 353+)
+		obj_id = io_unpack_int(data_io)
+		general.log("[ map ] request object id (353+)", obj_id)
+		self.send_object_detail(obj_id)
+	
 	def do_020d(self, data_io):
 		#キャラクタ情報要求
 		obj_id = io_unpack_int(data_io)

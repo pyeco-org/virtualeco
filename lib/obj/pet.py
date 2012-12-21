@@ -173,6 +173,8 @@ class PetObject(threading.Thread, Pet):
 		general.log("[ pet ] %s stop"%self)
 	
 	def _run_near_master(self):
+		if self.standby:
+			return
 		if time.time() - self.wait_move_time < 0.5:
 			return
 		self.wait_move_time = time.time()
