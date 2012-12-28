@@ -76,7 +76,8 @@ class Monster:
 				state01 = 0x200 #行動不能
 				general.start_thread(monsters.delete_monster_thread, (self,))
 		script.send_map_obj(self.map_obj, (), "021c", self) #現在のHP/MP/SP/EP
-		script.send_map_obj(self.map_obj, (), "157c", self, state01) #キャラの状態
+		#changed from ver353+
+		#script.send_map_obj(self.map_obj, (), "157c", self, state01) #キャラの状態
 		return self.status.hp
 	
 	def reset(self):

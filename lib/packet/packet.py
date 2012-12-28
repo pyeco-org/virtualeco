@@ -138,7 +138,7 @@ def make_0033(reply_ping=False):
 def make_09e9(pc):
 	"""装備情報 IDのキャラの見た目を変更"""
 	result = pack_int(pc.id)
-	result += "\x0d" #装備の数(常に0x0d) #13
+	result += "\x0e" #装備の数 #?353+ 13->14 (effect)
 	item_head = pc.item.get(pc.equip.head)
 	item_face = pc.item.get(pc.equip.face)
 	item_chestacce = pc.item.get(pc.equip.chestacce)
@@ -194,7 +194,8 @@ def make_09e9(pc):
 	#靴下
 	result += pack_pict_id(item_socks, general.SOCKS_TYPE_LIST)
 	#ペット
-	#result += pack_pict_id(item_pet, general.PET_TYPE_LIST)
+	result += pack_int(0)
+	#effect #?353+
 	result += pack_int(0)
 	#左手モーションタイプ size=3 (片手, 両手, 攻撃)
 	result += "\x03"+l_s_motion+l_d_motion+"\x00"
@@ -553,9 +554,10 @@ def make_1f72(show=False):
 	return pack_byte(1 if show else 0)
 
 def make_157c(obj,
-			state01=0, state02=0, state03=0,
-			state04=0, state05=0, state06=0,
-			state07=0, state08=0, state09=0):
+		state01=0, state02=0, state03=0,
+		state04=0, state05=0, state06=0,
+		state07=0, state08=0, state09=0):
+	#changed from ver353+
 	"""キャラの状態""" #send when loading map and after load
 	#キャラの自然回復や状態異常等、様々な状態を更新する
 	#状態に応じて画面上にアイコンが出る
@@ -638,7 +640,7 @@ def make_1b67(pc):
 	"""マップ情報完了通知
 	MAPログイン時に基本情報を全て受信した後に受信される"""
 	result = pack_int(pc.id)
-	result += pack_byte(0) #unknow
+	result += pack_int(0) #unknow ver353+ byte->int
 	return result
 
 def make_196e(pc):
@@ -730,8 +732,9 @@ def make_11f9(pc, move_type=7):
 	#0014: ワープ(ソーサラースキル・テレポート等)
 	return result
 
-def make_020e(pc):
+def make_020b(pc):
 	"""キャラ情報"""
+	#353+ from 020e to 020b
 	result = pack_int(pc.id)
 	result += pack_int(pc.id)
 	result += pack_str(pc.name)
@@ -767,18 +770,15 @@ def make_020e(pc):
 	result += pack_byte(0) #1にすると/joyのモーションを取る
 							#（マリオネット変身時。）2にすると〜
 	result += pack_byte(0) #不明
+	result += pack_byte(0) #不明 #353+ 演習関係？
+	result += pack_byte(0) #不明 #353+ 演習関係？
+	result += pack_byte(0) #不明 #353+ 演習関係？
 	result += pack_byte(0) #ゲストIDかどうか
 	result += pack_byte(pc.lv_base) #レベル（ペットは1固定
 	result += pack_int(pc.wrprank) #WRP順位（ペットは -1固定。
 									#別のパケで主人の値が送られてくる
 	result += pack_int(0) #不明
 	result += pack_byte(-1) #不明
-	return result
-
-def make_041b(pc):
-	"""kanban"""
-	result = pack_int(pc.id)
-	result += pack_str(pc.kanban)
 	return result
 
 def make_03e9(speaker_id, message):
@@ -1156,7 +1156,11 @@ def make_05e2(npc_id):
 
 def make_05e3(npc_id):
 	"""hide npc"""
-	return pack_unsigned_int(npc_id)
+	result = pack_unsigned_int(npc_id)
+	result += pack_byte(0) #353+
+	result += pack_byte(0) #353+
+	result += pack_byte(0) #353+
+	return result
 
 def make_0609(switch, type):
 	"""blackout, whiteout"""
@@ -1251,10 +1255,9 @@ def make_07d5(mapitem_obj):
 	#アイテムを落としたキャラのサーバキャラID。憑依アイテムは0固定
 	result += pack_int(mapitem_obj.id_from)
 	result += pack_int(0) #unknow
-	result += pack_int(0) #unknow
 	result += pack_unsigned_byte(0) #憑依装備は1。通常アイテムは0
-	#result += pack_str("") #憑依装備のコメント。(憑依装備のみ)
-	result += pack_unsigned_byte(1) #鑑定されているかどうか
+	result += pack_str("") #憑依装備のコメント。(憑依装備のみ)
+	result += pack_int(1) #鑑定されているかどうか #353+ byte->int
 	result += pack_unsigned_byte(0) #融合されてるかどうか
 	return result
 
@@ -1435,9 +1438,9 @@ def make_09c6(pc, item_id, target_id, x, y):
 	result += pack_array(pack_int, ()) #target_id
 	result += pack_unsigned_byte(int(x)) #x
 	result += pack_unsigned_byte(int(y)) #y
-	result += pack_array(pack_short, ()) #hp
-	result += pack_array(pack_short, ()) #mp
-	result += pack_array(pack_short, ()) #sp
+	result += pack_array(pack_int, ()) #hp #353+ short->int
+	result += pack_array(pack_int, ()) #mp #353+ short->int
+	result += pack_array(pack_int, ()) #sp #353+ short->int
 	result += pack_array(pack_int, ()) #color_flag
 	return result
 
@@ -1449,9 +1452,9 @@ def make_09c7(pc, item_id, target_id, x, y):
 	result += pack_array(pack_int, (target_id,)) #target_id
 	result += pack_unsigned_byte(int(x)) #x
 	result += pack_unsigned_byte(int(y)) #y
-	result += pack_array(pack_short, (0,)) #hp
-	result += pack_array(pack_short, (0,)) #mp
-	result += pack_array(pack_short, (0,)) #sp
+	result += pack_array(pack_int, (0,)) #hp #hp #353+ short->int
+	result += pack_array(pack_int, (0,)) #mp #hp #353+ short->int
+	result += pack_array(pack_int, (0,)) #sp #hp #353+ short->int
 	result += pack_array(pack_int, (0,)) #color_flag
 	return result
 
@@ -1463,9 +1466,9 @@ def make_09c8(pc, item_id):
 	result += pack_array(pack_int, (pc.id,)) #target_id
 	result += pack_unsigned_byte(int(pc.x)) #x
 	result += pack_unsigned_byte(int(pc.y)) #y
-	result += pack_array(pack_short, (0,)) #hp
-	result += pack_array(pack_short, (0,)) #mp
-	result += pack_array(pack_short, (0,)) #sp
+	result += pack_array(pack_int, (0,)) #hp #hp #353+ short->int
+	result += pack_array(pack_int, (0,)) #mp #hp #353+ short->int
+	result += pack_array(pack_int, (0,)) #sp #hp #353+ short->int
 	result += pack_array(pack_int, (0,)) #color_flag
 	return result
 

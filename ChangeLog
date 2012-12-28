@@ -1,3 +1,8 @@
+2012-12-27
+	update database to 354
+	packet fixes
+	fix wrong password when delete character cause client frozen
+
 2012-12-21
 	update database to 353
 	many packet changed, wait fix.

@@ -152,7 +152,7 @@ class MapDataHandler:
 				return
 			if not pet.master:
 				return
-			self.send("020e", pet) #キャラ情報
+			self.send("020b", pet) #キャラ情報
 			#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス
 		else:
 			p = users.get_pc_from_id(i)
@@ -163,7 +163,7 @@ class MapDataHandler:
 					return
 				if not p.visible:
 					return
-				self.send("020e", p) #キャラ情報
+				self.send("020b", p) #キャラ情報
 				self.send("041b", p) #kanban
 	
 	def do_000a(self, data_io):
@@ -238,7 +238,7 @@ class MapDataHandler:
 		self.send("0231", self.pc) #最大CAPA/PAYL
 		self.send("0221", self.pc) #最大HP/MP/SP
 		self.send("021c", self.pc) #現在のHP/MP/SP/EP
-		self.send("157c", self.pc) #キャラの状態
+		#self.send("157c", self.pc) #キャラの状態 #changed from ver353+
 		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
 		self.send("0217", self.pc) #詳細ステータス
 		self.send("0226", self.pc, 0) #スキル一覧 一次職
@@ -277,7 +277,7 @@ class MapDataHandler:
 		self.send("0231", self.pc) #最大CAPA/PAYL
 		self.send("0221", self.pc) #最大HP/MP/SP
 		self.send("021c", self.pc) #現在のHP/MP/SP/EP
-		self.send("157c", self.pc) #キャラの状態
+		#self.send("157c", self.pc) #キャラの状態 #changed from ver353+
 		self.send("0212", self.pc) #ステータス・補正・ボーナスポイント
 		self.send("0217", self.pc) #詳細ステータス
 		self.send("0226", self.pc, 0) #スキル一覧 一次職
@@ -376,12 +376,6 @@ class MapDataHandler:
 				#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
 	def do_020a(self, data_io):
-		#キャラクタ情報要求 (ver 353+)
-		obj_id = io_unpack_int(data_io)
-		general.log("[ map ] request object id (353+)", obj_id)
-		self.send_object_detail(obj_id)
-	
-	def do_020d(self, data_io):
 		#キャラクタ情報要求
 		obj_id = io_unpack_int(data_io)
 		general.log("[ map ] request object id", obj_id)

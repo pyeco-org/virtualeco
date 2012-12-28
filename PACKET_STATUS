@@ -1,132 +1,131 @@
 #This file use for confirm packet compatibility status
 #ID  Version Result
-0002     353   Pass #認証接続確認(s0001)の応答
-001e     353   Pass #PASS鍵
-000f     353   Pass #マップサーバーのPASS鍵送信
-000b     353   Pass #接続・接続確認(s000a)の応答
-0011     353   Pass #認証結果(マップサーバーに認証情報の送信(s0010)に対する応答)
-0020     353   Pass #アカウント認証結果/ログアウト開始/ログアウトキャンセル
-00a1     353   Pass #キャラクター作成結果
-00a6     353   Pass #キャラクター削除結果
-00a8     353   Pass #キャラクターマップ通知
-0028     353   Pass #4キャラクターの基本属性
-0033     353   Pass #接続先通知要求(ログインサーバ/0032)の応答
-09e9     353   Pass #装備情報 IDのキャラの見た目を変更
-0029     353   Pass #4キャラクターの装備
-1239     353   Pass #キャラ速度通知・変更
-0fa7     353        #キャラのモード変更
-1a5f     353        #右クリ設定
-0203     353        #インベントリ情報
-01ff     353        #自分のキャラクター情報
-03f2     353   Pass #システムメッセージ
-09ec     353   Pass #ゴールドを更新する、値は更新後の値
-0221     353   Pass #最大HP/MP/SP
-021c     353   Pass #現在のHP/MP/SP/EP
-0217     353   Pass #詳細ステータス
-0230     353   Pass #現在CAPA/PAYL
-0231     353   Pass #最大CAPA/PAYL
-0244     353        #ステータスウィンドウの職業
-0226     353   Pass #スキル一覧
-022e     353   Pass #リザーブスキル
-023a     353        #Lv JobLv ボーナスポイント スキルポイント
-0235     353        #EXP/JOBEXP
-1f72     353        #もてなしタイニーアイコン
-157c     353        #キャラの状態
-022d     353        #HEARTスキル
-0223     353        #属性値
-122a     353   Pass #モンスターID通知
-1bbc     353        #スタンプ帳詳細
-025d     353        #不明
-0695     353        #不明
-0236     353        #wrp ranking
-1b67     353   Pass #マップ情報完了通
-196e     353   Pass #クエスト回数・時間
-0259     353        #ステータス試算結果
-120c     353        #他キャラ情報/他キャラの憑依やHP等の情報
-1220     353   Pass #モンスター情報
-00dd     353        #フレンドリスト(自キャラ)
-0fa6     353        #戦闘状態変更通知
-121c     353   Pass #モーション通知
-1211     353        #PC消去
-11f9     353        #キャラ移動アナウンス
-020e     353 Failed #キャラ情報
-041b     353   Pass #kanban
-03e9     353   Pass #オープンチャット・システムメッセージ
-05dc     353   Pass #イベント開始の通知
-05e8     353   Pass #EventID通知 Event送信に対する応答
-05dd     353   Pass #イベント終了の通知
-03f8     353   Pass #NPCメッセージのヘッダー
-03f9     353   Pass #NPCメッセージのフッター
-03f7     353   Pass #NPCメッセージ
-09e8     353   Pass #アイテム装備
-09e3     353   Pass #アイテム保管場所変更
-11fd     353   Pass #マップ変更通知
-09d4     353   Pass #アイテム取得
-09cf     353   Pass #アイテム個数変化
-09ce     353   Pass #インベントリからアイテム消去
-0a0f     353   Pass #トレードウィンドウ表示
-0a19     353        #自分・相手がOKやキャンセルを押した際に双方に送信される
-0a1c     353        #トレード終了通
-09f6     353   Pass #倉庫インベントリーヘッダ
-09f9     353   Pass #倉庫インベントリーデータ
-09fa     353   Pass #倉庫インベントリーフッタ
-09fc     353   Pass #倉庫から取り出した時の結果
-09fe     353   Pass #倉庫に預けた時の結果
-0a08     353        #搬送結果
-0604     353   Pass #NPCのメッセージのうち、選択肢から選ぶも
-0606     353   Pass #s0605で選択結果が通知された場合の応
-122f     353 Failed #pet info
-1234     353 Failed #hide pet
-041b     353   Pass #kanban
-05eb     353        #イベント関連のウェイト
-05f0     353        #音楽を再生する
-05f5     353        #効果音を再生する
-05fa     353        #ジングルを再生する
-060e     353   Pass #エフェクト受信
-0613     353   Pass #NPCのショップウィンドウ
-0615     353   Pass #NPCショップウィンドウ（売却）
-0209     353        #ステータス上昇s0208の結果
-0212     353        #ステータス・補正・ボーナスポイント
-0fa1     353   Pass #攻撃結果
-1225     353 Failed #モンスター消去
-1217     353        #emotion
-1d0c     353        #emotion_ex
-00ca     353        #whisper failed
-00ce     353        #whisper message
-05e2     353        #show npc
-05e3     353        #hide npc
-0609     353        #blackout, whiteout
-1ce9     353   Pass #useable motion_ex_id
-1d06     353   Pass #emotion_ex enumerate
-0a0b     353        #trade ask result
-0a0c     353        #receive trade ask
-0a1f     353        #trade gold
-0a20     353        #trade item header
-0a21     353        #trade item footer
-0a1e     353        #trade item data
-07d1     353        #put item error (won't send if success)
-07d5     353   Pass #drop item info
-07e6     353   Pass #pick up item error
-07df     353   Pass #pick up item
-020f     353   Pass #size
-1e7e     353 Failed #dem form change result
-1389     353   Pass #スキル使用通知
-138a     353   Pass #スキル使用通知
-1392     353 Failed #スキル使用結果通知（対象：単体）
-138d     353 Failed #スキル使用結果通知（対象：地面）
-05dc     353        #移動ロック開始(イベント開始)
-05dd     353        #移動ロック終了(イベント終了)
-09c5     353        #アイテム使用結果
-09c6     353        #アイテム使用効果 (対象：地面)
-09c7     353        #アイテム使用効果 (対象：単体)
-09c8     353        #アイテム使用効果 (対象：自分)
-0bb8     353   Pass #飛空庭のひも・テント表示
-0bb9     353   Pass #飛空庭のひも・テント消去
-1be4     353        #飛空庭ログイン #unfinished
-13bc     353        #飛空庭の天候
-13bd     353        #飛空庭の天体
-1bee     353        #家具情報ヘッダ
-1bf0     353        #家具情報フッタ
-1bef     353        #家具情報データ #unfinished
-1bf9     353        #飛空庭に装飾品を装着・解除するの結果
+0002     354   Pass #認証接続確認(s0001)の応答
+001e     354   Pass #PASS鍵
+000f     354   Pass #マップサーバーのPASS鍵送信
+000b     354   Pass #接続・接続確認(s000a)の応答
+0011     354   Pass #認証結果(マップサーバーに認証情報の送信(s0010)に対する応答)
+0020     354   Pass #アカウント認証結果/ログアウト開始/ログアウトキャンセル
+00a1     354   Pass #キャラクター作成結果
+00a6     354   Pass #キャラクター削除結果
+00a8     354   Pass #キャラクターマップ通知
+0028     354   Pass #4キャラクターの基本属性
+0033     354   Pass #接続先通知要求(ログインサーバ/0032)の応答
+09e9     354   Pass #装備情報 IDのキャラの見た目を変更
+0029     354   Pass #4キャラクターの装備
+1239     354   Pass #キャラ速度通知・変更
+0fa7                #キャラのモード変更
+1a5f                #右クリ設定
+0203                #インベントリ情報
+01ff                #自分のキャラクター情報
+03f2     354   Pass #システムメッセージ
+09ec     354   Pass #ゴールドを更新する、値は更新後の値
+0221     354   Pass #最大HP/MP/SP
+021c     354   Pass #現在のHP/MP/SP/EP
+0217     354   Pass #詳細ステータス
+0230     354   Pass #現在CAPA/PAYL
+0231     354   Pass #最大CAPA/PAYL
+0244                #ステータスウィンドウの職業
+0226     354   Pass #スキル一覧
+022e     354   Pass #リザーブスキル
+023a                #Lv JobLv ボーナスポイント スキルポイント
+0235                #EXP/JOBEXP
+1f72                #もてなしタイニーアイコン
+157c     354 Failed #キャラの状態
+022d                #HEARTスキル
+0223                #属性値
+122a     354   Pass #モンスターID通知
+1bbc                #スタンプ帳詳細
+025d                #不明
+0695                #不明
+0236                #wrp ranking
+1b67     354   Pass #マップ情報完了通
+196e     354   Pass #クエスト回数・時間
+0259                #ステータス試算結果
+120c                #他キャラ情報/他キャラの憑依やHP等の情報
+1220     354   Pass #モンスター情報
+00dd                #フレンドリスト(自キャラ)
+0fa6                #戦闘状態変更通知
+121c     354   Pass #モーション通知
+1211                #PC消去
+11f9                #キャラ移動アナウンス
+020b     354   Pass #キャラ情報
+041b     354   Pass #kanban
+03e9     354   Pass #オープンチャット・システムメッセージ
+05dc     354   Pass #イベント開始の通知
+05e8     354   Pass #EventID通知 Event送信に対する応答
+05dd     354   Pass #イベント終了の通知
+03f8     354   Pass #NPCメッセージのヘッダー
+03f9     354   Pass #NPCメッセージのフッター
+03f7     354   Pass #NPCメッセージ
+09e8     354   Pass #アイテム装備
+09e3     354   Pass #アイテム保管場所変更
+11fd     354   Pass #マップ変更通知
+09d4     354   Pass #アイテム取得
+09cf     354   Pass #アイテム個数変化
+09ce     354   Pass #インベントリからアイテム消去
+0a0f     354   Pass #トレードウィンドウ表示
+0a19     354   Pass #自分・相手がOKやキャンセルを押した際に双方に送信される
+0a1c     354   Pass #トレード終了通
+09f6     354   Pass #倉庫インベントリーヘッダ
+09f9     354   Pass #倉庫インベントリーデータ
+09fa     354   Pass #倉庫インベントリーフッタ
+09fc     354   Pass #倉庫から取り出した時の結果
+09fe     354   Pass #倉庫に預けた時の結果
+0a08                #搬送結果
+0604     354   Pass #NPCのメッセージのうち、選択肢から選ぶも
+0606     354   Pass #s0605で選択結果が通知された場合の応
+122f     354   Pass #pet info
+1234     354   Pass #hide pet
+05eb                #イベント関連のウェイト
+05f0                #音楽を再生する
+05f5                #効果音を再生する
+05fa                #ジングルを再生する
+060e     354   Pass #エフェクト受信
+0613     354   Pass #NPCのショップウィンドウ
+0615     354   Pass #NPCショップウィンドウ（売却）
+0209                #ステータス上昇s0208の結果
+0212                #ステータス・補正・ボーナスポイント
+0fa1     354   Pass #攻撃結果
+1225                #モンスター消去
+1217                #emotion
+1d0c                #emotion_ex
+00ca                #whisper failed
+00ce                #whisper message
+05e2                #show npc
+05e3                #hide npc
+0609                #blackout, whiteout
+1ce9     354   Pass #useable motion_ex_id
+1d06     354   Pass #emotion_ex enumerate
+0a0b     354   Pass #trade ask result
+0a0c     354   Pass #receive trade ask
+0a1f     354   Pass #trade gold
+0a20     354   Pass #trade item header
+0a21     354   Pass #trade item footer
+0a1e     354   Pass #trade item data
+07d1                #put item error (won't send if success)
+07d5     354   Pass #drop item info
+07e6                #pick up item error
+07df     354   Pass #pick up item
+020f     354   Pass #size
+1e7e     354   Pass #dem form change result
+1389     354   Pass #スキル使用通知
+138a     354   Pass #スキル使用通知
+1392     354   Pass #スキル使用結果通知（対象：単体）
+138d     354   Pass #スキル使用結果通知（対象：地面）
+05dc                #移動ロック開始(イベント開始)
+05dd                #移動ロック終了(イベント終了)
+09c5                #アイテム使用結果
+09c6                #アイテム使用効果 (対象：地面)
+09c7                #アイテム使用効果 (対象：単体)
+09c8                #アイテム使用効果 (対象：自分)
+0bb8     354   Pass #飛空庭のひも・テント表示
+0bb9     354   Pass #飛空庭のひも・テント消去
+1be4                #飛空庭ログイン #unfinished
+13bc                #飛空庭の天候
+13bd                #飛空庭の天体
+1bee                #家具情報ヘッダ
+1bf0                #家具情報フッタ
+1bef                #家具情報データ #unfinished
+1bf9                #飛空庭に装飾品を装着・解除するの結果
 

@@ -129,9 +129,8 @@ class LoginDataHandler:
 				self.user, num, name, race, gender, hair, hair_color, face):
 				self.send("00a1", "slotexist") #キャラクター作成結果
 				return
-		except:
+		except ValueError:
 			self.send("00a1", "other") #キャラクター作成結果
-			raise Exception("do_00a0 error:", traceback.format_exc())
 			return
 		else:
 			self.send("00a1", "sucess") #キャラクター作成結果
@@ -146,7 +145,7 @@ class LoginDataHandler:
 			"delpassword", delpassword_md5)
 		try:
 			if self.user.delpassword != delpassword_md5:
-				raise (Exception, "delpassword error")
+				raise (ValueError, "delpassword error")
 			with self.user.lock:
 				p = self.user.pc_list[num]
 				with users.user_list_lock:
@@ -155,9 +154,8 @@ class LoginDataHandler:
 				os.remove(p.path, base=env.USER_DIR)
 				self.user.pc_list[num] = None
 			self.send("00a6", True) #キャラクター削除結果
-		except:
+		except ValueError:
 			self.send("00a6", False) #キャラクター削除結果
-			raise Exception("do_00a5 error:", traceback.format_exc())
 		self.send("0028", self.user) #4キャラクターの基本属性
 		self.send("0029", self.user) #4キャラクターの装備
 	
