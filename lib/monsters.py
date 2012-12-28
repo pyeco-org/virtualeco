@@ -47,7 +47,7 @@ def spawn(monster_id, map_id, x, y):
 		return error
 	general.log("[monster] spawn monster id %s"%(monster.id))
 	script.send_map_obj(map_obj, (), "1220", monster) #モンスター情報
-	#script.send_map_obj(map_obj, (), "157c", monster) #キャラの状態 #changed from ver353+
+	script.send_map_obj(map_obj, (), "170c", monster) #キャラの状態
 
 def delete(monster):
 	with monster_list_lock and monster.lock:

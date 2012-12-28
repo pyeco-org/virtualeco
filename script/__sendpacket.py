@@ -6,17 +6,19 @@ from lib.packet import login_data_handler
 from lib.packet import map_data_handler
 from lib.packet.packet_struct import *
 ID = 110
-PACKET_START = 0x0200
-PACKET_END = 0x0400
+PACKET_START = 0x1700
+PACKET_END = 0x1710
 PACKET_KNOWN_LIST = packet.name_map.keys()
 PACKET_KNOWN_LIST += login_data_handler.LoginDataHandler.name_map.keys()
 PACKET_KNOWN_LIST += map_data_handler.MapDataHandler.name_map.keys()
 
 def main(pc):
+	from lib import monsters
+	from lib import general
 	for packet_type in xrange(PACKET_START, PACKET_END+1):
 		#create data
 		data_type = pack_unsigned_short(packet_type)
-		data_value = make_020b(pc.pet)
+		data_value = packet.make_170c(monsters.monster_list[0], dict((j, 0xffffffff) for j in xrange(10)))
 		#skip known type
 		if data_type.encode("hex") in PACKET_KNOWN_LIST:
 			general.log("skip", data_type.encode("hex"))

@@ -69,15 +69,14 @@ class Monster:
 			if self.status.hp <= 0:
 				general.log_error("[monster] monster.hp <= 0", self)
 				return 0
-			state01 = 0
+			state_list = dict((j, 0) for j in xrange(10))
 			self.status.hp -= i
 			if self.status.hp <= 0:
 				self.status.hp = 0
-				state01 = 0x200 #行動不能
+				state_list[0] |= 0x200 #行動不能
 				general.start_thread(monsters.delete_monster_thread, (self,))
 		script.send_map_obj(self.map_obj, (), "021c", self) #現在のHP/MP/SP/EP
-		#changed from ver353+
-		#script.send_map_obj(self.map_obj, (), "157c", self, state01) #キャラの状態
+		script.send_map_obj(self.map_obj, (), "170c", self, state_list) #キャラの状態
 		return self.status.hp
 	
 	def reset(self):
