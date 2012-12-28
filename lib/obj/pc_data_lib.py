@@ -4,6 +4,7 @@ import sys
 import os
 import threading
 import traceback
+import ConfigParser
 from lib import env
 from lib import general
 from lib import server
@@ -179,10 +180,18 @@ def load_1_0_0(self, data):
 		self.warehouse[i] = item
 	#equip.place = iid
 	for attr in general.EQUIP_ATTR_LIST:
-		setattr(self.equip_std, attr, data.getint("equip", attr))
+		try:
+			setattr(self.equip_std, attr, data.getint("equip", attr))
+		except ConfigParser.NoOptionError:
+			general.log_error(
+				"[ pc  ] warning: equip [%s] not exist in [%s]"%(attr, self))
 	if data.has_section("equip_dem"):
 		for attr in general.EQUIP_ATTR_LIST:
-			setattr(self.equip_dem, attr, data.getint("equip_dem", attr))
+			try:
+				setattr(self.equip_dem, attr, data.getint("equip_dem", attr))
+			except ConfigParser.NoOptionError:
+				general.log_error(
+					"[ pc  ] warning: dem equip [%s] not exist in [%s]"%(attr, self))
 	#{name: value, ...}
 	self.var = {}
 	if data.has_section("dic"):
@@ -256,10 +265,18 @@ def load_1_1_0(self, data):
 		self.warehouse[i] = item_loads(data.get("warehouse", str(i)))
 	#equip.place = iid
 	for attr in general.EQUIP_ATTR_LIST:
-		setattr(self.equip_std, attr, data.getint("equip", attr))
+		try:
+			setattr(self.equip_std, attr, data.getint("equip", attr))
+		except ConfigParser.NoOptionError:
+			general.log_error(
+				"[ pc  ] warning: equip [%s] not exist in [%s]"%(attr, self))
 	if data.has_section("equip_dem"):
 		for attr in general.EQUIP_ATTR_LIST:
-			setattr(self.equip_dem, attr, data.getint("equip_dem", attr))
+			try:
+				setattr(self.equip_dem, attr, data.getint("equip_dem", attr))
+			except ConfigParser.NoOptionError:
+				general.log_error(
+					"[ pc  ] warning: dem equip [%s] not exist in [%s]"%(attr, self))
 	#{name: value, ...}
 	self.var = {}
 	if data.has_section("var"):

@@ -118,6 +118,8 @@ class PC:
 				return 17
 			elif iid == equip.pet:
 				return 18
+			elif iid == equip.effect:
+				return 19
 		return 0x02 #body
 	
 	def set_map(self, *args):
@@ -275,6 +277,10 @@ class PC:
 			self.equip.pet = iid
 			self.set_pet()
 			set_part = 18
+		elif item.check_type(general.EFFECT_TYPE_LIST): #effect
+			unset_iid_list.append(self.equip.effect)
+			self.equip.effect = iid
+			set_part = 19
 		else: #装備しようとする装備タイプが不明の場合
 			general.log_error("[ pc  ] set_equip unknow item type", item)
 			self.map_send("09e8", iid, -1, -2, 1) #アイテム装備

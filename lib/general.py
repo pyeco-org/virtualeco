@@ -117,6 +117,9 @@ BACKPACK_TYPE_LIST = (
 SOCKS_TYPE_LIST = (
 	"SOCKS",
 )
+EFFECT_TYPE_LIST = (
+	"EFFECT",
+)
 PARTS_SET_TYPE_LIST = (
 	#not using
 	"SETPARTS_BLOW",
@@ -135,6 +138,7 @@ EQUIP_ATTR_LIST = (
 	"shoes",
 	"socks",
 	"pet",
+	"effect",
 )
 FLYGARDEN_ATTR_LIST = (
 	"flying_base",
