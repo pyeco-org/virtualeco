@@ -49,4 +49,5 @@ def main(pc):
 	item_id = ID[pc.event_id]
 	item = general.get_item(item_id)
 	if script.takeitem(pc, item_id, 1):
+		script.effect(pc, 4112)
 		script.haircolor(pc, item.color)
