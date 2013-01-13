@@ -1,12 +1,3 @@
--------------------------------
-
-LICENSE: The MIT License (MIT)
-Additions:
-Use of this software is limited to private use of the individual or circle, use for commercial purposes is not allowed.
-このソフトウェアは個人またはサークルの私的使用目的での利用に限ります、商用目的での利用は認めません。
-
--------------------------------
-
 Rewrite from pyeco.
 
 Guide:
@@ -18,17 +9,24 @@ Guide:
 Support:
 saga17
 
+No more feature will be add because developer can't
+get any more resource of packet and script.
+
+-------------------------------
+
+LICENSE: The MIT License (MIT)
+Additions:
+Use of this software is limited to private use of the individual or circle, use for commercial purposes is not allowed.
+このソフトウェアは個人またはサークルの私的使用目的での利用に限ります、商用目的での利用は認めません。
+
+-------------------------------
+
+If you can dump packet from official server, please contact me.
+Or if you dont known how to dump, I can provide tool to you.
+
 Contact:
 pyeco.git@gmail.com
 
 Mail-List(Google Group):
 https://groups.google.com/group/pyeco
 
-No more feature will be add because developer can't
-get any more resource of packet and script.
-
--------------------------------
-
-If you can dump packet from official server, please contact me.
-Or if you dont known how to dump, I can provide tool to you.
-Email: pyeco.git@gmail.com
