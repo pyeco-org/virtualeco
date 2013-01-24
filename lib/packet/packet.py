@@ -725,9 +725,10 @@ def make_11f9(pc, move_type=7):
 	#0014: ワープ(ソーサラースキル・テレポート等)
 	return result
 
-def make_020b(pc):
+def make_020d(pc):
 	"""キャラ情報"""
 	#353+ from 020e to 020b
+	#356+ from 020b to 020d
 	result = pack_int(pc.id)
 	result += pack_int(pc.id)
 	result += pack_str(pc.name)
@@ -766,6 +767,7 @@ def make_020b(pc):
 	result += pack_byte(0) #不明 #353+ 演習関係？
 	result += pack_byte(0) #不明 #353+ 演習関係？
 	result += pack_byte(0) #不明 #353+ 演習関係？
+	result += pack_int(0) #不明 #356+
 	result += pack_byte(0) #ゲストIDかどうか
 	result += pack_byte(pc.lv_base) #レベル（ペットは1固定
 	result += pack_int(pc.wrprank) #WRP順位（ペットは -1固定。

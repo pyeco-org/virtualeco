@@ -397,7 +397,7 @@ def warpraw(pc, rawx, rawy):
 
 def update(pc):
 	with pc.lock and pc.user.lock:
-		pc.map_send_map("020b", pc) #キャラ情報
+		pc.map_send_map("020d", pc) #キャラ情報
 
 def update_pet(pc):
 	with pc.lock and pc.user.lock:

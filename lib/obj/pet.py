@@ -36,7 +36,7 @@ class Pet:
 		self.motion_loop = False
 		self.standby = False
 		self.lv_base = 1
-		#packet.make_020b
+		#packet.make_020d
 		self.race = -1
 		self.form = -1
 		self.gender = -1

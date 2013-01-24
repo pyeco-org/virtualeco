@@ -152,7 +152,7 @@ class MapDataHandler:
 				return
 			if not pet.master:
 				return
-			self.send("020b", pet) #キャラ情報
+			self.send("020d", pet) #キャラ情報
 			#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス
 		else:
 			p = users.get_pc_from_id(i)
@@ -163,7 +163,7 @@ class MapDataHandler:
 					return
 				if not p.visible:
 					return
-				self.send("020b", p) #キャラ情報
+				self.send("020d", p) #キャラ情報
 				self.send("041b", p) #kanban
 	
 	def do_000a(self, data_io):
@@ -375,7 +375,7 @@ class MapDataHandler:
 				self.pc.pet.set_raw_dir(rawdir)
 				#self.send_map("11f9", self.pc.pet, 0x06) #キャラ移動アナウンス #歩き
 	
-	def do_020a(self, data_io):
+	def do_020c(self, data_io):
 		#キャラクタ情報要求
 		obj_id = io_unpack_int(data_io)
 		general.log("[ map ] request object id", obj_id)

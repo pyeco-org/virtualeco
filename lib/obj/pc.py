@@ -294,7 +294,7 @@ class PC:
 			#self.map_send("0203", self.item[i], i, 0x02) #インベントリ情報
 		self.map_send("09e8", iid, set_part, 0, 1) #アイテム装備
 		self.map_send_map("09e9", self) #キャラの見た目を変更
-		#self.map_send_map_without_self("020b", self.pc) #キャラ情報
+		#self.map_send_map_without_self("020d", self.pc) #キャラ情報
 		self.update_equip_status()
 		return True
 	
