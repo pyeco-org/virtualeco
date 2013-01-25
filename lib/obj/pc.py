@@ -71,7 +71,7 @@ class PC:
 		self.map_send("0231", self) #最大CAPA/PAYL
 		self.map_send_map("0221", self) #最大HP/MP/SP
 		self.map_send_map("021c", self) #現在のHP/MP/SP/EP
-		self.map_send("170c", self) #キャラの状態
+		self.map_send("157c", self) #キャラの状態
 		self.map_send("0212", self) #ステータス・補正・ボーナスポイント
 		self.map_send("0217", self) #詳細ステータス
 		self.map_send("0226", self, 0) #スキル一覧 一次職

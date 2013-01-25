@@ -554,12 +554,13 @@ def make_1f72(show=False):
 	"""もてなしタイニーアイコン""" #before login
 	return pack_byte(1 if show else 0)
 
-def make_170c(obj, state_list=None):
+def make_157c(obj, state_list=None):
 	"""キャラの状態""" #send when loading map and after load
 	#キャラの自然回復や状態異常等、様々な状態を更新する
 	#状態に応じて画面上にアイコンが出る
 	#毒などの場合エフェクトも出る
 	#353+ from 157c to 170c
+	#356+ from 170c to 157c
 	result = pack_int(obj.id)
 	if state_list is None:
 		state_list = {}
