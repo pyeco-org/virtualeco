@@ -773,7 +773,7 @@ def make_020d(pc):
 	result += pack_byte(pc.lv_base) #レベル（ペットは1固定
 	result += pack_int(pc.wrprank) #WRP順位（ペットは -1固定。
 									#別のパケで主人の値が送られてくる
-	result += pack_int(0) #不明
+	result += pack_int(-1) #不明
 	result += pack_byte(-1) #不明
 	return result
 
