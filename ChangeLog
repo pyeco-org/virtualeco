@@ -1,3 +1,7 @@
+2013-02-21
+	update database to 359
+	fix bug: pet not visible in some time (359+?)
+
 2013-01-24
 	update database to 356
 	packet fixes with 356

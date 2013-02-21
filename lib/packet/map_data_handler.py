@@ -288,6 +288,8 @@ class MapDataHandler:
 		
 		self.sync_map()
 		self.pc.unset_pet()
+		if self.pc.equip.pet:
+			time.sleep(0.5) #must have some delay before send 122f (pet info)
 		self.pc.set_pet()
 		
 		if self.send_login_event:
