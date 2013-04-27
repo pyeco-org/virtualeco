@@ -7,7 +7,10 @@ Guide:
 * copy and run pyecolauncher
 
 Support:
-saga17
+saga17 (until ver 361)
+361+ is unsupported because mapserver login packet changed.
+If you can dump packet please help me,
+I can't do that because I'm not in jp.
 
 No more feature will be add because developer can't
 get any more resource of packet and script.
